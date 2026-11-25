@@ -4,6 +4,7 @@
  * changed (docs/RULES.md, rule G1). Rule numbers refer to docs/RULES.md.
  */
 import type { Bay, DrawerSpec, VanityOptions } from '../types';
+import { defaultTools } from './tools';
 import { appDefault, defaultChoice } from './values';
 
 
@@ -74,6 +75,8 @@ export const vanityDefaults: VanityOptions = {
   tapeIncrement: '1/16in',
   joinery: defaultChoice('pocketHolesAndGlue', 'One jig, no long clamps, joints pull themselves tight.'),
 
+  tools: defaultTools,
+
   ends: {
     left: defaultChoice('exposed', 'Finished and flush, which is safe whichever way the cabinet ends up.'),
     right: defaultChoice('exposed', 'Finished and flush, which is safe whichever way the cabinet ends up.'),
@@ -105,7 +108,12 @@ export const vanityDefaults: VanityOptions = {
     shakerFrameMaterial: 'oak-1x3',
     shakerFrameWidth: 'boardWidth',
     shakerPanelMaterial: 'oak-ply-1-4',
+    panelMethod: defaultChoice('auto', 'The app picks the easiest method your tools allow.'),
     panelGrooveDepth: appDefault('3/8', 'Deep enough to hold the panel; cut with a router.'),
+    panelRecessWidth: appDefault('3/8', 'The recess a common bearing-guided bit cuts.'),
+    panelBackClearance: appDefault('1/4', 'Keeps a panel on the back of a door clear of the face frame.'),
+    minimumPanelLap: appDefault('3/8', 'Enough frame for the glue to hold the panel.'),
+    hingeInset: appDefault('3', 'A common place for hinges: clear of the corners, easy to reach.'),
     panelClearance: appDefault('1/8', 'Room for the panel to slide into its groove.'),
     hinge: 'hinge-face-frame-half-inch',
   },

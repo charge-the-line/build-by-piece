@@ -21,6 +21,8 @@ export interface LaidOpening {
   readonly left: Expr;
   /** From the top of the face frame to the opening. */
   readonly top: Expr;
+  /** For a door: which edge its hinges are on. */
+  readonly hingeSide?: 'left' | 'right';
 }
 
 export interface LaidBay {
@@ -225,6 +227,7 @@ export function layOut(r: Resolved): LayoutResult {
         heightDerivation: height.derivation,
         left,
         top,
+        ...(bay.kind === 'door' ? { hingeSide: bay.hingeSide } : {}),
       });
     });
     bays.push({ bay, width: width.val, left, openings });
