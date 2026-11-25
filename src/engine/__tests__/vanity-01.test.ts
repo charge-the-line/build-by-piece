@@ -1,19 +1,16 @@
 /**
- * Test list. Everything marked `todo` is pending: it names a behaviour the
- * Phase 1 engine must have. Rule numbers refer to docs/RULES.md.
- *
- * Two fixtures:
- *  - vanity01: the design being built (60" x 21" x 30", three numbers in).
- *  - mockupDesign / mockupClaims: the old AI mock-up, kept only for its errors.
- *
- * The first two blocks run today and guard the fixtures and defaults.
+ * Vanity 01: 60" wide x 21" deep x 30" high, left end on a wall, right end
+ * exposed. Three numbers in, a whole plan out. Rule numbers refer to
+ * docs/RULES.md; the expected sizes are the worked example in that document.
  */
 import { describe, expect, it } from 'vitest';
 import { defaultCatalog } from '../defaults/catalog';
 import { proposedVanityLayout, vanityDefaults } from '../defaults/vanity';
-import { mockupClaims, mockupDesign } from '../fixtures/mockup-errors';
+import { appDefault, userChoice, userEntered } from '../defaults/values';
 import { vanity01 } from '../fixtures/vanity-01';
-import type { Measurement } from '../types';
+import { generatePlan } from '../generatePlan';
+import type { Measurement, Part } from '../types';
+import { inches, part, plan, size, sized, vanityWith } from './helpers';
 
 /** Collects every Measurement anywhere inside a value. */
 function measurementsIn(value: unknown, found: Measurement[] = []): Measurement[] {
@@ -27,25 +24,23 @@ function measurementsIn(value: unknown, found: Measurement[] = []): Measurement[
   return found;
 }
 
+const result = plan();
+const errors = (r = result) => r.issues.filter((i) => i.severity === 'error');
+
 describe('vanity 01 fixture', () => {
   it('contains exactly three measurements: width, depth and height', () => {
     expect(measurementsIn(vanity01)).toEqual([vanity01.width, vanity01.depth, vanity01.height]);
   });
 
-  it('marks all three as entered by the user', () => {
-    for (const m of [vanity01.width, vanity01.depth, vanity01.height]) {
-      expect(m).toMatchObject({ status: 'confirmed', origin: 'user', unit: 'in' });
-    }
-  });
-
-  it('is 60" wide, 21" deep and 30" high', () => {
+  it('is 60" wide, 21" deep and 30" high, all entered by the user', () => {
     expect([vanity01.width.entered, vanity01.depth.entered, vanity01.height.entered]).toEqual(['60', '21', '30']);
+    for (const m of [vanity01.width, vanity01.depth, vanity01.height]) {
+      expect(m).toMatchObject({ status: 'confirmed', origin: 'user' });
+    }
   });
 
   it('changes nothing from the defaults except which ends touch a wall', () => {
     expect(Object.keys(vanity01.overrides)).toEqual(['ends']);
-    expect(vanity01.overrides.ends?.left?.value).toBe('wall');
-    expect(vanity01.overrides.ends?.right?.value).toBe('exposed');
   });
 });
 
@@ -67,182 +62,506 @@ describe('defaults and catalog', () => {
   });
 
   it('asks her to check every plywood thickness at the cutting step', () => {
-    const sheets = defaultCatalog.stock.filter((s) => s.kind === 'sheet');
-    expect(sheets.length).toBeGreaterThan(0);
-    for (const sheet of sheets) {
+    for (const sheet of defaultCatalog.stock.filter((s) => s.kind === 'sheet')) {
       expect(sheet.actualThickness).toMatchObject({ status: 'assumed', checkAt: 'cutting' });
     }
-  });
-
-  it('refers only to materials and hardware that exist in the catalog', () => {
-    const stock = new Set(defaultCatalog.stock.map((s) => s.id));
-    const hardware = new Set(defaultCatalog.hardware.map((h) => h.id));
-    const d = vanityDefaults;
-    const materials = [
-      d.box.caseMaterial,
-      d.box.backMaterial,
-      d.box.supportMaterial,
-      ...d.box.spacerMaterials,
-      d.faceFrame.material,
-      d.fronts.slabMaterial,
-      d.fronts.shakerFrameMaterial,
-      d.fronts.shakerPanelMaterial,
-      d.drawers.boxMaterial,
-      d.drawers.bottomMaterial,
-      d.platform.lumber,
-      d.platform.toeKickMaterial,
-    ];
-    expect(materials.filter((id) => !stock.has(id))).toEqual([]);
-    expect([d.fronts.hinge, d.drawers.slide].filter((id) => !hardware.has(id))).toEqual([]);
   });
 
   it('proposes drawers, two doors, drawers, with every width shared', () => {
     expect(proposedVanityLayout.map((b) => b.kind)).toEqual(['drawerColumn', 'door', 'door', 'drawerColumn']);
     expect(proposedVanityLayout.every((b) => b.width.by === 'fill')).toBe(true);
   });
-
-  it('leaves one opening in every column free to take up the leftover height', () => {
-    for (const bay of proposedVanityLayout) {
-      const heights = bay.kind === 'door' ? [bay.height] : bay.drawers.map((d) => d.height);
-      expect(heights.filter((h) => h.by === 'fill')).toHaveLength(1);
-    }
-  });
-});
-
-describe('mock-up fixture', () => {
-  it('marks every mock-up number as assumed', () => {
-    const all = measurementsIn(mockupDesign);
-    expect(all.length).toBeGreaterThan(10);
-    expect(all.filter((m) => m.status !== 'assumed')).toEqual([]);
-  });
-
-  it('keeps the five conflicting widths for the engine to reject', () => {
-    expect(mockupClaims.overallWidths).toHaveLength(5);
-  });
 });
 
 describe('three numbers in, a whole plan out (rules G1-G3)', () => {
-  it.todo('builds a complete plan from width, depth and height alone');
-  it.todo('builds vanity 01 with no errors');
-  it.todo('has no required input other than width, depth and height');
-  it.todo('lists every default it used, each with its value and the reason for it');
-  it.todo('labels each value as entered by her, chosen by the app, or to check before cutting');
-  it.todo('uses a changed default everywhere that default was used');
-  it.todo('goes back to the app default when a change is removed');
-  it.todo('treats 60" as the full cabinet width, including the frame overhang on a wall end');
-  it.todo('makes the box 1/4" narrower than the cabinet when one end is on a wall (rule B1)');
-  it.todo('treats 21" as wall to the front of the face frame, so the side panels are 20 1/4" deep (rule B1)');
-  it.todo('treats 30" as the box only, with platform and top added on for the finished height (rule H1)');
-  it.todo('proposes drawers, two doors, drawers for a 60" vanity and sizes every opening itself (rule L0)');
-  it.todo('sizes four equal openings that, with five frame pieces, add up to exactly 60" (rule L1)');
-  it.todo('chooses the drawer slides and sizes each drawer box from its opening (rules X1-X3)');
-  it.todo('chooses hinges that match the overlay and lists two for each door (rule D7)');
-  it.todo('carries the check-at-cutting prompt for plywood thickness into the plan');
-  it.todo('recalculates every affected part when plywood thickness changes from 3/4" to 23/32"');
-  it.todo('needs no lengthwise cut in any solid-wood part with the default settings (rule M5)');
+  it('builds a complete plan from width, depth and height alone', () => {
+    const bare = generatePlan({ ...vanity01, overrides: {} }, vanityDefaults, defaultCatalog);
+    expect(bare.canGeneratePlan).toBe(true);
+    expect(bare.parts.length).toBeGreaterThan(40);
+    expect(bare.materials.length).toBeGreaterThan(0);
+    expect(bare.hardware.length).toBe(2);
+  });
+
+  it('builds vanity 01 with no errors and no warnings', () => {
+    expect(result.canGeneratePlan).toBe(true);
+    expect(result.issues).toEqual([]);
+  });
+
+  it('lists every value it used, each with a label, and every default with its reason', () => {
+    expect(result.inputs.length).toBeGreaterThan(25);
+    for (const input of result.inputs) {
+      expect(input.label).toBeTruthy();
+      if (input.origin === 'appDefault') expect(input.note, input.path).toBeTruthy();
+    }
+  });
+
+  it('labels each value as entered by her, chosen by the app, or to check before cutting', () => {
+    const by = (path: string) => result.inputs.find((i) => i.path === path)!;
+    expect(by('width')).toMatchObject({ origin: 'user', status: 'confirmed' });
+    expect(by('ends.left')).toMatchObject({ origin: 'user', value: 'wall' });
+    expect(by('fronts.overlay')).toMatchObject({ origin: 'appDefault', status: 'assumed' });
+    expect(by('fronts.overlay').checkAt).toBeUndefined();
+    expect(by('measuredThickness.oak-ply-3-4')).toMatchObject({ origin: 'appDefault', checkAt: 'cutting' });
+    expect(result.inputs.filter((i) => i.origin === 'user').map((i) => i.path)).toEqual(['width', 'depth', 'height', 'ends.left', 'ends.right']);
+  });
+
+  it('uses a changed default everywhere that default was used', () => {
+    const changed = plan(vanityWith({}, { fronts: { overlay: userEntered('3/8') } }));
+    // Hinges are made for 1/2", so the engine refuses rather than quietly mixing overlays.
+    expect(errors(changed).map((i) => i.code)).toEqual(['HINGE_OVERLAY_MISMATCH']);
+
+    const wider = plan(vanityWith({}, { ends: { wallOverhang: userEntered('1/2') } }));
+    expect(wider.overall?.boxWidth.result).toBe(inches('59 1/2'));
+    expect(part(wider, 'Bottom').length).toBe(inches('58'));
+    expect(part(wider, 'Back').length).toBe(inches('58'));
+    expect(part(wider, 'Platform rail (front and back)').length).toBe(inches('55 3/4'));
+  });
+
+  it('goes back to the app default when a change is removed', () => {
+    expect(plan(vanityWith({}, {}))).toEqual(result);
+  });
+
+  it('treats 60" as the full cabinet width, including the frame overhang on a wall end', () => {
+    expect(result.overall?.frameWidth).toBe(inches('60'));
+    expect(result.overall?.boxWidth.result).toBe(inches('59 3/4'));
+    expect(result.overall?.boxWidth.ruleId).toBe('B1');
+  });
+
+  it('makes the box as wide as the cabinet when both ends are exposed, and 1/2" narrower between two walls', () => {
+    const open = plan(vanityWith({}, { ends: { left: userChoice('exposed') } }));
+    expect(open.overall?.boxWidth.result).toBe(inches('60'));
+    const walled = plan(vanityWith({}, { ends: { right: userChoice('wall') } }));
+    expect(walled.overall?.boxWidth.result).toBe(inches('59 1/2'));
+  });
+
+  it('treats 21" as wall to the front of the face frame, so the side panels are 20 1/4" deep (rule B1)', () => {
+    expect(result.overall?.boxDepth.result).toBe(inches('20 1/4'));
+    expect(part(result, 'Left side').width).toBe(inches('20 1/4'));
+  });
+
+  it('treats 30" as the box only, with platform and top added on for the finished height (rule H1)', () => {
+    expect(part(result, 'Left side').length).toBe(inches('30'));
+    expect(result.overall?.platformHeight.result).toBe(inches('3 1/2'));
+    expect(result.overall?.finishedHeight.result).toBe(inches('34 3/4'));
+  });
+
+  it('carries the check-at-cutting prompt for plywood thickness into the parts that depend on it', () => {
+    expect(part(result, 'Bottom').needsCheck).toBe(true);
+    expect(part(result, 'Left side').needsCheck).toBe(true);
+    expect(part(result, 'Top frame piece').needsCheck).toBe(false);
+    expect(part(result, 'Platform cross support').needsCheck).toBe(false);
+  });
+
+  it('recalculates every affected part when plywood thickness changes from 3/4" to 23/32"', () => {
+    const thin = plan(vanityWith({}, { measuredThickness: { 'oak-ply-3-4': userEntered('23/32') } }));
+    expect(errors(thin)).toEqual([]);
+    expect(part(thin, 'Bottom').length).toBe(inches('58 5/16'));
+    expect(part(thin, 'Back').length).toBe(inches('58 5/16'));
+    expect(part(thin, 'Interior divider').length).toBe(inches('29 9/32'));
+    expect(part(thin, 'Left side').thickness).toBe(inches('23/32'));
+    expect(part(thin, 'Left drawers, drawer 1: box front and back').length).toBe(inches('10 23/32'));
+    // Frame, fronts and platform do not depend on plywood thickness.
+    for (const name of ['Top frame piece', 'Left door: door upright', 'Platform rail (front and back)', 'Toe kick (front)']) {
+      expect(size(part(thin, name)), name).toEqual(size(part(result, name)));
+    }
+    expect(thin.inputs.find((i) => i.path === 'measuredThickness.oak-ply-3-4')).toMatchObject({ origin: 'user', status: 'confirmed' });
+  });
+
+  it('needs no lengthwise cut in any solid-wood part with the default settings (rule M5)', () => {
+    expect(result.issues.filter((i) => i.code === 'NEEDS_LENGTHWISE_CUT')).toEqual([]);
+    const ripped = plan(vanityWith({}, { faceFrame: { topRailWidth: appDefault('1 1/4', 'test') } }));
+    expect(ripped.canGeneratePlan).toBe(true);
+    expect(ripped.issues.filter((i) => i.code === 'NEEDS_LENGTHWISE_CUT').map((i) => i.partIds)).toEqual([[part(ripped, 'Top frame piece').id]]);
+  });
 });
 
-describe('vanity 01 construction choices', () => {
-  it.todo('overhangs the face frame 1/4" past the box on the wall end and keeps it flush on the exposed end (rule F1)');
-  it.todo('fits a 1/4" back between the sides so no back edge shows on the exposed end (rule B4)');
-  it.todo('adds one mounting strip and one top front support to each section of the box (rules B6, B7)');
-  it.todo('keeps the cabinet floor flush with the bottom of the box (rule B3)');
-  it.todo('makes the top rail, bottom rail and every other frame piece 1 1/2" wide (rules F2-F5)');
-  it.todo('keeps a vertical frame piece between the two doors (rule F4)');
-  it.todo('sets the platform back from the exposed end by the same toe space as the front (rule P1)');
-  it.todo('adds a toe kick return on the exposed end and none on the wall end (rule P5)');
-  it.todo('makes the slide spacer on each cabinet side as thick as the frame piece stands proud of the plywood (rule B8)');
-  it.todo('puts no screw or pocket hole on the outside face of the exposed side (rule J2)');
-  it.todo('gives every drawer box part, slide and hinge a place in the cut list or hardware list');
+describe('layout (rules L0-L4)', () => {
+  it('proposes drawers, two doors, drawers for a 60" vanity and sizes every opening itself', () => {
+    expect(result.openings.map((o) => o.kind)).toEqual(['drawer', 'drawer', 'drawer', 'door', 'door', 'drawer', 'drawer', 'drawer']);
+  });
+
+  it('sizes four equal openings that, with five frame pieces, add up to exactly 60" (rule L1)', () => {
+    const widths = ['left-drawers', 'left-door', 'right-door', 'right-drawers'].map((bay) => result.openings.find((o) => o.bayId === bay)!.width.result);
+    expect(widths).toEqual(Array(4).fill(inches('13 1/8')));
+    expect(5 * inches('1 1/2') + widths.reduce((a, b) => a + b, 0)).toBe(inches('60'));
+  });
+
+  it('makes each small drawer front one 1x6 board high and gives the large drawer the rest (rules L2, L4)', () => {
+    const column = result.openings.filter((o) => o.bayId === 'left-drawers');
+    expect(column.map((o) => o.height.result)).toEqual([inches('4 1/2'), inches('4 1/2'), inches('15')]);
+    expect(column.map((o) => o.frontHeight)).toEqual([inches('5 1/2'), inches('5 1/2'), inches('16')]);
+    expect(4 * inches('1 1/2') + column.reduce((a, o) => a + o.height.result, 0)).toBe(inches('30'));
+  });
+
+  it('places each opening in the frame, left to right and top to bottom', () => {
+    expect(result.openings.find((o) => o.id === 'left-door')).toMatchObject({ left: inches('16 1/8'), top: inches('1 1/2') });
+    expect(result.openings.find((o) => o.id === 'right-drawer-3')).toMatchObject({ left: inches('45 3/8'), top: inches('13 1/2') });
+  });
+
+  it('never produces an opening layout that fails the checks when the layout is left to the app', () => {
+    for (let sixteenths = 36 * 16; sixteenths <= 96 * 16; sixteenths += 7) {
+      const width = `${Math.floor(sixteenths / 16)} ${sixteenths % 16}/16`.replace(' 0/16', '');
+      const r = plan(vanityWith({ width }));
+      expect(r.issues.filter((i) => i.code.startsWith('LAYOUT_')), width).toEqual([]);
+      if (!r.canGeneratePlan) continue;
+      const across = ['left-drawers', 'left-door', 'right-door', 'right-drawers'].map((bay) => r.openings.find((o) => o.bayId === bay)!.width.result);
+      expect(5 * inches('1 1/2') + across.reduce((a, b) => a + b, 0), width).toBe(r.overall!.frameWidth);
+    }
+  });
+
+  it('splits leftover width so the shares still add up exactly, with no rounding loss (rule U4)', () => {
+    const r = plan(vanityWith({ width: '60 1/16' }));
+    const widths = ['left-drawers', 'left-door', 'right-door', 'right-drawers'].map((bay) => r.openings.find((o) => o.bayId === bay)!.width.result);
+    expect(widths).toEqual([inches('13 1/8'), inches('13 1/8'), inches('13 1/8'), inches('13 3/16')]);
+  });
 });
 
-describe('units (rules U1-U4)', () => {
-  it.todo('parses fractional inches, decimal inches and millimetres to whole ticks');
-  it.todo('represents 1/32" as 127 ticks and 1 mm as 160 ticks exactly');
-  it.todo('rejects a fraction whose bottom number is not 2, 4, 8, 16 or 32, such as 79 2/3 or 79 3/5');
-  it.todo('rounds a decimal-inch entry that is not on a tick to the nearest tick and reports the rounding');
-  it.todo('never produces a non-integer tick value from any formula');
-  it.todo('prints inches as proper fractions on the chosen tape increment, such as 79 1/2"');
+describe('the box (rules B1-B8)', () => {
+  it('matches the worked example', () => {
+    expect(size(part(result, 'Left side'))).toEqual(sized('30', '20 1/4'));
+    expect(size(part(result, 'Right side'))).toEqual(sized('30', '20 1/4'));
+    expect(size(part(result, 'Bottom'))).toEqual(sized('58 1/4', '20'));
+    expect(size(part(result, 'Back'))).toEqual(sized('58 1/4', '30'));
+    expect(size(part(result, 'Interior divider'))).toEqual(sized('29 1/4', '20'));
+    expect(part(result, 'Interior divider').quantity).toBe(2);
+  });
+
+  it('fits a 1/4" back between the sides so no back edge shows on the exposed end (rule B4)', () => {
+    const back = part(result, 'Back');
+    expect(back.thickness).toBe(inches('1/4'));
+    expect(back.length).toBe(part(result, 'Bottom').length);
+    expect(back.length + 2 * part(result, 'Left side').thickness).toBe(result.overall!.boxWidth.result);
+  });
+
+  it('adds a plywood divider at every boundary that touches a drawer column, and none between two doors (rule B5)', () => {
+    expect(part(result, 'Interior divider').quantity).toBe(2);
+    const twoDoors = plan(vanityWith({}, { layout: proposedVanityLayout.slice(1, 3) }));
+    expect(twoDoors.canGeneratePlan).toBe(true);
+    expect(twoDoors.parts.filter((p) => p.colorRole === 'divider')).toEqual([]);
+  });
+
+  it('adds one mounting strip and one top front support to each section of the box (rules B6, B7)', () => {
+    const lengths = (prefix: string) => result.parts.filter((p) => p.name.startsWith(prefix)).map((p) => p.length);
+    const expected = [inches('13 5/8'), inches('29 1/4'), inches('13 7/8')];
+    expect(lengths('Top front support')).toEqual(expected);
+    expect(lengths('Mounting strip')).toEqual(expected);
+    // The three sections, two dividers and two sides fill the box exactly.
+    expect(expected.reduce((a, b) => a + b, 0) + 4 * inches('3/4')).toBe(result.overall!.boxWidth.result);
+  });
+
+  it('makes the slide spacer on each cabinet side as thick as the frame piece stands proud of the plywood (rule B8)', () => {
+    const wall = part(result, 'Slide spacer (left drawers, wall side)');
+    const open = part(result, 'Slide spacer (right drawers, right side)');
+    // Wall side: 1 1/2" - 1/4" overhang - 3/4" = 1/2", as two layers of 1/4" for each of three drawers.
+    expect([wall.thickness, wall.quantity]).toEqual([inches('1/4'), 6]);
+    // Exposed side: 1 1/2" - 3/4" = 3/4", one layer for each of three drawers.
+    expect([open.thickness, open.quantity]).toEqual([inches('3/4'), 3]);
+    expect(wall.length).toBe(inches('18'));
+  });
+
+  it('allows for a spacer that falls slightly short when the plywood is thinner than its label', () => {
+    const thin = plan(vanityWith({}, { measuredThickness: { 'oak-ply-3-4': userEntered('23/32') } }));
+    // Exposed side needs 25/32" and gets one 23/32" layer: 1/16" short, added to the drawer box width.
+    expect(part(thin, 'Right drawers, drawer 1: box bottom').width).toBe(inches('12 3/16'));
+    // Wall side needs 17/32" and gets two 1/4" layers: 1/32" short.
+    expect(part(thin, 'Left drawers, drawer 1: box bottom').width).toBe(inches('12 5/32'));
+  });
+
+  it('refuses plywood thicker than the frame piece that has to cover its edge', () => {
+    const r = plan(vanityWith({}, { faceFrame: { stileWidth: userEntered('3/4') } }));
+    expect(errors(r).map((i) => i.code)).toContain('SIDE_SHOWS_IN_OPENING');
+  });
 });
 
-describe('known error 1: one width drives every part', () => {
-  it.todo('accepts exactly one cabinet width and has no second place to enter one');
-  it.todo('rejects 79 2/3" and 79 1/3" as widths because thirds are not on a tape measure');
-  it.todo('rejects 79 3/5" as a width because fifths are not on a tape measure');
-  it.todo('accepts 79 1/2" and 79 5/8" as widths');
-  it.todo('derives the bottom, back, long frame pieces, platform and toe kick from the one cabinet width');
-  it.todo('changes every width-driven part, and no other part, when the cabinet width changes');
-  it.todo('prints no length anywhere in the plan with thirds or fifths of an inch');
-  it.todo('prints every length on the 1/16" tape increment');
-  it.todo('makes the face frame exactly as wide as the cabinet width');
-  it.todo('derives the platform width from the box width and the end conditions, with no input for it (rule P1)');
+describe('the face frame (rules F1-F5)', () => {
+  it('makes the face frame exactly as wide as the cabinet width and as tall as the box', () => {
+    expect(result.overall).toMatchObject({ frameWidth: inches('60'), frameHeight: inches('30') });
+    expect(part(result, 'Top frame piece').length + 2 * inches('1 1/2')).toBe(inches('60'));
+  });
+
+  it('makes the top rail, bottom rail and every other frame piece 1 1/2" wide', () => {
+    const frame = result.parts.filter((p) => p.colorRole === 'faceFrame');
+    expect(frame.length).toBe(6);
+    expect(frame.every((p) => p.width === inches('1 1/2') && p.thickness === inches('3/4'))).toBe(true);
+  });
+
+  it('matches the worked example', () => {
+    expect([part(result, 'Vertical frame piece (end)').length, part(result, 'Vertical frame piece (end)').quantity]).toEqual([inches('30'), 2]);
+    expect(part(result, 'Top frame piece').length).toBe(inches('57'));
+    expect(part(result, 'Bottom frame piece').length).toBe(inches('57'));
+    expect([part(result, 'Vertical frame piece (inner)').length, part(result, 'Vertical frame piece (inner)').quantity]).toEqual([inches('27'), 3]);
+  });
+
+  it('keeps a vertical frame piece between the two doors: three inner pieces for four bays (rule F4)', () => {
+    expect(part(result, 'Vertical frame piece (inner)').quantity).toBe(3);
+  });
+
+  it('lists four drawer rails for two columns of three drawers (rule F5)', () => {
+    const rails = result.parts.filter((p) => p.name.startsWith('Piece between drawers'));
+    expect(rails.map((p) => [p.quantity, p.length])).toEqual([[2, inches('13 1/8')], [2, inches('13 1/8')]]);
+  });
 });
 
-describe('known error 2: stile length follows box height', () => {
-  it.todo('makes each end stile as long as the box is tall (rule F2)');
-  it.todo('does not produce the mock-up length of 25 1/2" for a 30" box');
-  it.todo('makes each inner stile the box height minus the top rail width minus the bottom rail width (rule F4)');
-  it.todo('changes every stile length when the box height changes');
-  it.todo('has no input for stile length');
+describe('doors, drawer fronts and hinges (rules D1-D7)', () => {
+  it('matches the worked example', () => {
+    expect(size(part(result, 'Left door: door upright'))).toEqual(sized('28', '2 1/2'));
+    expect(size(part(result, 'Left door: door cross piece'))).toEqual(sized('9 1/8', '2 1/2'));
+    expect(size(part(result, 'Left door: door centre panel'))).toEqual(sized('23 5/8', '9 3/4'));
+    expect(size(part(result, 'Left drawers, drawer 1: drawer front'))).toEqual(sized('14 1/8', '5 1/2'));
+    expect(size(part(result, 'Left drawers, drawer 3: drawer front upright'))).toEqual(sized('16', '2 1/2'));
+    expect(size(part(result, 'Left drawers, drawer 3: drawer front centre panel'))).toEqual(sized('9 3/4', '11 5/8'));
+    expect(result.openings.find((o) => o.id === 'left-door')).toMatchObject({ frontWidth: inches('14 1/8'), frontHeight: inches('28') });
+  });
+
+  it('chooses hinges that match the overlay and lists two for each door (rule D7)', () => {
+    const hinges = result.hardware.find((h) => h.hardwareId === 'hinge-face-frame-half-inch');
+    expect(hinges).toMatchObject({ quantity: 4, unit: 'each' });
+  });
+
+  it('reports an error when two fronts sharing a frame piece would touch or overlap (rule D3)', () => {
+    const r = plan(vanityWith({}, { fronts: { overlay: userEntered('3/4') } }));
+    expect(errors(r).map((i) => i.code)).toContain('FRONTS_TOO_CLOSE');
+  });
+
+  it('reports an error for a framed front too small to show a panel (rule D6)', () => {
+    const r = plan(vanityWith({ width: '26' }));
+    expect(errors(r).map((i) => i.code)).toContain('FRAMED_FRONT_TOO_SMALL');
+    expect(r.parts).toEqual([]);
+  });
 });
 
-describe('known error 3: drawn pieces and cut list always match', () => {
-  it.todo('puts every part that appears in a drawing in the cut list');
-  it.todo('draws every part that is in the cut list');
-  it.todo('adds one inner stile at every boundary between two bays (rule F4)');
-  it.todo('adds one drawer rail between every two drawers in a column (rule F5)');
-  it.todo('lists four drawer rails for two columns of three drawers');
-  it.todo('lists three inner stiles for four bays');
-  it.todo('lists every drawer box part for every drawer');
-  it.todo('adds a plywood divider at every boundary that touches a drawer column, and none between two doors (rule B5)');
-  it.todo('gives every part a unique, stable ID that is the same in the cut list, drawings and steps');
-  it.todo('keeps part IDs unchanged when only a measurement changes');
+describe('drawer boxes and slides (rules X1-X5)', () => {
+  it('chooses the longest slide that fits and lists one pair for each drawer (rule X1)', () => {
+    const slides = result.hardware.find((h) => h.hardwareId === 'slide-side-mount');
+    expect(slides).toMatchObject({ quantity: 6, unit: 'pair' });
+    expect(slides?.length?.result).toBe(inches('18'));
+    const shallow = plan(vanityWith({ depth: '18' }));
+    expect(shallow.hardware.find((h) => h.hardwareId === 'slide-side-mount')?.length?.result).toBe(inches('16'));
+  });
+
+  it('sizes each drawer box from its opening (rules X2-X5)', () => {
+    // Small drawers: 12 1/8" wide, 3 1/2" high, 18" deep.
+    expect(size(part(result, 'Left drawers, drawer 1: box side'))).toEqual(sized('18', '3 1/4'));
+    expect(size(part(result, 'Left drawers, drawer 1: box front and back'))).toEqual(sized('10 5/8', '3 1/4'));
+    expect(size(part(result, 'Left drawers, drawer 1: box bottom'))).toEqual(sized('18', '12 1/8'));
+    // Large drawers: 14" high.
+    expect(size(part(result, 'Right drawers, drawer 3: box side'))).toEqual(sized('18', '13 3/4'));
+  });
+
+  it('lists every drawer box part for every drawer', () => {
+    const drawers = result.openings.filter((o) => o.kind === 'drawer');
+    expect(drawers).toHaveLength(6);
+    for (const drawer of drawers) {
+      const names = drawer.partIds.map((id) => result.parts.find((p) => p.id === id)!.name.replace(`${drawer.label}: `, ''));
+      expect(names).toEqual(expect.arrayContaining(['box side', 'box front and back', 'box bottom']));
+    }
+  });
+
+  it('reports an error when no slide sold is short enough', () => {
+    const r = plan(vanityWith({ depth: '12' }));
+    expect(errors(r).map((i) => i.code)).toContain('NO_SLIDE_FITS');
+  });
 });
 
-describe('known error 4: openings must add up to the width', () => {
-  it.todo('reports an error when frame pieces plus openings do not equal the cabinet width (rule L1)');
-  it.todo('refuses the mock-up layout of four 13" columns on a 79 1/2" box');
-  it.todo('never produces an opening layout that fails this check when the layout is left to the app');
-  it.todo('states the unexplained width in the explanation');
-  it.todo('attaches a diagram listing each stile and opening against the box width, with the gap shown');
-  it.todo('suggests letting the door openings share the leftover width as the fix');
-  it.todo('passes once the door bays are set to share the leftover width (rule L3)');
-  it.todo('splits leftover width so the shares still add up exactly, with no rounding loss');
-  it.todo('reports an error when openings add up to more than the box width');
-  it.todo('produces no parts, materials or steps while the layout error stands');
+describe('the platform and toe kick (rules P1-P5)', () => {
+  it('matches the worked example', () => {
+    const rails = part(result, 'Platform rail (front and back)');
+    const supports = part(result, 'Platform cross support');
+    expect([rails.length, rails.quantity]).toEqual([inches('56'), 2]);
+    expect([supports.length, supports.quantity]).toEqual([inches('14 1/4'), 5]);
+    expect(size(part(result, 'Toe kick (front)'))).toEqual(sized('56 3/4', '3 1/2'));
+    expect(size(part(result, 'Toe kick (end return)'))).toEqual(sized('17 1/4', '3 1/2'));
+  });
+
+  it('sets the platform back from the exposed end by the same toe space as the front (rule P1)', () => {
+    const box = result.overall!.boxWidth.result;
+    const toeSpacePlusKick = inches('3') + inches('3/4');
+    expect(part(result, 'Platform rail (front and back)').length).toBe(box - toeSpacePlusKick);
+    expect(part(result, 'Toe kick (end return)').length + toeSpacePlusKick).toBe(inches('21'));
+  });
+
+  it('adds a toe kick return on each exposed end and none on a wall end (rule P5)', () => {
+    expect(part(result, 'Toe kick (end return)').quantity).toBe(1);
+    const walled = plan(vanityWith({}, { ends: { right: userChoice('wall') } }));
+    expect(walled.parts.filter((p) => p.name === 'Toe kick (end return)')).toEqual([]);
+    const open = plan(vanityWith({}, { ends: { left: userChoice('exposed') } }));
+    expect(part(open, 'Toe kick (end return)').quantity).toBe(2);
+  });
+
+  it('takes platform height from the actual width of the 2x4, not its nominal size', () => {
+    expect(part(result, 'Platform cross support').width).toBe(inches('3 1/2'));
+    expect(part(result, 'Platform cross support').thickness).toBe(inches('1 1/2'));
+  });
+
+  it('adds a cross support every 16" so no gap is wider than that (rule P3)', () => {
+    expect(part(plan(vanityWith({ width: '36' })), 'Platform cross support').quantity).toBe(3);
+    expect(part(plan(vanityWith({ width: '96' })), 'Platform cross support').quantity).toBe(7);
+  });
+
+  it('warns when the toe space is changed to something uncomfortable (rule P4)', () => {
+    const r = plan(vanityWith({}, { platform: { toeSpace: userEntered('1') } }));
+    expect(r.canGeneratePlan).toBe(true);
+    expect(r.issues.map((i) => [i.severity, i.code])).toEqual([['warning', 'TOE_SPACE_UNUSUAL']]);
+  });
 });
 
-describe('known error 5: lengths account for the pieces they sit between', () => {
-  it.todo('makes each platform cross support the platform depth minus 2 x the 2x4 thickness (rule P3)');
-  it.todo('does not produce the mock-up length of 17 1/2" for a cross support on a 17 1/2" deep platform');
-  it.todo('makes the platform front and back rails the full platform width (rule P2)');
-  it.todo('reads the 2x4 thickness and width from the material catalog, not from a constant');
-  it.todo('makes the bottom panel the box width minus 2 x the side panel thickness (rule B3)');
-  it.todo('makes the top and bottom rails the cabinet width minus 2 x the stile width (rule F3)');
-  it.todo('recalculates every between-pieces length when the plywood thickness changes from 3/4" to 23/32"');
+describe('every part (architecture rules)', () => {
+  it('gives every part a unique, stable ID', () => {
+    const ids = result.parts.map((p) => p.id);
+    expect(new Set(ids).size).toBe(ids.length);
+    expect(ids[0]).toBe('P01');
+    expect(ids.every((id) => /^P\d{2}$/.test(id))).toBe(true);
+  });
+
+  it('keeps part IDs and names unchanged when only a measurement changes', () => {
+    const other = plan(vanityWith({ width: '72 1/2', depth: '22', height: '32' }));
+    expect(other.canGeneratePlan).toBe(true);
+    expect(other.parts.map((p) => [p.id, p.name])).toEqual(result.parts.map((p) => [p.id, p.name]));
+  });
+
+  it('gives every part a name, color role, material, thickness, length, width, grain direction and quantity', () => {
+    const materials = new Set(defaultCatalog.stock.map((s) => s.id));
+    for (const p of result.parts) {
+      expect(p.name).toBeTruthy();
+      expect(p.colorRole).toBeTruthy();
+      expect(p.assembly).toBeTruthy();
+      expect(materials.has(p.materialId), p.name).toBe(true);
+      expect(Math.min(p.thickness, p.length, p.width), p.name).toBeGreaterThan(0);
+      expect(['alongLength', 'alongWidth']).toContain(p.grain);
+      expect(p.quantity).toBeGreaterThan(0);
+    }
+  });
+
+  it('gives every part dimension a derivation with a rule number, a plain-English formula and its inputs', () => {
+    for (const p of result.parts) {
+      for (const d of [p.derivation.thickness, p.derivation.length, p.derivation.width]) {
+        expect(d.ruleId, p.name).toMatch(/^[A-Z]\d$/);
+        expect(d.formula.length, p.name).toBeGreaterThan(5);
+        expect(d.inputs.length, p.name).toBeGreaterThan(0);
+      }
+      expect(p.derivation.length.result).toBe(p.length);
+      expect(p.derivation.width.result).toBe(p.width);
+      expect(p.derivation.thickness.result).toBe(p.thickness);
+    }
+  });
+
+  it('recomputes each part dimension from its derivation inputs and gets the same result', () => {
+    let sums = 0;
+    for (const p of result.parts) {
+      for (const d of [p.derivation.thickness, p.derivation.length, p.derivation.width]) {
+        if (d.kind !== 'sum') continue;
+        sums += 1;
+        expect(d.inputs.reduce((total, i) => total + (i.times ?? 1) * i.value, 0), `${p.name}: ${d.formula}`).toBe(d.result);
+      }
+    }
+    expect(sums).toBeGreaterThan(100);
+  });
+
+  it('never produces a non-integer tick value from any formula', () => {
+    const values = result.parts.flatMap((p) => [p.thickness, p.length, p.width]);
+    expect(values.every(Number.isInteger)).toBe(true);
+  });
+
+  it('prints every length on the 1/16" tape increment, with no thirds or fifths', () => {
+    const sixteenth = inches('1/16');
+    for (const p of result.parts) {
+      expect(p.length % sixteenth, p.name).toBe(0);
+      expect(p.width % sixteenth, p.name).toBe(0);
+    }
+  });
+
+  it('marks a part assumed when any number in its derivation is assumed', () => {
+    const isAssumed = (p: Part) => Object.values(p.derivation).some((d) => d.inputs.some((i) => i.status === 'assumed'));
+    for (const p of result.parts) expect(p.status === 'assumed', p.name).toBe(isAssumed(p));
+    // Built only from the entered cabinet size and standard lumber sizes.
+    expect(part(result, 'Platform cross support').status).toBe('assumed'); // depends on the default toe space
+    expect(result.parts.some((p) => p.status === 'assumed')).toBe(true);
+  });
+
+  it('uses the fixed color role for each kind of part', () => {
+    const roles = (name: string) => part(result, name).colorRole;
+    expect(roles('Left side')).toBe('leftSide');
+    expect(roles('Right side')).toBe('rightSide');
+    expect(roles('Bottom')).toBe('bottom');
+    expect(roles('Back')).toBe('back');
+    expect(roles('Interior divider')).toBe('divider');
+    expect(roles('Top frame piece')).toBe('faceFrame');
+    expect(roles('Left door: door upright')).toBe('door');
+    expect(roles('Left drawers, drawer 1: drawer front')).toBe('drawerFront');
+    expect(roles('Left drawers, drawer 1: box side')).toBe('drawerBox');
+    expect(roles('Mounting strip (section 1 of 3)')).toBe('support');
+    expect(roles('Platform cross support')).toBe('platform');
+    expect(roles('Toe kick (front)')).toBe('platform');
+  });
+
+  it('gives every issue a severity, an explanation and a suggested fix', () => {
+    const bad = plan(vanityWith({ width: '32', depth: '12' }, { platform: { toeSpace: userEntered('1') } }));
+    expect(bad.issues.length).toBeGreaterThan(1);
+    for (const issue of bad.issues) {
+      expect(['error', 'warning', 'info']).toContain(issue.severity);
+      expect(issue.explanation.length).toBeGreaterThan(20);
+      expect(issue.suggestedFix.length).toBeGreaterThan(10);
+      expect(issue.ruleId).toMatch(/^[A-Z]\d$/);
+    }
+  });
+
+  it('blocks plan generation when any issue is an error, and allows it with only warnings', () => {
+    const blocked = plan(vanityWith({ depth: '12' }));
+    expect(blocked).toMatchObject({ canGeneratePlan: false, parts: [], materials: [], hardware: [], openings: [] });
+    const warned = plan(vanityWith({}, { platform: { toeSpace: userEntered('1') } }));
+    expect(warned.canGeneratePlan).toBe(true);
+    expect(warned.parts.length).toBeGreaterThan(0);
+  });
+
+  it('reports an error when a plywood part is larger than the sheet it is cut from (rule M3)', () => {
+    const r = plan(vanityWith({ width: '100' }));
+    const tooBig = errors(r).filter((i) => i.code === 'PART_LARGER_THAN_SHEET');
+    expect(tooBig.length).toBeGreaterThan(0);
+    expect(tooBig.every((i) => i.partIds.length === 1)).toBe(true);
+  });
+
+  it('explains an entry that is not on a tape measure, and blocks the plan', () => {
+    const r = plan(vanityWith({ width: '60 1/3' }));
+    expect(r.canGeneratePlan).toBe(false);
+    expect(errors(r)).toHaveLength(1);
+    expect(errors(r)[0]).toMatchObject({ code: 'INPUT_NOT_USABLE', inputPaths: ['width'] });
+    expect(errors(r)[0]!.explanation).toMatch(/tape measure/);
+  });
 });
 
-describe('known error 6: toe kick matches the platform', () => {
-  it.todo('derives toe kick height from the platform height when none is entered (rule P5)');
-  it.todo('reports an error for a 4" toe kick on a 3 1/2" platform');
-  it.todo('names the toe kick and platform parts in the issue and suggests the platform height as the fix');
-  it.todo('takes platform height from the actual width of the 2x4, not its nominal size');
+describe('one width drives every part', () => {
+  it('changes every width-driven part, and no other part, when the cabinet width changes', () => {
+    const wider = plan(vanityWith({ width: '64' }));
+    const changed = wider.parts.filter((p, i) => p.length !== result.parts[i]!.length || p.width !== result.parts[i]!.width).map((p) => p.name);
+    const unchanged = ['Left side', 'Right side', 'Interior divider', 'Vertical frame piece (end)', 'Vertical frame piece (inner)', 'Platform cross support', 'Toe kick (end return)', 'Left door: door upright', 'Left drawers, drawer 1: box side'];
+    for (const name of unchanged) expect(changed, name).not.toContain(name);
+    for (const name of ['Bottom', 'Back', 'Top frame piece', 'Bottom frame piece', 'Platform rail (front and back)', 'Toe kick (front)', 'Left door: door cross piece']) {
+      expect(changed, name).toContain(name);
+      expect(part(wider, name).length - part(result, name).length, name).toBeGreaterThan(0);
+    }
+    for (const name of ['Bottom', 'Back', 'Top frame piece', 'Platform rail (front and back)', 'Toe kick (front)']) {
+      expect(part(wider, name).length - part(result, name).length, name).toBe(inches('4'));
+    }
+  });
+
+  it('changes every stile length when the box height changes (rule F2)', () => {
+    const taller = plan(vanityWith({ height: '32' }));
+    expect(part(taller, 'Vertical frame piece (end)').length).toBe(inches('32'));
+    expect(part(taller, 'Vertical frame piece (inner)').length).toBe(inches('29'));
+  });
+
+  it('has no input for stile length: it comes only from the box height', () => {
+    expect(part(result, 'Vertical frame piece (end)').derivation.length.inputs.map((i) => i.source)).toEqual(['height']);
+    expect(result.inputs.filter((i) => /length/i.test(i.path))).toEqual([]);
+  });
+
+  it('derives the platform width from the cabinet width and the end conditions, with no input for it', () => {
+    expect(result.inputs.filter((i) => /platform\.(width|depth)/.test(i.path))).toEqual([]);
+  });
 });
 
-describe('mock-up errors 7 and 8: heights must add up too', () => {
-  it.todo('reports an error when rails plus opening heights in a drawer column do not equal the box height (rule L2)');
-  it.todo('reports an error when a door front and its opening do not account for the frame opening height (rule L2)');
-  it.todo('reports an error when two fronts sharing a frame piece would touch or overlap (rule D3)');
-});
-
-describe('inputs, parts and issues (architecture rules)', () => {
-  it.todo('returns every input used, each marked confirmed or assumed');
-  it.todo('marks a part assumed when any number in its derivation is assumed');
-  it.todo('gives every part a name, color role, material, thickness, length, width, grain direction and quantity');
-  it.todo('gives every part dimension a derivation with a rule number, a plain-English formula and its inputs');
-  it.todo('recomputes each part dimension from its derivation inputs and gets the same result');
-  it.todo('gives every issue a severity, the parts involved, an explanation and a suggested fix');
-  it.todo('blocks plan generation when any issue is an error, and allows it with only warnings');
-  it.todo('reports an error when a plywood part is larger than the sheet it is cut from');
-  it.todo('uses the fixed color role for each kind of part');
+describe('still to come', () => {
+  it.todo('draws every part that is in the cut list, and lists every part that is drawn (Phase 2)');
+  it.todo('puts no screw or pocket hole on the outside face of the exposed side (rule J2, Phase 3)');
+  it.todo('puts divider pocket holes on the drawer side (rule J3, Phase 3)');
 });

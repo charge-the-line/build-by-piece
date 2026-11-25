@@ -1,59 +1,51 @@
-import { colorRoles } from '../engine/colorRoles';
-import { vanity01 } from '../engine/fixtures/vanity-01';
-import { MeasureGuide } from './MeasureGuide';
+import { useMemo, useState } from 'react';
+import { defaultCatalog } from '../engine/defaults/catalog';
+import { vanityDefaults } from '../engine/defaults/vanity';
+import { generatePlan } from '../engine/generatePlan';
+import { ChoicesTab } from './ChoicesTab';
+import { CutListTab } from './CutListTab';
+import { useProject } from './project';
+import { ShoppingTab } from './ShoppingTab';
+import { SizeTab } from './SizeTab';
 
-/** Phase 0 placeholder. It shows no dimensions: those only ever come from the engine. */
+const TABS = [
+  ['size', 'Size'],
+  ['choices', 'Choices'],
+  ['cut', 'Cut list'],
+  ['shop', 'Shopping'],
+] as const;
+
+type Tab = (typeof TABS)[number][0];
+
 export function App() {
+  const { design, setDesign } = useProject();
+  const [tab, setTab] = useState<Tab>('size');
+  const plan = useMemo(() => generatePlan(design, vanityDefaults, defaultCatalog), [design]);
+
+  const go = (next: Tab) => {
+    setTab(next);
+    window.scrollTo({ top: 0 });
+  };
+
   return (
-    <main>
-      <header>
-        <img src="./icons/icon.svg" alt="" width="72" height="72" />
-        <h1>Build by Piece</h1>
-      </header>
-
-      <p className="lead">
-        A few measurements in. A complete, checked woodworking plan out: shopping list, cut list,
-        cutting diagrams and step-by-step pictures.
-      </p>
-
-      <section aria-labelledby="status">
-        <h2 id="status">Where things stand</h2>
-        <p>
-          <strong>Phase 0: foundation.</strong> The construction rules are written and waiting for
-          review. The plan builder comes next.
-        </p>
-      </section>
-
-      <section aria-labelledby="numbers">
-        <h2 id="numbers">Three numbers are all you enter</h2>
-        <p>
-          Width, depth and height. The app decides everything else, shows you each choice, and lets you
-          change it. Here is the first test cabinet.
-        </p>
-        <MeasureGuide design={vanity01} />
-      </section>
-
-      <section aria-labelledby="colors">
-        <h2 id="colors">The colours you will see</h2>
-        <p>Every piece keeps the same colour on every page, and always shows its part number too.</p>
-        <ul className="roles">
-          {colorRoles.map((c) => (
-            <li key={c.role} style={{ background: c.hex, color: c.textHex }}>
-              <span>{c.label}</span>
-              <span className="colorName">{c.colorName}</span>
-            </li>
-          ))}
-        </ul>
-      </section>
-
-      <section aria-labelledby="install">
-        <h2 id="install">Add it to your iPhone home screen</h2>
-        <ol>
-          <li>Open this page in Safari.</li>
-          <li>Tap the Share button.</li>
-          <li>Tap “Add to Home Screen”, then “Add”.</li>
-        </ol>
-      </section>
-    </main>
+    <>
+      <main>
+        <header>
+          <img src="./icons/icon.svg" alt="" width="48" height="48" />
+          <h1>Build by Piece</h1>
+        </header>
+        {tab === 'size' && <SizeTab design={design} plan={plan} onChange={setDesign} />}
+        {tab === 'choices' && <ChoicesTab design={design} plan={plan} onChange={setDesign} />}
+        {tab === 'cut' && <CutListTab plan={plan} />}
+        {tab === 'shop' && <ShoppingTab plan={plan} />}
+      </main>
+      <nav aria-label="Screens">
+        {TABS.map(([id, label]) => (
+          <button key={id} type="button" aria-current={tab === id ? 'page' : undefined} onClick={() => go(id)}>
+            {label}
+          </button>
+        ))}
+      </nav>
+    </>
   );
 }

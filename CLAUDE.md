@@ -27,14 +27,18 @@ From Ashley, the first user.
 
 ## Current status
 
-**Phase 0 complete (second draft, after Ashley's design change), waiting for Max's review. Do not start Phase 1 until Max approves `docs/RULES.md` and answers the new questions in `docs/OPEN-QUESTIONS.md`.**
+**Phase 1 complete, waiting for Max's review. Do not start Phase 2 until Max approves.**
+
+Max approved `docs/RULES.md` and all open questions. The engine builds a full plan (openings, cut list, shopping list, hardware, validation) from three numbers, and the app has four screens: Size, Choices, Cut list, Shopping.
 
 Test case: vanity 01, 60" wide × 21" deep × 30" high, left end on a wall, right end exposed. The earlier AI mock-up survives only as a fixture of known errors.
 
+Not done yet, by design: cutting diagrams (Phase 2), assembly steps (Phase 3), and changing the door and drawer layout in the app (the engine supports it; there is no screen for it).
+
 | Phase | What | Status |
 |---|---|---|
-| 0 | Scaffold, rules, data model, fixture, test list | Done, in review |
-| 1 | Engine and vanity: questionnaire, validation, cut list, shopping list | Not started |
+| 0 | Scaffold, rules, data model, fixture, test list | Done |
+| 1 | Engine and vanity: questionnaire, validation, cut list, shopping list | Done, in review |
 | 2 | Cutting diagrams: kerf, grain, cut order, offcuts | Not started |
 | 3 | Assembly steps, checklists, print to PDF | Not started |
 | Later | Tool inventory, other cabinets, kitchen | Not started |
@@ -46,13 +50,21 @@ Update this section at the end of every phase.
 ```
 src/engine/      Pure TypeScript. Design + defaults + catalog in; parts, materials, hardware, issues, steps out.
   types.ts         The data model.
+  units.ts         Parsing typed lengths to ticks and printing tape-measure text. The only unit conversion.
+  derive.ts        Values that remember their source; builds each part's "how this was worked out".
+  resolve.ts       Lays the user's changes over the defaults and reads every value, with its label and status.
+  layout.ts        Sizes and places every opening; the "does not add up" checks (rules L1-L5).
+  vanity.ts        The construction rules: one block per rule in docs/RULES.md.
+  materials.ts     Counts sheets and boards for the shopping list (rule M6).
+  generatePlan.ts  The engine's single entry point.
   colorRoles.ts    The fixed instructional colours (data).
   defaults/        Every value the app decides: vanity.ts (options, proposed layout), catalog.ts (materials, hardware).
   fixtures/        vanity-01.ts is the test case (three numbers). mockup-errors.ts holds the old mock-up's mistakes.
-  __tests__/       Vitest tests. Pending tests (it.todo) are the Phase 1 to-do list.
-src/app/         React UI. May import from the engine; the engine never imports from here.
+  __tests__/       Vitest tests. The expected sizes are the worked example in docs/RULES.md.
+src/app/         React UI: Size, Choices, Cut list and Shopping screens. Imports from the engine; never the reverse.
+                 The UI does no arithmetic on dimensions and prints lengths only through `fmt` (src/app/format.ts).
 docs/RULES.md    Construction rules with formulas. The engine implements exactly these.
-docs/OPEN-QUESTIONS.md   Decisions waiting on Max.
+docs/OPEN-QUESTIONS.md   Decisions waiting on Max, and the record of what he decided.
 public/          Web app manifest and icons.
 ```
 
@@ -68,7 +80,7 @@ Engine rules:
 - Validation returns structured issues: severity, parts, explanation, suggested fix. Any error blocks plan generation.
 - Every rule in the engine cites its number in `docs/RULES.md`. Change the document and the code together.
 - No AI calls, no accounts, no backend in v1. Explanations are written templates filled with the user's numbers. Projects save on the device, with export and import of a project file.
-- Colour roles are fixed everywhere: blue left side, green right side, yellow bottom, purple back, orange platform and toe kick, red dividers, brown face frame, teal doors, pink drawer fronts, grey support pieces. Drawer boxes are proposed as white with a dark outline, not yet approved. Never rely on colour alone; always show the part ID.
+- Colour roles are fixed everywhere: blue left side, green right side, yellow bottom, purple back, orange platform and toe kick, red dividers, brown face frame, teal doors, pink drawer fronts, grey support pieces, white (dark outline) drawer boxes. Never rely on colour alone; always show the part ID.
 
 ## Working rules
 

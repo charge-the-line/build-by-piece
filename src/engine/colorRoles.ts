@@ -27,6 +27,5 @@ export const colorRoles: readonly ColorRoleInfo[] = [
   { role: 'door', colorName: 'teal', hex: '#0b7f7f', textHex: '#ffffff', label: 'Doors' },
   { role: 'drawerFront', colorName: 'pink', hex: '#e86aa6', textHex: '#000000', label: 'Drawer fronts' },
   { role: 'support', colorName: 'grey', hex: '#5f6368', textHex: '#ffffff', label: 'Support pieces' },
-  // Proposed, awaiting approval (docs/OPEN-QUESTIONS.md).
   { role: 'drawerBox', colorName: 'white', hex: '#ffffff', textHex: '#000000', label: 'Drawer boxes' },
 ];

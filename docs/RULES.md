@@ -1,10 +1,10 @@
 # Construction rules: face-frame vanity on a separate 2x4 platform
 
-**Status: second draft, for Max's approval. No engine code is written until these are approved.**
+**Status: approved by Max. The engine in `src/engine/` implements these rules; change this document and the code together.**
 
 These are the rules the engine will follow to turn three numbers into a full set of parts. Each rule has a number, a plain-English statement and a formula. The same rule numbers appear in the tests and in every part's "how this size was worked out" note.
 
-Where there is more than one legitimate way to build something, the rule picks the most beginner-friendly one, says why in one line, and notes the alternative. Rules marked **(Q)** have a matching item in [OPEN-QUESTIONS.md](OPEN-QUESTIONS.md).
+Where there is more than one legitimate way to build something, the rule picks the most beginner-friendly one, says why in one line, and notes the alternative.
 
 ## Words used here
 
@@ -103,7 +103,7 @@ Two sizes are worked out first and used throughout:
 **B4. Back panel (purple).** A thin back that fits *between* the sides and runs the full height. It is glued and nailed to the back edges of the bottom, the dividers and the mounting strips.
 - Length = WB − 2 × t
 - Width (height) = H
-- Why between the sides: its edge never shows on an exposed end, and there is no groove to cut. Alternative: a router-cut recess in the sides **(Q)**.
+- Why between the sides: its edge never shows on an exposed end, and there is no groove to cut. Alternative: a router-cut recess in the sides.
 
 **B5. Interior dividers (red).** One upright divider at every bay boundary that touches a drawer column, so drawer slides have something to mount on. No divider between two doors.
 - Length (up and down) = H − t
@@ -122,7 +122,7 @@ Two sizes are worked out first and used throughout:
 **B8. Drawer slide spacers (grey).** At a cabinet side, the frame piece stands proud of the plywood, so the slide needs a spacer to bring its mounting surface out level with the opening.
 - Spacer thickness needed = S − overhang on that end − t
 - Built from layers of plywood offcuts (thickest first) that come closest without going over. Any shortfall must be 1/16" or less, and the drawer box width (X3) allows for it exactly.
-- Length = slide length. One behind each slide on a cabinet side; none on a divider **(Q)**.
+- Length = slide length. Width = 2" (a default). One behind each slide on a cabinet side; none on a divider that is flush with the opening.
 
 ---
 
@@ -153,7 +153,7 @@ Two sizes are worked out first and used throughout:
 
 ## L. Layout: the app proposes it, and it must add up
 
-**L0. Proposed layout.** For a vanity the app proposes, left to right: a drawer column, two doors, a drawer column, all four openings the same width. Each drawer column has two small drawers over one large one. She can change it. Other widths will get their own proposals later **(Q)**.
+**L0. Proposed layout.** For a vanity the app proposes, left to right: a drawer column, two doors, a drawer column, all four openings the same width. Each drawer column has two small drawers over one large one. She can change it. Other widths will get their own proposals later.
 
 **L1. Across.** Frame pieces plus opening widths must equal the cabinet width exactly.
 - (number of bays + 1) × S + sum of opening widths = W
@@ -191,7 +191,7 @@ Two sizes are worked out first and used throughout:
 - Cross pieces: length = front width − 2 × FW, width = FW. Quantity 2.
 - Why pocket screws: no special joint to cut. Alternative: a short tongue on each cross piece.
 
-**D5. Shaker centre panel.** Sits in a groove cut with the router along the inside edge of each frame piece. On the uprights the groove stops short of each end so it does not show on the top and bottom of the door **(Q)**.
+**D5. Shaker centre panel.** Sits in a groove cut with the router along the inside edge of each frame piece. On the uprights the groove stops short of each end so it does not show on the top and bottom of the door.
 - Width = front width − 2 × FW + 2 × groove depth − 1/8"
 - Height = front height − 2 × FW + 2 × groove depth − 1/8"
 - Groove depth default 3/8". The 1/8" is room for the panel to slide in. Grain runs up and down on doors, side to side on drawer fronts.
@@ -202,7 +202,7 @@ Two sizes are worked out first and used throughout:
 
 ---
 
-## X. Drawer boxes (white, proposed) (Q)
+## X. Drawer boxes (white with a dark outline)
 
 New boxes on new side-mount slides. The app chooses the slides and sizes every box.
 
@@ -279,13 +279,15 @@ New boxes on new side-mount slides. The app chooses the slides and sizes every b
 
 **M4.** Grain direction is set by the rule that creates each part and is carried to the cutting diagrams.
 
-**M5. No lengthwise cuts in solid wood by default.** There is a router but no table saw, so every solid-wood part defaults to the width of a board as sold: frame pieces from 1x2, shaker frames from 1x3, small drawer fronts from 1x6, toe kick from 1x4, supports from 1x4. Plywood is cut with a circular saw and a straight edge. Changing a width to something no board matches gives a warning that a lengthwise cut is needed **(Q)**.
+**M5. No lengthwise cuts in solid wood by default.** There is a router but no table saw, so every solid-wood part defaults to the width of a board as sold: frame pieces from 1x2, shaker frames from 1x3, small drawer fronts from 1x6, toe kick from 1x4, supports from 1x4. Plywood is cut with a circular saw and a straight edge. Changing a width to something no board matches gives a warning that a lengthwise cut is needed.
+
+**M6. Counting sheets and boards.** The shopping list lays every piece out on its sheet or board, with the saw blade's width (default 1/8") between pieces and plywood grain running the right way, so the number bought is always enough. Each board is bought at the shortest length sold that holds its pieces.
 
 ---
 
 ## Worked example: vanity 01 (60" × 21" × 30", left end on a wall, right end exposed)
 
-This is here so the rules can be checked by eye. I calculated it with a script using exact fractions; in the app every number comes from the engine, and the tests will hold the engine to them.
+This is here so the rules can be checked by eye. In the app every number comes from the engine, and the tests in `src/engine/__tests__/vanity-01.test.ts` hold the engine to every size in this table.
 
 Box width WB = 59 3/4". Box depth DB = 20 1/4".
 
