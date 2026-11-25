@@ -435,7 +435,7 @@ describe('every part (architecture rules)', () => {
   it('gives every part dimension a derivation with a rule number, a plain-English formula and its inputs', () => {
     for (const p of result.parts) {
       for (const d of [p.derivation.thickness, p.derivation.length, p.derivation.width]) {
-        expect(d.ruleId, p.name).toMatch(/^[A-Z]\d$/);
+        expect(d.ruleId, p.name).toMatch(/^[A-Z]\d{1,2}$/);
         expect(d.formula.length, p.name).toBeGreaterThan(5);
         expect(d.inputs.length, p.name).toBeGreaterThan(0);
       }
@@ -501,7 +501,7 @@ describe('every part (architecture rules)', () => {
       expect(['error', 'warning', 'info']).toContain(issue.severity);
       expect(issue.explanation.length).toBeGreaterThan(20);
       expect(issue.suggestedFix.length).toBeGreaterThan(10);
-      expect(issue.ruleId).toMatch(/^[A-Z]\d$/);
+      expect(issue.ruleId).toMatch(/^[A-Z]\d{1,2}$/);
     }
   });
 

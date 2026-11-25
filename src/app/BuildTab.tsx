@@ -11,7 +11,8 @@ interface Props {
 }
 
 export function BuildTab({ plan, checked, onCheck, onPrint }: Props) {
-  const keysOf = (s: Step) => stepTemplates[s.templateId]!.checklist(s.values).map((_, i) => checkKey(s, i));
+  // Blocked plans have no steps, so the methods are only read when there is something to show.
+  const keysOf = (s: Step) => stepTemplates[s.templateId]!.checklist(s.values, plan.methods!).map((_, i) => checkKey(s, i));
   const stepDone = (s: Step) => keysOf(s).every((k) => checked[k]);
   // Open at the first step that still has something to check.
   const [index, setIndex] = useState(() => Math.max(0, plan.steps.findIndex((s) => !stepDone(s))));

@@ -155,6 +155,10 @@ export interface HingeHardware {
   readonly name: string;
   /** The overlay this hinge is made for; must match the design's overlay (rule D7). */
   readonly overlay: Measurement;
+  /** Solid wood the hinge needs on the back of the door, measured in from the door's edge (rule D8). */
+  readonly mountingWidth: Measurement;
+  /** The drill bit that bores the hinge's cup hole. */
+  readonly boringBit: string;
 }
 
 export type Hardware = SlideHardware | HingeHardware;
@@ -218,6 +222,58 @@ export interface DoorBay {
   readonly hingeSide: Choice<'left' | 'right'>;
 }
 
+// ---------------------------------------------------------------------------
+// Tools and the methods they allow (rules T1-T8)
+// ---------------------------------------------------------------------------
+
+export type ToolId =
+  | 'circularSaw'
+  | 'trackSaw'
+  | 'tableSaw'
+  | 'mitreSaw'
+  | 'jigsaw'
+  | 'holeSaw'
+  | 'router'
+  | 'pocketHoleJig'
+  | 'drill'
+  | 'bradNailer'
+  | 'sander'
+  | 'clamps'
+  | 'measuring';
+
+/**
+ * How the thin centre panel of a framed front is held (rule T5):
+ *  - routedRecess:  frame built first, a recess routed round the back, panel glued in
+ *  - stoppedGroove: a groove routed in each frame piece before assembly (advanced)
+ *  - sawnGroove:    the same groove, cut on a table saw
+ *  - panelOnBack:   no groove; panel glued and nailed to the back of the frame
+ */
+export type PanelMethod = 'routedRecess' | 'stoppedGroove' | 'sawnGroove' | 'panelOnBack';
+
+/** The method the engine settled on for each job that can be done more than one way. */
+export interface PlanMethods {
+  readonly solidWidths: 'boardsAsSold' | 'anyWidth';
+  readonly sheetSaw: 'circularSaw' | 'trackSaw';
+  readonly boardSaw: 'mitreSaw' | 'circularSaw';
+  readonly panel: PanelMethod;
+  readonly nailing: 'bradNailer' | 'hammer';
+  readonly sanding: 'sander' | 'sandingBlock';
+  readonly cutouts: 'holeSaw' | 'jigsaw';
+}
+
+/** One line of "Tools for this plan" (rule T2). */
+export interface PlanTool {
+  readonly id: string;
+  readonly kind: 'tool' | 'bit' | 'safety';
+  readonly name: string;
+  /** have = ticked; buyOrBorrow = needed but not ticked; required = needed on every such plan, not tracked. */
+  readonly status: 'have' | 'buyOrBorrow' | 'required';
+  /** What it is used for, in plain words. */
+  readonly usedFor: readonly string[];
+  /** For a router bit: the cut it has to make, from the plan's sizes. */
+  readonly cut?: { readonly kind: 'recess' | 'groove'; readonly width: Ticks; readonly depth: Ticks };
+}
+
 /** wall = that end touches a wall; exposed = that end will be seen. */
 export type EndCondition = 'wall' | 'exposed';
 
@@ -232,6 +288,9 @@ export interface VanityOptions {
   readonly displayUnit: LengthUnit;
   readonly tapeIncrement: TapeIncrement;
   readonly joinery: Choice<JoineryMethod>;
+
+  /** Which tools she has (rule T1). Ticks, not questions: each has a default. */
+  readonly tools: Readonly<Record<ToolId, Choice<boolean>>>;
 
   readonly ends: {
     readonly left: Choice<EndCondition>;
@@ -271,8 +330,18 @@ export interface VanityOptions {
     readonly shakerFrameMaterial: MaterialId;
     readonly shakerFrameWidth: BoardDimension;
     readonly shakerPanelMaterial: MaterialId;
+    /** 'auto' = the first method her tools allow (rule T5). */
+    readonly panelMethod: Choice<'auto' | PanelMethod>;
     /** How deep the centre panel sits in the frame's groove on each edge (rule D5). */
     readonly panelGrooveDepth: Measurement;
+    /** How far a routed recess reaches into the frame on each edge (rule D9). */
+    readonly panelRecessWidth: Measurement;
+    /** Panel on the back: gap kept between the panel and the face frame it sits inside (rule D10). */
+    readonly panelBackClearance: Measurement;
+    /** Panel on the back: least width of frame the panel must be glued to (rule D10). */
+    readonly minimumPanelLap: Measurement;
+    /** From the top and bottom of a door to the centre of each hinge (rule D7). */
+    readonly hingeInset: Measurement;
     /** Room for the panel to slide into its groove (rule D5). */
     readonly panelClearance: Measurement;
     readonly hinge: HardwareId;
@@ -496,6 +565,8 @@ export interface CutDiagram {
   readonly hasGrain: boolean;
   /** Width of the saw cut left between pieces. */
   readonly kerf: Ticks;
+  /** For a sheet: which cuts come first (rules C4, T4). */
+  readonly order: 'sectionsFirst' | 'longCutsFirst';
   readonly pieces: readonly CutPiece[];
   readonly offcuts: readonly Offcut[];
   readonly steps: readonly CutStep[];
@@ -523,6 +594,8 @@ export interface Opening {
   readonly frontHeight: Ticks;
   readonly frontLeft: Ticks;
   readonly frontTop: Ticks;
+  /** For a door: which edge the hinges are on. */
+  readonly hingeSide?: 'left' | 'right';
   /** The door, drawer front and drawer box parts that belong to this opening. */
   readonly partIds: readonly PartId[];
 }
@@ -588,7 +661,7 @@ export type JointFace = 'underside' | 'top face' | 'inside face' | 'outside face
 
 /** One kind of joint made in a step (rules J1-J3). */
 export interface Joint {
-  readonly method: 'pocketScrews' | 'glueAndNails' | 'screws';
+  readonly method: 'pocketScrews' | 'glueAndNails' | 'glue' | 'screws';
   /** The piece that is drilled or fastened through. */
   readonly through: PartId;
   /** Where on that piece, for pocket screws. */
@@ -654,6 +727,10 @@ export interface PlanResult {
   readonly cutDiagrams: readonly CutDiagram[];
   readonly materials: readonly MaterialLine[];
   readonly hardware: readonly HardwareLine[];
+  /** The method chosen for each job, from the tools ticked (rule T2). Absent when blocked. */
+  readonly methods?: PlanMethods;
+  /** Tools for this plan, including anything to buy or borrow. */
+  readonly tools: readonly PlanTool[];
   /** Where every piece sits, for the step drawings. */
   readonly placements: readonly Placement[];
   readonly steps: readonly Step[];

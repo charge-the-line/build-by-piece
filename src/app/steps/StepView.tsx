@@ -30,6 +30,7 @@ function jointLines(joints: readonly Joint[]): string[] {
     const targets = list(joint.into);
     if (joint.method === 'pocketScrews') return `Pocket screws and glue: drill pocket holes in the ${joint.face} of ${pieces}, then screw into ${targets}.`;
     if (joint.method === 'glueAndNails') return `Glue and nails: fix ${pieces} to ${targets}.`;
+    if (joint.method === 'glue') return `Glue only: fix ${pieces} to ${targets}.`;
     return joint.into.length === 0 ? `Screws: through ${pieces} into the wall studs.` : `Screws: through ${pieces} into ${targets}.`;
   });
 }
@@ -77,7 +78,7 @@ export function StepView({ plan, step, checked, onCheck }: Props) {
 
       <h3>What to do</h3>
       <ol className="todo">
-        {template.instructions(step.values).map((line, i) => (
+        {template.instructions(step.values, plan.methods!).map((line, i) => (
           <li key={i}>{line}</li>
         ))}
       </ol>
@@ -95,7 +96,7 @@ export function StepView({ plan, step, checked, onCheck }: Props) {
 
       <h3>Check before moving on</h3>
       <ul className="checks">
-        {template.checklist(step.values).map((line, i) => {
+        {template.checklist(step.values, plan.methods!).map((line, i) => {
           const key = checkKey(step, i);
           return (
             <li key={key}>

@@ -6,7 +6,7 @@ import { useEffect, useState } from 'react';
 import { defaultCatalog } from '../engine/defaults/catalog';
 import { userChoice, userEntered } from '../engine/defaults/values';
 import { vanity01 } from '../engine/fixtures/vanity-01';
-import type { EndCondition, ProjectFile, VanityDesign } from '../engine/types';
+import type { EndCondition, PanelMethod, ProjectFile, ToolId, VanityDesign } from '../engine/types';
 
 const STORAGE_KEY = 'build-by-piece:project';
 
@@ -84,6 +84,18 @@ export const withEnd = (design: VanityDesign, side: 'left' | 'right', value: End
   ...design,
   overrides: { ...design.overrides, ends: { ...design.overrides.ends, [side]: userChoice(value) } },
 });
+
+/** Ticks or unticks one tool. */
+export const withTool = (design: VanityDesign, tool: ToolId, has: boolean): VanityDesign => ({
+  ...design,
+  overrides: { ...design.overrides, tools: { ...design.overrides.tools, [tool]: userChoice(has) } },
+});
+
+/** Picks how framed fronts hold their panel, or hands the choice back to the app. */
+export function withPanelMethod(design: VanityDesign, method: 'auto' | PanelMethod): VanityDesign {
+  const { panelMethod: _dropped, ...fronts } = design.overrides.fronts ?? {};
+  return { ...design, overrides: { ...design.overrides, fronts: method === 'auto' ? fronts : { ...fronts, panelMethod: userChoice(method) } } };
+}
 
 type Tree = { readonly [key: string]: unknown };
 

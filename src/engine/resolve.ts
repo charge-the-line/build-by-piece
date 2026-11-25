@@ -4,6 +4,7 @@
  * Also produces the list of every value used, so defaults are visible and
  * changeable (docs/RULES.md, rules G1-G4, M1, M2).
  */
+import { toolList } from './defaults/tools';
 import { proposedVanityLayout } from './defaults/vanity';
 import type { Val } from './derive';
 import type {
@@ -16,9 +17,11 @@ import type {
   MaterialCatalog,
   MaterialId,
   Measurement,
+  PanelMethod,
   ResolvedInput,
   SheetStock,
   SlideHardware,
+  ToolId,
   ValidationIssue,
   VanityDesign,
   VanityOptions,
@@ -68,6 +71,7 @@ export type ResolvedBay =
       readonly width: SizeValue;
       readonly height: SizeValue;
       readonly style: 'slab' | 'shaker';
+      readonly hingeSide: 'left' | 'right';
     };
 
 export interface BoardValues {
@@ -88,6 +92,8 @@ export interface Resolved {
   readonly D: Val;
   readonly H: Val;
   readonly ends: { readonly left: EndCondition; readonly right: EndCondition };
+  /** Which tools are ticked (rule T1). */
+  readonly tools: Readonly<Record<ToolId, boolean>>;
   readonly wallOverhang: Val;
 
   readonly caseSheet: SheetValues;
@@ -110,7 +116,13 @@ export interface Resolved {
   readonly shakerBoard: BoardValues;
   readonly FW: Val;
   readonly panelSheet: SheetValues;
+  readonly panelMethod: 'auto' | PanelMethod;
   readonly grooveDepth: Val;
+  readonly recessWidth: Val;
+  readonly panelBackClearance: Val;
+  readonly minimumPanelLap: Val;
+  readonly hingeInset: Val;
+  readonly hingeMountingWidth: Val;
   readonly panelClearance: Val;
   readonly hinge: HingeHardware;
   readonly hingeOverlay: Val;
@@ -176,6 +188,11 @@ export function resolveVanity(design: VanityDesign, defaults: VanityOptions, cat
   };
 
   const choice = <T extends string>(c: Choice<T>, path: string, label: string): T => {
+    inputs.set(path, { path, label, value: c.value, status: c.status, origin: c.origin, ...(c.note ? { note: c.note } : {}) });
+    return c.value;
+  };
+
+  const tick = (c: Choice<boolean>, path: string, label: string): boolean => {
     inputs.set(path, { path, label, value: c.value, status: c.status, origin: c.origin, ...(c.note ? { note: c.note } : {}) });
     return c.value;
   };
@@ -248,6 +265,7 @@ export function resolveVanity(design: VanityDesign, defaults: VanityOptions, cat
     left: choice(options.ends.left, 'ends.left', 'left end'),
     right: choice(options.ends.right, 'ends.right', 'right end'),
   };
+  const tools = Object.fromEntries(toolList.map((tool) => [tool.id, tick(options.tools[tool.id], `tools.${tool.id}`, tool.name)])) as Record<ToolId, boolean>;
   const wallOverhang = length(options.ends.wallOverhang, 'ends.wallOverhang', 'frame overhang on a wall end');
 
   const caseSheet = sheet(options.box.caseMaterial);
@@ -268,6 +286,11 @@ export function resolveVanity(design: VanityDesign, defaults: VanityOptions, cat
   const shakerBoard = board(options.fronts.shakerFrameMaterial);
   const FW = boardDimension(options.fronts.shakerFrameWidth, shakerBoard, 'fronts.shakerFrameWidth', 'door frame width');
   const panelSheet = sheet(options.fronts.shakerPanelMaterial);
+  const panelMethod = choice(options.fronts.panelMethod, 'fronts.panelMethod', 'how framed fronts hold their panel');
+  const recessWidth = length(options.fronts.panelRecessWidth, 'fronts.panelRecessWidth', 'recess width');
+  const panelBackClearance = length(options.fronts.panelBackClearance, 'fronts.panelBackClearance', 'gap between a back panel and the face frame');
+  const minimumPanelLap = length(options.fronts.minimumPanelLap, 'fronts.minimumPanelLap', 'least frame a back panel is glued to');
+  const hingeInset = length(options.fronts.hingeInset, 'fronts.hingeInset', 'hinge distance from the top and bottom of a door');
   const grooveDepth = length(options.fronts.panelGrooveDepth, 'fronts.panelGrooveDepth', 'groove depth');
   const panelClearance = length(options.fronts.panelClearance, 'fronts.panelClearance', 'panel clearance');
 
@@ -302,6 +325,7 @@ export function resolveVanity(design: VanityDesign, defaults: VanityOptions, cat
         width,
         height: sizeValue(bay.height, `${base}.height`, `${label}: ${bay.height.by === 'front' ? 'front' : 'opening'} height`),
         style: choice(bay.style, `${base}.style`, `${label}: style`),
+        hingeSide: bay.hingeSide.value,
       };
     }
     return {
@@ -345,6 +369,7 @@ export function resolveVanity(design: VanityDesign, defaults: VanityOptions, cat
     D,
     H,
     ends,
+    tools,
     wallOverhang,
     caseSheet,
     backSheet,
@@ -363,7 +388,13 @@ export function resolveVanity(design: VanityDesign, defaults: VanityOptions, cat
     shakerBoard,
     FW,
     panelSheet,
+    panelMethod,
     grooveDepth,
+    recessWidth,
+    panelBackClearance,
+    minimumPanelLap,
+    hingeInset,
+    hingeMountingWidth: hardwareSize(hinge.mountingWidth, 'solid wood the hinge needs from the edge of the door', hinge.id),
     panelClearance,
     hinge,
     hingeOverlay: hardwareSize(hinge.overlay, 'overlay the hinge is made for', hinge.id),

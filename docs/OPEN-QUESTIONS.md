@@ -2,7 +2,16 @@
 
 Rule numbers refer to [RULES.md](RULES.md).
 
-Nothing is waiting on an answer right now.
+## Waiting on Max
+
+Two readings of the tool-inventory changes to confirm; both are built as described:
+
+1. **Recess depth, not width, follows the panel thickness.** For a groove the width matches the measured panel. For a routed recess it is the depth that matches (so the panel sits flush); how far the recess reaches into the frame is a separate default of 3/8" (rule D9). OK?
+2. **Panel on the back sets the drawer boxes back.** With that method a framed drawer front has a panel behind it, so every drawer box sits back by the panel thickness (rule X6). OK?
+
+## Tool inventory
+
+Approved with changes A to D and seven answers; recorded in [TOOLS-PROPOSAL.md](TOOLS-PROPOSAL.md) and built as rules T1 to T8, D8 to D10 and step A10.
 
 ## Approved defaults (design-change questions)
 

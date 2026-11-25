@@ -106,6 +106,8 @@ export const defaultCatalog: MaterialCatalog = {
       id: 'hinge-face-frame-half-inch',
       name: 'Concealed face-frame hinge, 1/2" overlay, soft close',
       overlay: standardSize('1/2'),
+      mountingWidth: standardSize('1 3/4'),
+      boringBit: 'Hinge-boring bit, 35 mm (the size concealed hinges use)',
     },
   ],
   supplies: [

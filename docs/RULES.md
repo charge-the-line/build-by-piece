@@ -193,14 +193,34 @@ Two sizes are worked out first and used throughout:
 - Cross pieces: length = front width − 2 × FW, width = FW. Quantity 2.
 - Why pocket screws: no special joint to cut. Alternative: a short tongue on each cross piece.
 
-**D5. Shaker centre panel.** Sits in a groove cut with the router along the inside edge of each frame piece. On the uprights the groove stops short of each end so it does not show on the top and bottom of the door.
+**D5. Centre panel in a groove (advanced choice, or with a table saw).** A groove is cut along the inside edge of each frame piece before assembly. With a router it stops short of each end on the uprights so it does not show.
 - Width = front width − 2 × FW + 2 × groove depth − 1/8"
 - Height = front height − 2 × FW + 2 × groove depth − 1/8"
-- Groove depth default 3/8". The 1/8" is room for the panel to slide in. Grain runs up and down on doors, side to side on drawer fronts.
+- Groove depth default 3/8". Groove width = the measured thickness of the panel. The 1/8" is room for the panel to slide in.
+- Grain runs up and down on doors, side to side on drawer fronts, for every panel method.
 
 **D6. A shaker front must be big enough.** Its width and height must each be more than 2 × FW + 1", or there is no visible panel.
 
-**D7. Hinges.** The app picks concealed face-frame hinges made for the overlay in use, two for each door. A hinge whose overlay does not match V is an error.
+**D7. Hinges.** The app picks concealed face-frame hinges made for the overlay in use, two for each door, centred 3" (a default) from the top and bottom. Neighbouring doors are hinged on opposite edges. A hinge whose overlay does not match V is an error. The cup holes need a hinge-boring bit, which is listed with the tools.
+
+**D8. Hinges always have a clear place to mount.** A hinge needs solid wood on the back of the door, measured in from the hinge edge (1 3/4" for the default hinge; this is hardware data). The centre panel, its groove or its recess must start beyond that.
+- Groove or recess: FW − groove depth (or recess width) must be at least the hinge space, or it is an error.
+- Panel on the back: the panel is kept back from the hinge edge by the hinge space (D10), so this holds by construction. A test checks it for every door.
+
+**D9. Centre panel in a recess routed after assembly (default with a router).** The frame is built first with pocket screws. A bearing-guided bit then cuts a recess all round the inside edge of the back, and the panel is glued in.
+- Width = front width − 2 × FW + 2 × recess width − 1/8"
+- Height = front height − 2 × FW + 2 × recess width − 1/8"
+- Recess width default 3/8" (how far it reaches into the frame). Recess depth = the measured thickness of the panel, so the panel sits flush with the back.
+- The bit leaves the recess corners rounded; the panel's corners are rounded to match.
+- Why this is the default: the frame is assembled square before any routing, there is nothing to stop and start, and a slip only shows on the back. Alternative: the groove (D5).
+
+**D10. Centre panel on the back (no router, no table saw).** The frame is built first. The panel is glued and nailed to its back and sits inside the opening.
+- Gap = V + 1/4" (a default): how far each panel edge sits in from the edge of the front, so the panel clears the face frame.
+- Hinge edge of a door: the panel sits in by the hinge space instead, when that is larger than the gap (D8).
+- Door panel width = front width − hinge space − gap. Drawer front panel width = front width − 2 × gap.
+- Height = front height − 2 × gap.
+- The panel must still lap at least 3/8" of frame on every edge to be glued, or it is an error.
+- The front is thicker by the panel thickness, so drawer boxes sit back by that much (X6).
 
 ---
 
@@ -293,7 +313,7 @@ New boxes on new side-mount slides. The app chooses the slides and sizes every b
 - The box sits on the platform; the face frame's front is at the entered depth.
 - A top front support lies flat under the top at the front of the box. A mounting strip stands on edge against the back panel, at the top.
 - A slide spacer has its bottom edge level with the bottom of its drawer opening and its front end at the front of the box.
-- **X6.** A drawer box sits between its slides, a quarter of the height clearance (1/4" by default) above the bottom of its opening, with its front flush with the front of the face frame.
+- **X6.** A drawer box sits between its slides, a quarter of the height clearance (1/4" by default) above the bottom of its opening, with its front flush with the front of the face frame. When framed drawer fronts have their panel on the back (D10), every box sits back by the panel thickness, and the slide length (X1) allows for it.
 
 **The steps, in order.** Each step has a picture with that step's pieces in colour and earlier pieces in grey, a list of what is needed, written instructions, how it is joined, and a checklist.
 
@@ -307,14 +327,66 @@ New boxes on new side-mount slides. The app chooses the slides and sizes every b
 | A6 | Build the face frame and glue it on | Pocket holes on the back of the frame; through the side panels from the inside face on an exposed end, the outside face on a wall end (J2) |
 | A7 | Add the drawer slide spacers | Only when spacers are needed (B8) |
 | A8 | Build the drawer boxes | Pocket holes on the outside of the front and back pieces, hidden by the drawer front and the wall |
-| A9 | Build the doors and drawer fronts | Router groove, pocket screws on the back of the cross pieces |
-| A10 | Set the cabinet in place | Level the platform, screw through the mounting strips into studs, fix the toe kick |
-| A11 | Fit the slides, drawers and drawer fronts | One pair of slides per drawer (X1, X6) |
-| A12 | Hang the doors | Two hinges per door (D7) |
+| A9 | Build the doors and drawer fronts | Pocket screws on the back of the cross pieces; the panel by whichever method her tools allow (T5) |
+| A10 | Cut the openings for the pipes | In the back panel, before the cabinet goes against the wall. Hole saw if ticked, otherwise jigsaw. Positions are measured on site, so the app asks for none |
+| A11 | Set the cabinet in place | Level the platform, screw through the mounting strips into studs, fix the toe kick |
+| A12 | Fit the slides, drawers and drawer fronts | One pair of slides per drawer (X1, X6) |
+| A13 | Hang the doors | Two hinges per door (D7, D8) |
 
-Steps that do not apply are left out: no A3 or A7 without dividers or spacers, no A8 or A11 without drawers, no A12 without doors.
+Steps that do not apply are left out: no A3 or A7 without dividers or spacers, no A8 or A12 without drawers, no A13 without doors.
 
 **The words are written templates** (`src/app/steps/templates.ts`), filled in with the plan's numbers. Nothing is generated, and no size is typed into a template.
+
+---
+
+## T. Tools and methods
+
+**T1. The tool list.** Each tool is ticked or not, on the Choices screen. The default ticks are the first user's own tools, so nothing is asked up front.
+
+| Tool | Ticked by default | What it changes |
+|---|---|---|
+| Circular saw with a straight edge | Yes | Cuts the plywood |
+| Track saw | No | Allows long cuts first on plywood (T4) |
+| Table saw | No | Allows lengthwise cuts in solid wood (T3); can cut panel grooves (T5) |
+| Mitre saw | Yes | Wording only: how boards are cut to length |
+| Jigsaw | Yes | Cuts the opening for the pipes when there is no hole saw (A10) |
+| Hole saw | No | Cuts a round hole for each pipe (A10) |
+| Router | Yes | Cuts the recess or groove for the panel in framed fronts (T5) |
+| Pocket-hole jig | Yes | Every joint (T6) |
+| Drill and driver | Yes | Needed for every plan |
+| Brad nailer | Yes | Wording only: nailer, or hammer and small nails |
+| Sander | Yes | Wording only: sander, or sanding block |
+| Clamps; tape measure, square and level | Yes | Needed for every plan |
+
+**T2. How a method is chosen.** For each job that can be done more than one way, the app uses the first method her tools allow. A missing tool never blocks the plan: the simplest method is used and the tool goes on a "Buy or borrow" list.
+
+Every plan shows "Tools for this plan" on the Shop screen:
+- anything to buy or borrow, with what it is for;
+- the exact bits: the router bit for the chosen panel method, with the cut it must make (a recess of the recess width, as deep as the measured panel; or a groove as wide as the measured panel, of the groove depth), and the hinge-boring bit when there are doors;
+- safety glasses, ear protection and a dust mask, required on every plan;
+- the tools from her list that the plan uses.
+
+The panel thickness those bit settings follow is one of the values to check before cutting (M2).
+
+**T3. Solid wood widths.** Board-as-sold widths (M5) are always the defaults. With a table saw ticked, changing a width no longer gives the lengthwise-cut warning.
+
+**T4. Breaking down plywood.** Sections first (C4) by default. With a track saw ticked, the app also lays the parts out with full-length strips first, and uses that only when it needs fewer sheets. On a tie it keeps sections first, because the pieces are easier to handle.
+
+**T5. Framed doors and drawer fronts.** In order of preference:
+
+| Method | Needs | Rule |
+|---|---|---|
+| Recess routed after assembly | Router | D9 |
+| Groove cut on the table saw | Table saw | D5 |
+| Panel on the back | Nothing extra | D10 |
+
+She can also choose "Groove before assembly" (D5, with the router) as an advanced option, or pick any method herself. If her choice needs a tool she has not ticked, the tool goes on the "Buy or borrow" list.
+
+**T6. Joints.** Pocket screws throughout, so a pocket-hole jig is required. If it is not ticked, the app says to buy or borrow one and does not change the joints.
+
+**T7. Wording-only tools.** A mitre saw, brad nailer and sander change no part and no size, only the words in a step. Without them the plan names the circular saw and a square, a hammer and small nails, or a sanding block.
+
+**T8. Left for later.** A router-cut recess for the back panel and grooved drawer bottoms are not offered; the simple methods (B4, X5) work with any tools.
 
 ---
 

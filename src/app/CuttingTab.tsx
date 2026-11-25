@@ -118,7 +118,7 @@ function BoardPicture({ diagram, parts }: { diagram: CutDiagram; parts: Readonly
 }
 
 /** Written templates, filled in with this plan's numbers. */
-function sentence(step: CutStep, diagram: CutDiagram, parts: ReadonlyMap<string, Part>): string {
+function sentence(step: CutStep, diagram: CutDiagram, parts: ReadonlyMap<string, Part>, boardSaw: string): string {
   const size = fmt(step.measure);
   const part = step.partId ? parts.get(step.partId) : undefined;
   const named = part ? `${part.id} ${part.name}` : step.makes;
@@ -130,19 +130,21 @@ function sentence(step: CutStep, diagram: CutDiagram, parts: ReadonlyMap<string,
   if (step.kind === 'strip') {
     return step.noCutNeeded
       ? `What is left of ${step.from} is ${step.makes}. No cut needed.`
-      : `On ${step.from}, measure ${size} from the edge and cut along the grain. This is ${step.makes}.`;
+      : step.from === 'the sheet'
+        ? `Measure ${size} from the edge of the sheet and cut the full length, along the grain. This is ${step.makes}.`
+        : `On ${step.from}, measure ${size} from the edge and cut along the grain. This is ${step.makes}.`;
   }
   if (diagram.kind === 'board') {
     return step.noCutNeeded
       ? `What is left of the board is ${named}. No cut needed.`
-      : `Measure ${size} from the end and cut. This is ${named}.`;
+      : `Measure ${size} from the end and cut ${boardSaw}. This is ${named}.`;
   }
   return step.noCutNeeded
     ? `What is left of ${step.from} is ${size} long. It is ${named}. No cut needed.`
     : `Measure ${size} along ${step.from} and cut. This is ${named}.`;
 }
 
-function Diagram({ diagram, parts, open }: { diagram: CutDiagram; parts: ReadonlyMap<string, Part>; open: boolean }) {
+function Diagram({ diagram, parts, open, boardSaw }: { diagram: CutDiagram; parts: ReadonlyMap<string, Part>; open: boolean; boardSaw: string }) {
   const kept = diagram.offcuts.filter((o) => o.label);
   return (
     <article className="diagram">
@@ -159,7 +161,7 @@ function Diagram({ diagram, parts, open }: { diagram: CutDiagram; parts: Readonl
         </summary>
         <ol className="cuts">
           {diagram.steps.map((step) => (
-            <li key={step.number}>{sentence(step, diagram, parts)}</li>
+            <li key={step.number}>{sentence(step, diagram, parts, boardSaw)}</li>
           ))}
         </ol>
       </details>
@@ -186,6 +188,8 @@ export function CuttingTab({ design, plan, onChange, forPrint = false }: Props) 
   const toCheck = plan.inputs.filter((i) => i.path.startsWith('measuredThickness.') && typeof i.value === 'number');
   const kerf = plan.cutDiagrams[0]?.kerf;
   const materials = [...new Set(plan.cutDiagrams.map((d) => d.materialId))];
+  const boardSaw = plan.methods?.boardSaw === 'mitreSaw' ? 'with the mitre saw' : 'with the circular saw and a square';
+  const longCuts = plan.cutDiagrams.some((d) => d.order === 'longCutsFirst');
 
   return (
     <>
@@ -212,6 +216,7 @@ export function CuttingTab({ design, plan, onChange, forPrint = false }: Props) 
           last cut left{kerf ? `, and ${fmt(kerf)} is allowed for the saw blade between pieces` : ''}. Write the part
           number on each piece as you cut it.
         </p>
+        {longCuts && <p>With the track saw, some sheets are cut into full-length strips first because that saves a sheet.</p>}
       </section>
 
       {materials.map((id) => (
@@ -219,7 +224,7 @@ export function CuttingTab({ design, plan, onChange, forPrint = false }: Props) 
           {plan.cutDiagrams
             .filter((d) => d.materialId === id)
             .map((d) => (
-              <Diagram key={d.id} diagram={d} parts={parts} open={forPrint} />
+              <Diagram key={d.id} diagram={d} parts={parts} open={forPrint} boardSaw={boardSaw} />
             ))}
         </section>
       ))}
