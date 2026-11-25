@@ -678,4 +678,6 @@ export interface ProjectFile {
   readonly savedAt: string;
   readonly design: Design;
   readonly catalog: MaterialCatalog;
+  /** Checklist lines ticked off so far, by step and line. */
+  readonly checked?: Readonly<Record<string, boolean>>;
 }
