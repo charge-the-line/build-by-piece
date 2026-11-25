@@ -285,6 +285,37 @@ New boxes on new side-mount slides. The app chooses the slides and sizes every b
 
 ---
 
+## A. Assembly
+
+**A0. Where every piece sits.** The engine works out a position for every piece in the finished cabinet: across from the cabinet's left end, up from the floor, and out from the wall. The step pictures are drawn from these positions, and a test checks that no two pieces share the same space (a centre panel in its groove is the one exception).
+- The box sits on the platform; the face frame's front is at the entered depth.
+- A top front support lies flat under the top at the front of the box. A mounting strip stands on edge against the back panel, at the top.
+- A slide spacer has its bottom edge level with the bottom of its drawer opening and its front end at the front of the box.
+- **X6.** A drawer box sits between its slides, a quarter of the height clearance (1/4" by default) above the bottom of its opening, with its front flush with the front of the face frame.
+
+**The steps, in order.** Each step has a picture with that step's pieces in colour and earlier pieces in grey, a list of what is needed, written instructions, how it is joined, and a checklist.
+
+| Step | What | Rule notes |
+|---|---|---|
+| A1 | Build the platform | Rails front and back, cross supports between (P2, P3) |
+| A2 | Join the sides to the bottom | Pocket holes in the underside of the bottom (J2) |
+| A3 | Stand the dividers on the bottom | Pocket holes on the drawer side (J3); spaced with the top front supports |
+| A4 | Tie the top together | Top front supports and mounting strips, one of each per section |
+| A5 | Close the back | Glue and nails; squares the box |
+| A6 | Build the face frame and glue it on | Pocket holes on the back of the frame; through the side panels from the inside face on an exposed end, the outside face on a wall end (J2) |
+| A7 | Add the drawer slide spacers | Only when spacers are needed (B8) |
+| A8 | Build the drawer boxes | Pocket holes on the outside of the front and back pieces, hidden by the drawer front and the wall |
+| A9 | Build the doors and drawer fronts | Router groove, pocket screws on the back of the cross pieces |
+| A10 | Set the cabinet in place | Level the platform, screw through the mounting strips into studs, fix the toe kick |
+| A11 | Fit the slides, drawers and drawer fronts | One pair of slides per drawer (X1, X6) |
+| A12 | Hang the doors | Two hinges per door (D7) |
+
+Steps that do not apply are left out: no A3 or A7 without dividers or spacers, no A8 or A11 without drawers, no A12 without doors.
+
+**The words are written templates** (`src/app/steps/templates.ts`), filled in with the plan's numbers. Nothing is generated, and no size is typed into a template.
+
+---
+
 ## C. Cutting diagrams
 
 **C1. One diagram for each sheet and each board.** Every piece in the cut list is placed on exactly one diagram, with its part number.
