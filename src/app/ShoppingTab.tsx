@@ -1,4 +1,5 @@
 import type { PlanResult } from '../engine/types';
+import { defaultCatalog } from '../engine/defaults/catalog';
 import { fmt } from './format';
 
 export function ShoppingTab({ plan }: { plan: PlanResult }) {
@@ -41,7 +42,18 @@ export function ShoppingTab({ plan }: { plan: PlanResult }) {
             </li>
           ))}
         </ul>
-        <p className="hint">Screws, glue, handles and finish are not listed yet.</p>
+      </section>
+      <section>
+        <h2>Also needed</h2>
+        <ul className="supplies">
+          {defaultCatalog.supplies.map((supply) => (
+            <li key={supply.id}>
+              <strong>{supply.name}</strong>
+              <span className="hint">{supply.use}</span>
+            </li>
+          ))}
+        </ul>
+        <p className="hint">The app does not work out how much of each yet. Handles and the finish are your choice.</p>
       </section>
     </>
   );

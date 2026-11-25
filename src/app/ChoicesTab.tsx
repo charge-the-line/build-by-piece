@@ -2,6 +2,7 @@ import { useState } from 'react';
 import type { PlanResult, ResolvedInput, VanityDesign } from '../engine/types';
 import { formatLength } from '../engine/units';
 import { choiceWords, fmt } from './format';
+import { glossary } from './glossary';
 import { LengthField } from './LengthField';
 import { type Checked, fromProjectText, isChangeable, startingDesign, toProjectFile, withChange } from './project';
 
@@ -98,6 +99,24 @@ export function ChoicesTab({ design, plan, onChange, checked, onReplace }: Props
       {group('You entered', 'Your numbers and anything you changed.', yours)}
       {group('Check before you cut', 'Standard sizes the app is using for now. Measure the real sheet before cutting and change the number if it differs.', toCheck)}
       {group("The app's choices", 'Nothing here needs your attention. Change any of them if you want to.', apps)}
+
+      <section>
+        <h2>Words you might hear</h2>
+        <p>The app uses plain words. Here is what woodworkers call the same things.</p>
+        <ul className="words">
+          {glossary.map((entry) => (
+            <li key={entry.term}>
+              <details>
+                <summary>
+                  {entry.plain}
+                  {entry.term.toLowerCase() !== entry.plain.toLowerCase() && <span className="tradeWord"> “{entry.term}”</span>}
+                </summary>
+                <p>{entry.meaning}</p>
+              </details>
+            </li>
+          ))}
+        </ul>
+      </section>
 
       <section>
         <h2>Your project</h2>

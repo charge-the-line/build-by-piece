@@ -1,5 +1,7 @@
 import type { Derivation, Part, PlanResult } from '../engine/types';
+import { useState } from 'react';
 import { colorOf, fmt, materialName } from './format';
+import { lookUp } from './glossary';
 
 function Worked({ title, derivation }: { title: string; derivation: Derivation }) {
   return (
@@ -22,6 +24,21 @@ function Worked({ title, derivation }: { title: string; derivation: Derivation }
   );
 }
 
+/** Tap to see what woodworkers call this piece, and what the word means. */
+function TradeTerm({ term }: { term: string }) {
+  const [open, setOpen] = useState(false);
+  const entry = lookUp(term);
+  if (!entry) return null;
+  return (
+    <div className="term">
+      <button type="button" className="quiet" aria-expanded={open} onClick={() => setOpen(!open)}>
+        Also called a “{term}”
+      </button>
+      {open && <p className="hint">{entry.meaning}</p>}
+    </div>
+  );
+}
+
 function PartCard({ part }: { part: Part }) {
   const color = colorOf(part.colorRole);
   return (
@@ -40,6 +57,7 @@ function PartCard({ part }: { part: Part }) {
         {materialName(part.materialId)}, {fmt(part.thickness)} thick
         {part.needsCheck ? '. Check your plywood thickness before cutting.' : ''}
       </p>
+      {part.tradeTerm && <TradeTerm term={part.tradeTerm} />}
       <details>
         <summary>How this size was worked out</summary>
         <Worked title="Length" derivation={part.derivation.length} />
