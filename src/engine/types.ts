@@ -238,6 +238,8 @@ export interface VanityOptions {
     readonly supportMaterial: MaterialId;
     /** Sheet material stacked to make slide spacers, thickest first (rule B8). */
     readonly spacerMaterials: readonly MaterialId[];
+    /** Width of each slide spacer strip (rule B8). */
+    readonly spacerWidth: Measurement;
   };
 
   readonly faceFrame: {
@@ -275,6 +277,8 @@ export interface VanityOptions {
     readonly heightClearance: Measurement;
     /** Space kept free behind the slide (rule X1). */
     readonly rearClearance: Measurement;
+    /** Most a slide spacer may fall short of the opening edge (rule B8). */
+    readonly spacerTolerance: Measurement;
   };
 
   readonly platform: {
@@ -290,6 +294,17 @@ export interface VanityOptions {
      */
     readonly toeKickHeight?: Measurement;
   };
+
+  readonly cutting: {
+    /** Width of wood the saw blade removes; used when counting sheets and boards (rule M6). */
+    readonly kerf: Measurement;
+  };
+
+  /**
+   * Thickness she measured on her own sheet, by material. Replaces the
+   * catalog's standard thickness for that material (rule M2). Empty by default.
+   */
+  readonly measuredThickness: Readonly<Record<MaterialId, Measurement>>;
 
   /** For the finished-height note only (rule H1). The top is made by others. */
   readonly countertop: {
@@ -336,12 +351,21 @@ export interface DerivationInput {
   readonly label: string;
   readonly value: Ticks;
   readonly status: InputStatus;
-  /** Path into the design or catalog, e.g. "box.width", so the UI can jump to it. */
+  readonly origin: InputOrigin;
+  readonly checkAt?: 'cutting';
+  /** Where it came from: an input path such as "width", or "rule B1" for a worked-out value. */
   readonly source: string;
+  /** For a "sum" derivation: how many times this value is added (negative = taken away). */
+  readonly times?: number;
 }
 
 /** How one dimension of a part was worked out. */
 export interface Derivation {
+  /**
+   * sum:  result is exactly the inputs added up, each multiplied by its `times`.
+   * rule: result follows the stated rule (a shared space, a stock length picked).
+   */
+  readonly kind: 'sum' | 'rule';
   /** Rule number in docs/RULES.md, e.g. "B3". */
   readonly ruleId: string;
   /** Plain English, e.g. "overall box width minus 2 x side panel thickness". */
@@ -357,6 +381,8 @@ export interface Part {
   /** Trade term for the tap-to-explain glossary, e.g. "stile". */
   readonly tradeTerm?: string;
   readonly colorRole: ColorRole;
+  /** Which sub-assembly it belongs to, for grouping lists: "Box", "Face frame", ... */
+  readonly assembly: string;
   readonly materialId: MaterialId;
   readonly thickness: Ticks;
   readonly length: Ticks;
@@ -370,6 +396,8 @@ export interface Part {
   };
   /** assumed if any input in any derivation is assumed. */
   readonly status: InputStatus;
+  /** True when a size depends on something to check before cutting (rule G3). */
+  readonly needsCheck: boolean;
 }
 
 // ---------------------------------------------------------------------------
@@ -406,8 +434,17 @@ export interface Opening {
   readonly id: string;
   readonly bayId: string;
   readonly kind: 'door' | 'drawer';
+  /** Plain-English name, e.g. "Left drawers, drawer 1". */
+  readonly label: string;
+  readonly style: FrontStyle;
   readonly width: Derivation;
   readonly height: Derivation;
+  /** Where the opening sits in the face frame: from its left end and from its top. */
+  readonly left: Ticks;
+  readonly top: Ticks;
+  /** Size of the door or drawer front that covers it (rule D1). */
+  readonly frontWidth: Ticks;
+  readonly frontHeight: Ticks;
   /** The door, drawer front and drawer box parts that belong to this opening. */
   readonly partIds: readonly PartId[];
 }
@@ -491,6 +528,8 @@ export interface PlanResult {
   readonly issues: readonly ValidationIssue[];
   /** False when any issue has severity "error"; everything below is then empty. */
   readonly canGeneratePlan: boolean;
+  /** Overall sizes worked out from the three numbers. Absent when the plan is blocked. */
+  readonly overall?: OverallSizes;
   readonly openings: readonly Opening[];
   readonly parts: readonly Part[];
   readonly materials: readonly MaterialLine[];
@@ -498,7 +537,17 @@ export interface PlanResult {
   readonly steps: readonly Step[];
 }
 
-/** The whole engine, as seen from outside. Implemented in Phase 1. */
+export interface OverallSizes {
+  readonly frameWidth: Ticks;
+  readonly frameHeight: Ticks;
+  readonly boxWidth: Derivation;
+  readonly boxDepth: Derivation;
+  readonly platformHeight: Derivation;
+  /** Platform + box + countertop (rule H1). */
+  readonly finishedHeight: Derivation;
+}
+
+/** The whole engine, as seen from outside. See generatePlan.ts. */
 export type GeneratePlan = (
   design: Design,
   defaults: VanityOptions,

@@ -66,6 +66,7 @@ export const vanityDefaults: VanityOptions = {
     backMaterial: 'oak-ply-1-4',
     supportMaterial: 'pine-1x4',
     spacerMaterials: ['oak-ply-3-4', 'oak-ply-1-4'],
+    spacerWidth: appDefault('2', 'Wide enough to take the slide and its screws.'),
   },
 
   faceFrame: {
@@ -96,6 +97,7 @@ export const vanityDefaults: VanityOptions = {
     bottomMaterial: 'oak-ply-1-4',
     heightClearance: appDefault('1', 'Room above and below the drawer box so it never rubs.'),
     rearClearance: appDefault('1', 'Room behind the slide.'),
+    spacerTolerance: appDefault('1/16', 'Slides can take up this much slack.'),
   },
 
   platform: {
@@ -104,6 +106,12 @@ export const vanityDefaults: VanityOptions = {
     supportSpacing: appDefault('16', 'Close enough that the cabinet floor cannot sag.'),
     toeKickMaterial: 'oak-1x4',
   },
+
+  cutting: {
+    kerf: appDefault('1/8', 'The width of wood a saw blade turns to dust.'),
+  },
+
+  measuredThickness: {},
 
   countertop: {
     description: 'Stone top, installed by others',
