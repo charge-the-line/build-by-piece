@@ -153,7 +153,9 @@ Two sizes are worked out first and used throughout:
 
 ## L. Layout: the app proposes it, and it must add up
 
-**L0. Proposed layout.** For a vanity the app proposes, left to right: a drawer column, two doors, a drawer column, all four openings the same width. Each drawer column has two small drawers over one large one. She can change it. Other widths will get their own proposals later.
+**L0. Proposed layout.** For a vanity the app proposes, left to right: a drawer column, two doors, a drawer column, all four openings the same width. Each drawer column has two small drawers over one large one.
+
+**L0a. Changing the layout.** She can change what goes in each space (a door, or one to four drawers), add spaces up to six, or remove them. She never types an opening size: every space shares the width equally, the small drawers in a column sit on top with fronts one board high (L4), and the bottom drawer takes the rest of the height. A layout made this way always adds up; if it leaves a front too small to build, the app says which and why.
 
 **L1. Across.** Frame pieces plus opening widths must equal the cabinet width exactly.
 - (number of bays + 1) × S + sum of opening widths = W
