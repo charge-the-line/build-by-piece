@@ -560,17 +560,57 @@ export interface ValidationIssue {
 // Output — assembly steps
 // ---------------------------------------------------------------------------
 
+/** Where one piece sits in the finished cabinet, as a box. */
+export interface Placement {
+  readonly partId: PartId;
+  /** Which copy of the part: 1, 2, ... up to its quantity. */
+  readonly copy: number;
+  /** Corner nearest the wall-side floor corner: x from the cabinet's left end, y up from the floor, z out from the wall. */
+  readonly x: Ticks;
+  readonly y: Ticks;
+  readonly z: Ticks;
+  readonly sizeX: Ticks;
+  readonly sizeY: Ticks;
+  readonly sizeZ: Ticks;
+}
+
+/** Which face of a piece gets the pocket holes, in plain words. */
+export type JointFace = 'underside' | 'top face' | 'inside face' | 'outside face' | 'back face' | 'drawer side';
+
+/** One kind of joint made in a step (rules J1-J3). */
+export interface Joint {
+  readonly method: 'pocketScrews' | 'glueAndNails' | 'screws';
+  /** The piece that is drilled or fastened through. */
+  readonly through: PartId;
+  /** Where on that piece, for pocket screws. */
+  readonly face?: JointFace;
+  /** The pieces it is fastened to. Empty when it goes into the wall or floor. */
+  readonly into: readonly PartId[];
+}
+
+export interface StepHardware {
+  readonly hardwareId: HardwareId;
+  readonly quantity: number;
+  readonly unit: 'pair' | 'each';
+}
+
+/**
+ * One assembly step (rules A1-A13). The words come from a written template
+ * in the app, filled in with `values`; nothing here is free text.
+ */
 export interface Step {
+  readonly id: string;
   readonly number: number;
-  readonly title: string;
-  /** Written template filled in with this plan's numbers; never AI-generated. */
+  /** Which written template describes this step. */
   readonly templateId: string;
-  readonly values: Readonly<Record<string, Ticks | number | string>>;
+  /** Numbers the template quotes: lengths in ticks, or counts. */
+  readonly values: Readonly<Record<string, Ticks | number>>;
   /** Parts added in this step (highlighted in the drawing). */
   readonly partIds: readonly PartId[];
   /** Parts placed in earlier steps (muted in the drawing). */
   readonly earlierPartIds: readonly PartId[];
-  readonly checklist: readonly string[];
+  readonly joints: readonly Joint[];
+  readonly hardware: readonly StepHardware[];
 }
 
 // ---------------------------------------------------------------------------
@@ -605,6 +645,8 @@ export interface PlanResult {
   readonly cutDiagrams: readonly CutDiagram[];
   readonly materials: readonly MaterialLine[];
   readonly hardware: readonly HardwareLine[];
+  /** Where every piece sits, for the step drawings. */
+  readonly placements: readonly Placement[];
   readonly steps: readonly Step[];
 }
 
