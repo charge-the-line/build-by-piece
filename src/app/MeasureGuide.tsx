@@ -5,7 +5,7 @@ import type { ColorRole, VanityDesign } from '../engine/types';
 const hex = (role: ColorRole) => colorRoles.find((c) => c.role === role)?.hex ?? '#888888';
 
 /** The number exactly as entered, with its unit mark. Never a typed-in dimension. */
-const shown = (m: VanityDesign['width']) => `${m.entered}${m.unit === 'in' ? '″' : ' mm'}`;
+const shown = (m: VanityDesign['width']) => `${m.entered}${m.unit === 'in' ? '"' : ' mm'}`;
 
 function Bracket({ x1, y1, x2, y2 }: { x1: number; y1: number; x2: number; y2: number }) {
   const horizontal = y1 === y2;
