@@ -27,19 +27,19 @@ From Ashley, the first user.
 
 ## Current status
 
-**Phase 1 complete, waiting for Max's review. Do not start Phase 2 until Max approves.**
+**Phase 2 complete, waiting for Max's review. Do not start Phase 3 until Max approves.**
 
-Max approved `docs/RULES.md` and all open questions. The engine builds a full plan (openings, cut list, shopping list, hardware, validation) from three numbers, and the app has four screens: Size, Choices, Cut list, Shopping.
+The engine builds a full plan from three numbers: openings, cut list, cutting diagrams, shopping list, hardware and validation. The app has five screens: Size, Choices, Parts, Cutting, Shop.
 
 Test case: vanity 01, 60" wide × 21" deep × 30" high, left end on a wall, right end exposed. The earlier AI mock-up survives only as a fixture of known errors.
 
-Not done yet, by design: cutting diagrams (Phase 2), assembly steps (Phase 3), and changing the door and drawer layout in the app (the engine supports it; there is no screen for it).
+Not done yet, by design: assembly steps (Phase 3), and changing the door and drawer layout in the app (the engine supports it; there is no screen for it).
 
 | Phase | What | Status |
 |---|---|---|
 | 0 | Scaffold, rules, data model, fixture, test list | Done |
-| 1 | Engine and vanity: questionnaire, validation, cut list, shopping list | Done, in review |
-| 2 | Cutting diagrams: kerf, grain, cut order, offcuts | Not started |
+| 1 | Engine and vanity: questionnaire, validation, cut list, shopping list | Done |
+| 2 | Cutting diagrams: kerf, grain, cut order, offcuts | Done, in review |
 | 3 | Assembly steps, checklists, print to PDF | Not started |
 | Later | Tool inventory, other cabinets, kitchen | Not started |
 
@@ -55,13 +55,13 @@ src/engine/      Pure TypeScript. Design + defaults + catalog in; parts, materia
   resolve.ts       Lays the user's changes over the defaults and reads every value, with its label and status.
   layout.ts        Sizes and places every opening; the "does not add up" checks (rules L1-L5).
   vanity.ts        The construction rules: one block per rule in docs/RULES.md.
-  materials.ts     Counts sheets and boards for the shopping list (rule M6).
+  cutting.ts       Cutting diagrams (rules C1-C6); the shopping list is the diagrams, counted.
   generatePlan.ts  The engine's single entry point.
   colorRoles.ts    The fixed instructional colours (data).
   defaults/        Every value the app decides: vanity.ts (options, proposed layout), catalog.ts (materials, hardware).
   fixtures/        vanity-01.ts is the test case (three numbers). mockup-errors.ts holds the old mock-up's mistakes.
   __tests__/       Vitest tests. The expected sizes are the worked example in docs/RULES.md.
-src/app/         React UI: Size, Choices, Cut list and Shopping screens. Imports from the engine; never the reverse.
+src/app/         React UI: Size, Choices, Parts, Cutting and Shop screens. Imports from the engine; never the reverse.
                  The UI does no arithmetic on dimensions and prints lengths only through `fmt` (src/app/format.ts).
 docs/RULES.md    Construction rules with formulas. The engine implements exactly these.
 docs/OPEN-QUESTIONS.md   Decisions waiting on Max, and the record of what he decided.
