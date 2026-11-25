@@ -1,8 +1,9 @@
 /**
  * Build by Piece — engine data model (Phase 0: types only, no logic).
  *
- * The engine is pure TypeScript: a design and a material catalog go in;
- * parts, materials, validation issues and steps come out. Nothing in
+ * The engine is pure TypeScript: a design (three numbers plus any changed
+ * defaults), the defaults and a catalog go in; parts, materials, hardware,
+ * validation issues and steps come out. Nothing in
  * src/engine may import UI, DOM or network code.
  *
  * Rule numbers such as "B2" or "L1" refer to docs/RULES.md.
@@ -32,34 +33,51 @@ export type LengthUnit = 'in' | 'mm';
 export type TapeIncrement = '1/16in' | '1/32in' | '1mm';
 
 // ---------------------------------------------------------------------------
-// Inputs — every input carries a status
+// Inputs — every value carries a status and says who decided it
 // ---------------------------------------------------------------------------
 
-/** confirmed = measured or decided by the user; assumed = a placeholder or default. */
+/** confirmed = entered, changed or accepted by the user; assumed = not yet confirmed by her. */
 export type InputStatus = 'confirmed' | 'assumed';
 
 /**
- * A length exactly as the user gave it. The engine parses `entered` into
- * Ticks (rule U2); the original text is kept so a saved project shows what
- * was typed. Accepted forms: "79 1/2", "79.5", "23/32" (inches) or "30" (mm).
+ * Who decided a value.
+ *  - user:       she typed or picked it
+ *  - appDefault: the app decided it (rule G1); she can see it and change it
+ */
+export type InputOrigin = 'user' | 'appDefault';
+
+/**
+ * A length as text, exactly as a person would type it. The engine parses
+ * `entered` into Ticks (rule U2). Accepted forms: "79 1/2", "79.5", "23/32"
+ * (inches) or "30" (mm).
  */
 export interface Measurement {
   readonly entered: string;
   readonly unit: LengthUnit;
   readonly status: InputStatus;
-  /** Where the number came from, e.g. "AI mock-up" or "tape measure, 12 Mar". */
-  readonly source?: string;
+  readonly origin: InputOrigin;
+  /**
+   * Set on a default that stands in for a real-world fact, such as plywood
+   * thickness. The app prompts her to check it at this point (rule G3).
+   */
+  readonly checkAt?: 'cutting';
+  /** Why this value: shown next to it in the app. */
+  readonly note?: string;
 }
 
-/** A measurement the user has been asked for but has not supplied yet. */
-export type PendingMeasurement = Measurement | null;
-
-/** A non-length decision (a style, a count, a yes/no) with the same status rule. */
+/** A non-length decision (a style, an end condition) with the same labels. */
 export interface Choice<T> {
   readonly value: T;
   readonly status: InputStatus;
-  readonly source?: string;
+  readonly origin: InputOrigin;
+  readonly note?: string;
 }
+
+/**
+ * A width that is either typed, or taken from the actual width of the board
+ * the part is made from, so the part needs no lengthwise (rip) cut (rule M5).
+ */
+export type BoardDimension = Measurement | 'boardWidth';
 
 // ---------------------------------------------------------------------------
 // Colour roles — fixed everywhere, never the only cue
@@ -70,12 +88,13 @@ export type ColorRole =
   | 'rightSide' // green
   | 'bottom' // yellow
   | 'back' // purple
-  | 'platform' // orange
+  | 'platform' // orange: platform and toe kick
   | 'divider' // red
   | 'faceFrame' // brown
   | 'door' // teal
   | 'drawerFront' // pink
-  | 'support'; // grey — PROPOSED, not in the brief; see docs/OPEN-QUESTIONS.md Q9
+  | 'support' // grey: top supports, mounting strips, slide spacers
+  | 'drawerBox'; // white with a dark outline — PROPOSED; see docs/OPEN-QUESTIONS.md
 
 // ---------------------------------------------------------------------------
 // Materials — sizes are data, not constants in code
@@ -116,44 +135,58 @@ export interface BoardStock extends StockBase {
 
 export type Stock = SheetStock | BoardStock;
 
+export type HardwareId = string;
+
+/** Drawer slides. Clearances and lengths are data, like material sizes. */
+export interface SlideHardware {
+  readonly kind: 'drawerSlide';
+  readonly id: HardwareId;
+  readonly name: string;
+  readonly mount: 'side';
+  /** Space the slide needs between the drawer box and the cabinet, on each side. */
+  readonly clearancePerSide: Measurement;
+  /** Lengths sold, shortest first. */
+  readonly stockLengths: readonly Measurement[];
+}
+
+export interface HingeHardware {
+  readonly kind: 'hinge';
+  readonly id: HardwareId;
+  readonly name: string;
+  /** The overlay this hinge is made for; must match the design's overlay (rule D7). */
+  readonly overlay: Measurement;
+}
+
+export type Hardware = SlideHardware | HingeHardware;
+
 export interface MaterialCatalog {
   readonly stock: readonly Stock[];
+  readonly hardware: readonly Hardware[];
 }
 
 // ---------------------------------------------------------------------------
-// Design — what the user enters
+// Design — three numbers from the user, everything else a visible default
 // ---------------------------------------------------------------------------
 
 /**
  * How one opening gets its size along one direction:
- *  - opening: the clear hole in the face frame is given
- *  - front:   the door or drawer front size is given; opening = front - 2 x overlay
- *  - drawerBox: sized from a reused drawer box plus slide clearance (rule L4)
- *  - fill:    takes an equal share of whatever space is left (rule L3)
+ *  - fill:       an equal share of whatever space is left (rule L3)
+ *  - opening:    the clear hole in the face frame is given
+ *  - front:      the door or drawer front size is given; opening = front - 2 x overlay
+ *  - frontBoard: the front is one board at its actual width, so no rip cut (rule L4)
  */
 export type SizeSpec =
+  | { readonly by: 'fill' }
   | { readonly by: 'opening'; readonly value: Measurement }
   | { readonly by: 'front'; readonly value: Measurement }
-  | { readonly by: 'drawerBox' }
-  | { readonly by: 'fill' };
+  | { readonly by: 'frontBoard' };
 
 export type FrontStyle = 'slab' | 'shaker';
-
-export type SlideType = 'sideMount' | 'underMount' | 'centerMount' | 'woodRunner';
-
-/** An existing drawer box being reused. Measured outside to outside. */
-export interface ReusedDrawerBox {
-  readonly outsideWidth: PendingMeasurement;
-  readonly outsideHeight: PendingMeasurement;
-  readonly outsideDepth: PendingMeasurement;
-}
 
 export interface DrawerSpec {
   readonly id: string;
   readonly frontStyle: Choice<FrontStyle>;
   readonly height: SizeSpec;
-  /** Present when an existing box is reused; only the front is new. */
-  readonly reusedBox?: ReusedDrawerBox;
 }
 
 /** One vertical section of the face frame, between two vertical frame pieces. */
@@ -176,87 +209,113 @@ export interface DoorBay {
   readonly hingeSide: Choice<'left' | 'right'>;
 }
 
-export interface BoxDesign {
-  /** Outside of left side panel to outside of right side panel (rule B1). */
-  readonly width: Measurement;
-  /** Bottom edge to top edge of the side panels; excludes platform and top. */
-  readonly height: Measurement;
-  /** Back of the box to the front edge of the side panels; excludes face frame and doors. */
-  readonly depth: Measurement;
-  readonly caseMaterial: MaterialId;
-  readonly backMaterial: MaterialId;
-  /** A side that will be seen in the finished room gets no visible fasteners (rule J2). */
-  readonly exposedSides: Choice<{ readonly left: boolean; readonly right: boolean }>;
-  /** Width of the strips that tie the top front edge together (rule B6). */
-  readonly topSupportWidth: Measurement;
-}
-
-export interface FaceFrameDesign {
-  readonly material: MaterialId;
-  /** Width of every vertical frame piece ("stile"). */
-  readonly stileWidth: Measurement;
-  readonly topRailWidth: Measurement;
-  readonly bottomRailWidth: Measurement;
-  /** Width of the horizontal piece between two drawers in a column. */
-  readonly drawerRailWidth: Measurement;
-}
-
-export interface FrontsDesign {
-  /** How far each door and drawer front laps over the frame on every edge. */
-  readonly overlay: Measurement;
-  readonly slabMaterial: MaterialId;
-  readonly shakerFrameMaterial: MaterialId;
-  readonly shakerFrameWidth: Measurement;
-  readonly shakerPanelMaterial: MaterialId;
-  /** How deep the centre panel sits in the frame's groove on each edge (rule D5). */
-  readonly panelGrooveDepth: Measurement;
-  /** null until the user tells us which slides the reused drawers run on. */
-  readonly slideType: Choice<SlideType> | null;
-}
-
-export interface PlatformDesign {
-  readonly lumber: MaterialId;
-  /** 'matchBox' ties the platform width to the box width so they cannot drift apart. */
-  readonly width: 'matchBox' | Measurement;
-  readonly depth: Measurement;
-  readonly toeKickMaterial: MaterialId;
-  /**
-   * Normally omitted: toe kick height is derived from the platform (rule P5).
-   * If a value is entered it is checked against the platform, never trusted.
-   */
-  readonly toeKickHeight?: Measurement;
-}
-
-export interface CountertopDesign {
-  readonly description: string;
-  /** Used only for finished height (rule H1); the top itself is made by others. */
-  readonly thickness: Measurement;
-}
+/** wall = that end touches a wall; exposed = that end will be seen. */
+export type EndCondition = 'wall' | 'exposed';
 
 export type JoineryMethod = 'pocketHolesAndGlue';
 
-/** Where the cabinet will go. Used for fit checks only. */
-export interface SiteMeasurements {
-  readonly wallSpaceWidth: PendingMeasurement;
-  readonly finishedHeightWanted: PendingMeasurement;
-  readonly finishedDepthWanted: PendingMeasurement;
+/**
+ * Every value the engine needs beyond width, depth and height. A complete
+ * set lives in src/engine/defaults/vanity.ts; a design only stores the ones
+ * the user changed. Nothing in here is ever asked for up front (rule G1).
+ */
+export interface VanityOptions {
+  readonly displayUnit: LengthUnit;
+  readonly tapeIncrement: TapeIncrement;
+  readonly joinery: Choice<JoineryMethod>;
+
+  readonly ends: {
+    readonly left: Choice<EndCondition>;
+    readonly right: Choice<EndCondition>;
+    /** How far the face frame runs past the box on a wall end (rule F1). */
+    readonly wallOverhang: Measurement;
+  };
+
+  readonly box: {
+    readonly caseMaterial: MaterialId;
+    readonly backMaterial: MaterialId;
+    /** Board for top front supports and mounting strips (rules B6, B7). */
+    readonly supportMaterial: MaterialId;
+    /** Sheet material stacked to make slide spacers, thickest first (rule B8). */
+    readonly spacerMaterials: readonly MaterialId[];
+  };
+
+  readonly faceFrame: {
+    readonly material: MaterialId;
+    readonly stileWidth: BoardDimension;
+    readonly topRailWidth: BoardDimension;
+    readonly bottomRailWidth: BoardDimension;
+    readonly drawerRailWidth: BoardDimension;
+  };
+
+  /** 'auto' = the app proposes the bays (rule L0). Left to right when given. */
+  readonly layout: 'auto' | readonly Bay[];
+
+  readonly fronts: {
+    /** How far each door and drawer front laps over the frame on every edge. */
+    readonly overlay: Measurement;
+    /** Smallest gap allowed between two fronts on one frame piece (rule D3). */
+    readonly minimumGap: Measurement;
+    readonly slabMaterial: MaterialId;
+    readonly shakerFrameMaterial: MaterialId;
+    readonly shakerFrameWidth: BoardDimension;
+    readonly shakerPanelMaterial: MaterialId;
+    /** How deep the centre panel sits in the frame's groove on each edge (rule D5). */
+    readonly panelGrooveDepth: Measurement;
+    /** Room for the panel to slide into its groove (rule D5). */
+    readonly panelClearance: Measurement;
+    readonly hinge: HardwareId;
+  };
+
+  readonly drawers: {
+    readonly slide: HardwareId;
+    readonly boxMaterial: MaterialId;
+    readonly bottomMaterial: MaterialId;
+    /** Opening height minus drawer box height (rule X2). */
+    readonly heightClearance: Measurement;
+    /** Space kept free behind the slide (rule X1). */
+    readonly rearClearance: Measurement;
+  };
+
+  readonly platform: {
+    readonly lumber: MaterialId;
+    /** How far the toe kick sits back from the cabinet front and from an exposed end (rule P1). */
+    readonly toeSpace: Measurement;
+    /** Largest spacing between cross supports, centre to centre (rule P3). */
+    readonly supportSpacing: Measurement;
+    readonly toeKickMaterial: MaterialId;
+    /**
+     * Normally absent: toe kick height is derived from the platform (rule P5).
+     * If a value is entered it is checked against the platform, never trusted.
+     */
+    readonly toeKickHeight?: Measurement;
+  };
+
+  /** For the finished-height note only (rule H1). The top is made by others. */
+  readonly countertop: {
+    readonly description: string;
+    readonly thickness: Measurement;
+  };
 }
+
+/** Values that are replaced whole, never merged field by field. */
+type OverrideLeaf = Measurement | Choice<unknown> | readonly unknown[] | string | number | boolean;
+
+/** The same shape as T with everything optional, down to each single value. */
+export type Overrides<T> = T extends OverrideLeaf ? T : { readonly [K in keyof T]?: Overrides<T[K]> };
 
 export interface VanityDesign {
   readonly projectType: 'vanity';
   readonly id: string;
   readonly name: string;
-  readonly displayUnit: LengthUnit;
-  readonly tapeIncrement: TapeIncrement;
-  readonly joinery: Choice<JoineryMethod>;
-  readonly site: SiteMeasurements;
-  readonly box: BoxDesign;
-  readonly faceFrame: FaceFrameDesign;
-  /** Left to right as you face the cabinet. */
-  readonly bays: readonly Bay[];
-  readonly fronts: FrontsDesign;
-  readonly platform: PlatformDesign;
-  readonly countertop: CountertopDesign;
+  /** The full cabinet width, end to end, including any face-frame overhang (rule G2). */
+  readonly width: Measurement;
+  /** Wall to the front of the face frame; doors and handles stick out further (rule G2). */
+  readonly depth: Measurement;
+  /** The box only: not the platform below it or the top above it (rule G2). */
+  readonly height: Measurement;
+  /** Only what the user changed from the defaults. */
+  readonly overrides: Overrides<VanityOptions>;
 }
 
 /** Other cabinet types join this union later. */
@@ -328,6 +387,31 @@ export interface MaterialLine {
   readonly status: InputStatus;
 }
 
+export interface HardwareLine {
+  readonly hardwareId: HardwareId;
+  readonly name: string;
+  readonly quantity: number;
+  readonly unit: 'pair' | 'each';
+  /** For slides: the length chosen (rule X1). */
+  readonly length?: Derivation;
+  readonly status: InputStatus;
+}
+
+// ---------------------------------------------------------------------------
+// Output — the layout the engine settled on
+// ---------------------------------------------------------------------------
+
+/** One clear hole in the face frame, with how its size was worked out. */
+export interface Opening {
+  readonly id: string;
+  readonly bayId: string;
+  readonly kind: 'door' | 'drawer';
+  readonly width: Derivation;
+  readonly height: Derivation;
+  /** The door, drawer front and drawer box parts that belong to this opening. */
+  readonly partIds: readonly PartId[];
+}
+
 // ---------------------------------------------------------------------------
 // Output — validation
 // ---------------------------------------------------------------------------
@@ -387,26 +471,39 @@ export interface Step {
 // Engine boundary
 // ---------------------------------------------------------------------------
 
-/** Every input the plan used, flattened, so a plan can show confirmed vs assumed. */
+/**
+ * Every value the plan used, flattened: the three entered numbers and every
+ * default. This is what makes defaults visible and changeable (rule G1).
+ */
 export interface ResolvedInput {
+  /** Path into the design or defaults, e.g. "width" or "faceFrame.stileWidth". */
   readonly path: string;
   readonly label: string;
   readonly value: Ticks | string | number | boolean;
   readonly status: InputStatus;
+  readonly origin: InputOrigin;
+  readonly checkAt?: 'cutting';
+  readonly note?: string;
 }
 
 export interface PlanResult {
   readonly inputs: readonly ResolvedInput[];
   readonly issues: readonly ValidationIssue[];
-  /** False when any issue has severity "error"; parts, materials and steps are then empty. */
+  /** False when any issue has severity "error"; everything below is then empty. */
   readonly canGeneratePlan: boolean;
+  readonly openings: readonly Opening[];
   readonly parts: readonly Part[];
   readonly materials: readonly MaterialLine[];
+  readonly hardware: readonly HardwareLine[];
   readonly steps: readonly Step[];
 }
 
 /** The whole engine, as seen from outside. Implemented in Phase 1. */
-export type GeneratePlan = (design: Design, catalog: MaterialCatalog) => PlanResult;
+export type GeneratePlan = (
+  design: Design,
+  defaults: VanityOptions,
+  catalog: MaterialCatalog,
+) => PlanResult;
 
 // ---------------------------------------------------------------------------
 // Saved project file (on-device save, export and import)
