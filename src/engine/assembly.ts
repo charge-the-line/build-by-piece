@@ -6,12 +6,12 @@
  * numbers they quote come from here.
  */
 import type { Resolved } from './resolve';
-import type { Joint, Part, PartId, Step, StepHardware, Ticks } from './types';
+import type { Joint, Part, PartId, PlanMethods, Step, StepHardware, Ticks } from './types';
 import type { VanityBuild } from './vanity';
 
 type StepDraft = Omit<Step, 'number' | 'earlierPartIds'>;
 
-export function assemblySteps(r: Resolved, built: VanityBuild): Step[] {
+export function assemblySteps(r: Resolved, built: VanityBuild, methods: PlanMethods): Step[] {
   const { parts, facts } = built;
   const where = (test: (p: Part) => boolean): PartId[] => parts.filter(test).map((p) => p.id);
   const named = (prefix: string) => where((p) => p.name.startsWith(prefix));
@@ -153,19 +153,43 @@ export function assemblySteps(r: Resolved, built: VanityBuild): Step[] {
     });
   }
 
-  // A9: doors and drawer fronts.
+  // A9: doors and drawer fronts. The template follows the panel method (rule T5).
   if (doors.length + drawerFronts.length > 0) {
+    const flat = doors.length + drawerFronts.length - uprights.length - crossPieces.length - panels.length;
+    const grooved = methods.panel === 'stoppedGroove' || methods.panel === 'sawnGroove';
     drafts.push({
       id: 'fronts',
-      templateId: 'fronts',
-      values: { framed: panels.length, flat: doors.length + drawerFronts.length - uprights.length - crossPieces.length - panels.length, groove: facts.grooveDepth },
+      templateId: panels.length === 0 ? 'frontsFlat' : `fronts-${methods.panel}`,
+      values: {
+        framed: panels.length,
+        flat,
+        groove: facts.grooveDepth,
+        recess: facts.recessWidth,
+        panelThickness: facts.panelThickness,
+        panelGap: facts.panelGap,
+        hingeSpace: facts.hingeMountingWidth,
+      },
       partIds: [...doors, ...drawerFronts],
-      joints: each(crossPieces, { method: 'pocketScrews', face: 'back face', into: uprights }),
+      joints: [
+        ...each(crossPieces, { method: 'pocketScrews', face: 'back face', into: uprights }),
+        // A grooved panel floats; a recessed or back-mounted panel is glued (and nailed, on the back).
+        ...(grooved ? [] : each(panels, { method: methods.panel === 'panelOnBack' ? 'glueAndNails' : 'glue', into: [...uprights, ...crossPieces] })),
+      ],
       hardware: [],
     });
   }
 
-  // A10: set the cabinet in place.
+  // A10: openings for the pipes, before the cabinet goes against the wall.
+  drafts.push({
+    id: 'plumbing',
+    templateId: methods.cutouts === 'holeSaw' ? 'plumbingHoleSaw' : 'plumbingJigsaw',
+    values: {},
+    partIds: back,
+    joints: [],
+    hardware: [],
+  });
+
+  // A11: set the cabinet in place.
   drafts.push({
     id: 'install',
     templateId: 'install',
@@ -178,24 +202,24 @@ export function assemblySteps(r: Resolved, built: VanityBuild): Step[] {
     hardware: [],
   });
 
-  // A11: slides, drawer boxes and drawer fronts.
+  // A12: slides, drawer boxes and drawer fronts.
   if (drawerBoxes.length > 0 && facts.slideLength !== undefined) {
     drafts.push({
       id: 'drawers',
       templateId: 'drawers',
-      values: { slideLength: facts.slideLength, lift: facts.drawerLift, overlay: facts.overlay, drawers: boxBottoms.length },
+      values: { slideLength: facts.slideLength, lift: facts.drawerLift, overlay: facts.overlay, drawers: boxBottoms.length, setback: facts.boxSetback },
       partIds: [...drawerBoxes, ...drawerFronts],
       joints: each(boxEnds, { method: 'screws', into: drawerFronts }),
       hardware: hardwareOf(r.slide.id),
     });
   }
 
-  // A12: doors.
+  // A13: doors.
   if (doors.length > 0) {
     drafts.push({
       id: 'doors',
       templateId: 'doors',
-      values: { overlay: facts.overlay, doors: built.openings.filter((o) => o.kind === 'door').length },
+      values: { overlay: facts.overlay, doors: built.openings.filter((o) => o.kind === 'door').length, hingeInset: facts.hingeInset },
       partIds: doors,
       joints: [],
       hardware: hardwareOf(r.hinge.id),

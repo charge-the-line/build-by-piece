@@ -17,6 +17,7 @@ import type {
   OverallSizes,
   Part,
   Placement,
+  PlanMethods,
   PartId,
   SheetStock,
   Ticks,
@@ -59,6 +60,14 @@ export interface AssemblyFacts {
   readonly grooveDepth: Ticks;
   readonly drawerLift: Ticks;
   readonly platformHeight: Ticks;
+  readonly recessWidth: Ticks;
+  readonly panelThickness: Ticks;
+  /** Panel on the back: how far its edges sit in from the edge of the front. */
+  readonly panelGap: Ticks;
+  readonly hingeInset: Ticks;
+  readonly hingeMountingWidth: Ticks;
+  /** How far drawer boxes sit back from the front of the face frame. */
+  readonly boxSetback: Ticks;
 }
 
 interface PartSpec {
@@ -73,7 +82,7 @@ interface PartSpec {
   readonly quantity?: number;
 }
 
-export function buildVanity(r: Resolved, bays: readonly LaidBay[]): VanityBuild {
+export function buildVanity(r: Resolved, bays: readonly LaidBay[], methods: PlanMethods): VanityBuild {
   const parts: Part[] = [];
   const issues: ValidationIssue[] = [];
   const hardware: HardwareLine[] = [];
@@ -305,9 +314,12 @@ export function buildVanity(r: Resolved, bays: readonly LaidBay[]): VanityBuild 
   // --- X1: slide length ----------------------------------------------------
   const allOpenings = bays.flatMap((b) => b.openings);
   const drawerOpenings = allOpenings.filter((o) => o.kind === 'drawer');
+  // X6: a panel on the back of a framed drawer front needs room, so every drawer box sits back by its thickness.
+  const boxSetback: Val | undefined =
+    methods.panel === 'panelOnBack' && drawerOpenings.some((o) => o.style === 'shaker') ? r.panelSheet.thickness : undefined;
   let slideLength: Val | undefined;
   if (drawerOpenings.length > 0) {
-    const room = sum(D, [-1, tb], [-1, ts], [-1, r.rearClearance]);
+    const room = sum(D, [-1, tb], [-1, ts], [-1, r.rearClearance], ...(boxSetback ? ([[-1, boxSetback]] as Addend[]) : []));
     const fits = r.slideLengths.filter((l) => l.value <= room.value);
     const chosen = fits.reduce<Val | undefined>((best, l) => (!best || l.value > best.value ? l : best), undefined);
     if (!chosen) {
@@ -322,7 +334,7 @@ export function buildVanity(r: Resolved, bays: readonly LaidBay[]): VanityBuild 
       const derivation = deriveByRule(
         'X1',
         `the longest slide sold that fits in ${text(room.value)}: cabinet depth minus the back, the mounting strip and the room behind the slide`,
-        [D, tb, ts, r.rearClearance, chosen],
+        [D, tb, ts, r.rearClearance, ...(boxSetback ? [boxSetback] : []), chosen],
         chosen.value,
       );
       slideLength = named('slide length', derivation);
@@ -447,16 +459,61 @@ export function buildVanity(r: Resolved, bays: readonly LaidBay[]): VanityBuild 
       );
     }
     const frameWidthD = derive('D4', `${what} frame width`, FW);
-    const panelWidth = derive('D5', 'front width minus 2 x frame width, plus 2 x groove depth, minus panel clearance', sum(frontWidth, [-2, FW], [2, r.grooveDepth], [-1, r.panelClearance]));
-    const panelHeight = derive('D5', 'front height minus 2 x frame width, plus 2 x groove depth, minus panel clearance', sum(frontHeight, [-2, FW], [2, r.grooveDepth], [-1, r.panelClearance]));
+    const frameT = r.shakerBoard.thickness.value;
+    const panelT = r.panelSheet.thickness.value;
+    const hingeLeft = o.hingeSide === 'left';
+
+    // How the panel is held decides its size and where it sits (rule T5).
+    let panelWidth: Derivation;
+    let panelHeight: Derivation;
+    let panelBox: Box;
+    if (methods.panel === 'panelOnBack') {
+      // D10: the panel is glued to the back of the frame and sits inside the opening.
+      // Its edges stay clear of the face frame all round, and clear of the hinges on a door.
+      const clear = named('gap from the edge of the front to the panel', derive('D10', 'overlay plus the gap kept between the panel and the face frame', sum(V, r.panelBackClearance)));
+      const hingeEdge = isDoor && r.hingeMountingWidth.value > clear.value ? r.hingeMountingWidth : clear;
+      const lap = FW.value - Math.max(clear.value, hingeEdge.value);
+      if (lap < r.minimumPanelLap.value) {
+        error(
+          'PANEL_HAS_NOTHING_TO_GLUE_TO',
+          'D10',
+          `${o.label}: with the panel on the back, it must stay ${text(asTicks(Math.max(clear.value, hingeEdge.value)))} in from the edge${isDoor ? ' to leave room for the hinges' : ''}. That leaves ${text(asTicks(Math.max(lap, 0)))} of the ${text(FW.value)} frame piece to glue it to; it needs at least ${text(r.minimumPanelLap.value)}.`,
+          'Use wider frame pieces for the doors and drawer fronts.',
+          ['fronts.shakerFrameWidth'],
+        );
+      }
+      panelWidth = derive('D10', isDoor ? 'front width minus the hinge space on one edge and the gap on the other' : 'front width minus the gap on each edge', sum(frontWidth, [-1, hingeEdge], [-1, clear]));
+      panelHeight = derive('D10', 'front height minus the gap at top and bottom', sum(frontHeight, [-2, clear]));
+      panelBox = [frontX + (hingeLeft ? hingeEdge.value : clear.value), frontY + clear.value, D.value - panelT, panelWidth.result, panelHeight.result, panelT];
+    } else {
+      // D5 (groove) and D9 (recess routed after assembly) share one shape of formula.
+      const recess = methods.panel === 'routedRecess';
+      const reach = recess ? r.recessWidth : r.grooveDepth;
+      const rule = recess ? 'D9' : 'D5';
+      const word = recess ? 'recess width' : 'groove depth';
+      // D8: the hinge needs solid wood from the door's edge; the panel must start beyond it.
+      if (isDoor && FW.value - reach.value < r.hingeMountingWidth.value) {
+        error(
+          'HINGE_HAS_NO_CLEAR_PLACE',
+          'D8',
+          `${o.label}: the hinge needs ${text(r.hingeMountingWidth.value)} of solid wood in from the edge of the door, but the panel starts ${text(asTicks(FW.value - reach.value))} in.`,
+          'Use wider frame pieces for the doors.',
+          ['fronts.shakerFrameWidth'],
+        );
+      }
+      panelWidth = derive(rule, `front width minus 2 x frame width, plus 2 x ${word}, minus panel clearance`, sum(frontWidth, [-2, FW], [2, reach], [-1, r.panelClearance]));
+      panelHeight = derive(rule, `front height minus 2 x frame width, plus 2 x ${word}, minus panel clearance`, sum(frontHeight, [-2, FW], [2, reach], [-1, r.panelClearance]));
+      const inset = FW.value - reach.value + half(r.panelClearance.value);
+      // A routed recess is on the back of the frame; a groove is centred in its thickness.
+      panelBox = [frontX + inset, frontY + inset, recess ? D.value : D.value + half(frameT - panelT), panelWidth.result, panelHeight.result, panelT];
+    }
+
     const upright = add({ name: `${o.label}: ${what} upright`, tradeTerm: 'stile', role, assembly: o.label, material: r.shakerBoard, length: derive('D4', 'front height: opening height plus 2 x overlay', frontHeight), width: frameWidthD, quantity: 2 });
     const cross = add({ name: `${o.label}: ${what} cross piece`, tradeTerm: 'rail', role, assembly: o.label, material: r.shakerBoard, length: derive('D4', 'front width minus 2 x frame width', sum(frontWidth, [-2, FW])), width: frameWidthD, quantity: 2 });
     // Grain runs up and down on a door, side to side on a drawer front.
     const panel = isDoor
       ? add({ name: `${o.label}: ${what} centre panel`, role, assembly: o.label, material: r.panelSheet, length: panelHeight, width: panelWidth })
       : add({ name: `${o.label}: ${what} centre panel`, role, assembly: o.label, material: r.panelSheet, length: panelWidth, width: panelHeight });
-    const frameT = r.shakerBoard.thickness.value;
-    const panelT = r.panelSheet.thickness.value;
     const crossLength = frontWidth.value - 2 * FW.value;
     place(upright, [
       [frontX, frontY, D.value, FW.value, frontHeight.value, frameT],
@@ -466,9 +523,7 @@ export function buildVanity(r: Resolved, bays: readonly LaidBay[]): VanityBuild 
       [frontX + FW.value, frontY, D.value, crossLength, FW.value, frameT],
       [frontX + FW.value, frontY + frontHeight.value - FW.value, D.value, crossLength, FW.value, frameT],
     ]);
-    // The panel sits in the groove, centred in the frame's thickness.
-    const inset = FW.value - r.grooveDepth.value + half(r.panelClearance.value);
-    place(panel, [[frontX + inset, frontY + inset, D.value + half(frameT - panelT), panelWidth.result, panelHeight.result, panelT]]);
+    place(panel, [panelBox]);
     return [upright, cross, panel];
   };
 
@@ -500,14 +555,15 @@ export function buildVanity(r: Resolved, bays: readonly LaidBay[]): VanityBuild 
     // bottom of its opening, with its front flush with the front of the face frame.
     const boxX = o.left.value - (short.left?.value ?? 0) + r.slideClearance.value;
     const boxY = topY - o.top.value - o.height.value + drawerLift;
-    const boxZ = D.value - slideLength.value;
+    const boxFront = D.value - (boxSetback?.value ?? 0);
+    const boxZ = boxFront - slideLength.value;
     const wallY = boxY + tbottom.value;
     place(side, [
       [boxX, wallY, boxZ, td.value, wallHeight.value, slideLength.value],
       [boxX + boxWidth.value - td.value, wallY, boxZ, td.value, wallHeight.value, slideLength.value],
     ]);
     place(end, [
-      [boxX + td.value, wallY, D.value - td.value, endLength.value, wallHeight.value, td.value],
+      [boxX + td.value, wallY, boxFront - td.value, endLength.value, wallHeight.value, td.value],
       [boxX + td.value, wallY, boxZ, endLength.value, wallHeight.value, td.value],
     ]);
     place(base, [[boxX, boxY, boxZ, boxWidth.value, tbottom.value, slideLength.value]]);
@@ -531,6 +587,7 @@ export function buildVanity(r: Resolved, bays: readonly LaidBay[]): VanityBuild 
       frontHeight: asTicks(o.height.value + 2 * V.value),
       frontLeft: asTicks(o.left.value - V.value),
       frontTop: asTicks(o.top.value - V.value),
+      ...(o.hingeSide ? { hingeSide: o.hingeSide } : {}),
       partIds,
     });
   }
@@ -636,7 +693,7 @@ export function buildVanity(r: Resolved, bays: readonly LaidBay[]): VanityBuild 
       const longest = Math.max(...stock.stockLengths.map((m) => lengthOf(m)));
       if (part.width > board.width.value) {
         error('PART_WIDER_THAN_BOARD', 'M5', `${part.id} ${part.name} is ${text(part.width)} wide, but a ${stock.name} is only ${text(board.width.value)} wide.`, 'Use a narrower size, or it will need to be glued up from two boards.', [], [part.id]);
-      } else if (part.width < board.width.value) {
+      } else if (part.width < board.width.value && methods.solidWidths === 'boardsAsSold') {
         warning('NEEDS_LENGTHWISE_CUT', 'M5', `${part.id} ${part.name} is ${text(part.width)} wide, but a ${stock.name} is ${text(board.width.value)} wide, so it needs a lengthwise cut.`, `Use ${text(board.width.value)}, the width of the board as sold, to avoid the cut.`, [], [part.id]);
       }
       if (part.length > longest) {
@@ -663,6 +720,12 @@ export function buildVanity(r: Resolved, bays: readonly LaidBay[]): VanityBuild 
     grooveDepth: r.grooveDepth.value,
     drawerLift: asTicks(drawerLift),
     platformHeight: Lw.value,
+    recessWidth: r.recessWidth.value,
+    panelThickness: r.panelSheet.thickness.value,
+    panelGap: asTicks(V.value + r.panelBackClearance.value),
+    hingeInset: r.hingeInset.value,
+    hingeMountingWidth: r.hingeMountingWidth.value,
+    boxSetback: boxSetback?.value ?? asTicks(0),
   };
 
   return { parts, openings, hardware, issues, overall, placements, facts };

@@ -44,6 +44,8 @@ function itemsOf(parts: readonly Part[]): Item[] {
 export interface CuttingOptions {
   readonly kerf: Ticks;
   readonly keepOffcutsFrom: Ticks;
+  /** T4: with a track saw, long cuts first is tried too and used when it needs fewer sheets. */
+  readonly allowLongCutsFirst: boolean;
 }
 
 /** Numbers the leftovers worth keeping; the rest stay unlabelled scrap. */
@@ -87,7 +89,7 @@ interface SheetLayout {
 }
 
 /** Tries a few sensible orders and keeps the one that needs the fewest sheets. */
-function layOutSheets(items: readonly Item[], sheet: { length: Ticks; width: Ticks }, kerf: Ticks): SheetLayout[] {
+function layOutSheets(items: readonly Item[], sheet: { length: Ticks; width: Ticks }, kerf: Ticks, longCutsFirst = false): SheetLayout[] {
   const orders: ((a: Item, b: Item) => number)[] = [
     // Longest pieces first, so each section is as long as the first piece put in it.
     (a, b) => b.along - a.along || b.across - a.across,
@@ -96,13 +98,13 @@ function layOutSheets(items: readonly Item[], sheet: { length: Ticks; width: Tic
   ];
   let best: SheetLayout[] | undefined;
   for (const order of orders) {
-    const attempt = layOutSheetsInOrder([...items].sort(order), sheet, kerf);
+    const attempt = layOutSheetsInOrder([...items].sort(order), sheet, kerf, longCutsFirst);
     if (!best || attempt.length < best.length) best = attempt;
   }
   return best ?? [];
 }
 
-function layOutSheetsInOrder(sorted: readonly Item[], sheet: { length: Ticks; width: Ticks }, kerf: Ticks): SheetLayout[] {
+function layOutSheetsInOrder(sorted: readonly Item[], sheet: { length: Ticks; width: Ticks }, kerf: Ticks, longCutsFirst: boolean): SheetLayout[] {
   const sheets: SheetLayout[] = [];
 
   const tryPlace = (s: SheetLayout, item: Item): boolean => {
@@ -123,12 +125,13 @@ function layOutSheetsInOrder(sorted: readonly Item[], sheet: { length: Ticks; wi
     }
     if (s.usedLength + item.along > sheet.length) return false;
     s.sections.push({
-      length: item.along,
+      // Long cuts first: the whole sheet is one section, so every strip runs its full length.
+      length: longCutsFirst ? sheet.length : item.along,
       fromEnd: s.usedLength,
       usedAcross: item.across + kerf,
       strips: [{ width: item.across, fromEdge: 0, used: item.along + kerf, items: [{ item, start: 0 }] }],
     });
-    s.usedLength += item.along + kerf;
+    s.usedLength += longCutsFirst ? sheet.length : item.along + kerf;
     return true;
   };
 
@@ -150,6 +153,7 @@ function sheetDiagram(
   index: number,
   count: number,
   options: CuttingOptions,
+  longCutsFirst: boolean,
 ): CutDiagram {
   const pieces: CutPiece[] = [];
   const offcuts: Omit<Offcut, 'label'>[] = [];
@@ -157,12 +161,12 @@ function sheetDiagram(
   const laterCuts: Omit<CutStep, 'number'>[] = [];
 
   layout.sections.forEach((section, s) => {
-    const sectionName = `section ${letter(s)}`;
+    const sectionName = longCutsFirst ? 'the sheet' : `section ${letter(s)}`;
     const reachesEnd = section.fromEnd + section.length === size.length;
-    sectionCuts.push({ kind: 'section', from: 'the sheet', measure: asTicks(section.length), makes: sectionName, noCutNeeded: reachesEnd });
+    if (!longCutsFirst) sectionCuts.push({ kind: 'section', from: 'the sheet', measure: asTicks(section.length), makes: sectionName, noCutNeeded: reachesEnd });
 
     section.strips.forEach((strip, t) => {
-      const stripName = `strip ${letter(s)}${t + 1}`;
+      const stripName = longCutsFirst ? `strip ${t + 1}` : `strip ${letter(s)}${t + 1}`;
       const fillsSection = strip.fromEdge + strip.width === size.width;
       laterCuts.push({ kind: 'strip', from: sectionName, measure: asTicks(strip.width), makes: stripName, noCutNeeded: fillsSection });
 
@@ -218,6 +222,7 @@ function sheetDiagram(
     stockWidth: size.width,
     hasGrain: stock.hasGrain,
     kerf: options.kerf,
+    order: longCutsFirst ? 'longCutsFirst' : 'sectionsFirst',
     pieces,
     offcuts: labelOffcuts(offcuts, options.keepOffcutsFrom),
     steps: [...sectionCuts, ...laterCuts].map((step, i) => ({ ...step, number: i + 1 })),
@@ -284,6 +289,7 @@ function boardDiagram(
     stockWidth,
     hasGrain: true,
     kerf: options.kerf,
+    order: 'sectionsFirst',
     pieces,
     offcuts: labelOffcuts(
       [{ along: asTicks(Math.max(0, stockLength - layout.used)), across: stockWidth, fromEnd: asTicks(Math.min(layout.used, stockLength)), fromEdge: asTicks(0) }],
@@ -302,8 +308,12 @@ export function cutDiagrams(parts: readonly Part[], catalog: MaterialCatalog, op
     if (items.length === 0) continue;
     if (stock.kind === 'sheet') {
       const size = sheetSize(stock);
-      const layouts = layOutSheets(items, size, options.kerf);
-      layouts.forEach((layout, i) => diagrams.push(sheetDiagram(layout, stock, size, i, layouts.length, options)));
+      const sections = layOutSheets(items, size, options.kerf);
+      const long = options.allowLongCutsFirst ? layOutSheets(items, size, options.kerf, true) : undefined;
+      // T4: long cuts first only when it saves a sheet; on a tie, sections are easier to handle.
+      const useLong = long !== undefined && long.length < sections.length;
+      const layouts = useLong ? long : sections;
+      layouts.forEach((layout, i) => diagrams.push(sheetDiagram(layout, stock, size, i, layouts.length, options, useLong)));
     } else {
       const lengths = stock.stockLengths.map(lengthOf);
       const layouts = layOutBoards(items, Math.max(...lengths), options.kerf);

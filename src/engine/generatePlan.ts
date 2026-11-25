@@ -5,6 +5,7 @@
  */
 import { assemblySteps } from './assembly';
 import { layOut } from './layout';
+import { chooseMethods, toolsForPlan } from './methods';
 import { cutDiagrams, shoppingList } from './cutting';
 import { resolveVanity } from './resolve';
 import type { GeneratePlan, PlanResult } from './types';
@@ -18,6 +19,7 @@ const blocked = (base: Pick<PlanResult, 'inputs' | 'issues'>): PlanResult => ({
   cutDiagrams: [],
   materials: [],
   hardware: [],
+  tools: [],
   placements: [],
   steps: [],
 });
@@ -33,11 +35,25 @@ export const generatePlan: GeneratePlan = (design, defaults, catalog) => {
     return blocked({ inputs, issues: [...inputIssues, ...layout.issues, ...(toeKick ? [toeKick] : [])] });
   }
 
-  const built = buildVanity(resolved, layout.bays);
-  const issues = [...inputIssues, ...layout.issues, ...built.issues];
+  const methods = chooseMethods(resolved);
+  const built = buildVanity(resolved, layout.bays, methods);
+  const panels = built.parts.filter((p) => p.name.endsWith('centre panel')).length;
+  const needed = toolsForPlan(resolved, methods, {
+    framedFronts: panels,
+    doors: built.openings.filter((o) => o.kind === 'door').length,
+    hingeBit: resolved.hinge.boringBit,
+    panelThickness: built.facts.panelThickness,
+    recessWidth: built.facts.recessWidth,
+    grooveDepth: built.facts.grooveDepth,
+  });
+  const issues = [...inputIssues, ...layout.issues, ...built.issues, ...needed.issues];
   if (issues.some((issue) => issue.severity === 'error')) return blocked({ inputs, issues });
 
-  const diagrams = cutDiagrams(built.parts, catalog, { kerf: resolved.kerf.value, keepOffcutsFrom: resolved.keepOffcutsFrom.value });
+  const diagrams = cutDiagrams(built.parts, catalog, {
+    kerf: resolved.kerf.value,
+    keepOffcutsFrom: resolved.keepOffcutsFrom.value,
+    allowLongCutsFirst: methods.sheetSaw === 'trackSaw',
+  });
 
   return {
     inputs,
@@ -49,7 +65,9 @@ export const generatePlan: GeneratePlan = (design, defaults, catalog) => {
     cutDiagrams: diagrams,
     materials: shoppingList(diagrams, built.parts, catalog),
     hardware: built.hardware,
+    methods,
+    tools: needed.tools,
     placements: built.placements,
-    steps: assemblySteps(resolved, built),
+    steps: assemblySteps(resolved, built, methods),
   };
 };
