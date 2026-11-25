@@ -1,10 +1,10 @@
 # Construction rules: face-frame vanity on a separate 2x4 platform
 
-**Status: draft for Max's approval. No engine code is written until these are approved.**
+**Status: second draft, for Max's approval. No engine code is written until these are approved.**
 
-These are the rules the engine will follow to turn measurements into parts. Each rule has a number, a plain-English statement and a formula. The same rule numbers appear in the tests and in every part's "how this size was worked out" note.
+These are the rules the engine will follow to turn three numbers into a full set of parts. Each rule has a number, a plain-English statement and a formula. The same rule numbers appear in the tests and in every part's "how this size was worked out" note.
 
-Where there is more than one legitimate way to build something, the rule picks the most beginner-friendly one, says why in one line, and notes the alternative. Rules marked **(Q)** depend on an answer in [OPEN-QUESTIONS.md](OPEN-QUESTIONS.md).
+Where there is more than one legitimate way to build something, the rule picks the most beginner-friendly one, says why in one line, and notes the alternative. Rules marked **(Q)** have a matching item in [OPEN-QUESTIONS.md](OPEN-QUESTIONS.md).
 
 ## Words used here
 
@@ -16,128 +16,161 @@ Where there is more than one legitimate way to build something, the rule picks t
 | Horizontal frame piece | rail | A level piece of the face frame or of a door |
 | Opening | opening | A clear hole in the face frame that a door or drawer closes over |
 | Bay | bay | One opening-wide section of the frame, between two vertical frame pieces |
+| Section | compartment | One space inside the box, between sides and dividers |
 | Overlay | overlay | How far a door or drawer front laps over the frame on each edge |
 | Platform | toe-kick base | The 2x4 frame on the floor that the box sits on |
 | Toe kick | toe kick | The oak board that covers the front of the platform |
+| Lengthwise cut | rip cut | A cut along the length of a board to make it narrower |
 
-## Symbols
+---
 
-| Symbol | Meaning | Vanity 01 (assumed) |
+## G. What the user enters
+
+**G1. Never ask for a measurement the app can decide itself.** The user enters three numbers: width, depth and height. The app builds the whole plan from those. Every other value is a default that the app chooses, shows with a one-line reason, and lets her change. Changing a default is always optional.
+
+**G2. Exactly what the three numbers include.** The app shows this as a picture before she types anything (see the live page).
+
+| Number | Includes | Does not include |
 |---|---|---|
-| W | Box width, outside of left side to outside of right side | 79 1/2" |
-| H | Box height, bottom edge to top edge of the sides | 30" |
-| D | Box depth, back of the box to the front edge of the sides | 20 1/2" |
-| t | Actual thickness of the box plywood | 3/4" |
-| tb | Actual thickness of the back panel | 3/4" |
-| tf | Thickness of the face frame oak | 3/4" |
-| S | Width of a vertical frame piece | 1 1/2" |
-| RT, RB | Width of the top rail, bottom rail | 3", 3" |
-| RD | Width of a rail between drawers | 1 1/2" |
-| V | Overlay on each edge | 1/2" |
-| Lt, Lw | Actual thickness and width of a 2x4 | 1 1/2", 3 1/2" |
-| PW, PD | Platform width, platform depth | W, 17 1/2" |
+| **Width** W | The whole cabinet from end to end, including the frame's overhang on a wall end | Nothing else; this is the space it takes along the wall |
+| **Depth** D | From the wall to the front of the face frame, including the back panel | Doors, drawer fronts and handles, which stick out further; the countertop |
+| **Height** H | The box only, bottom edge to top edge | The platform underneath; the countertop on top |
+
+**G3. Three labels on every value.** The plan shows where each number came from:
+- *You entered*: she typed or changed it.
+- *App's choice*: a default; nothing to check.
+- *Check before you cut*: a default that stands in for something real, such as plywood thickness. The app prompts her to measure it at the cutting step, and recalculates if it differs.
+
+**G4. Which ends touch a wall** is a choice, not a measurement. Default: both ends exposed (finished and flush), which is safe either way. Vanity 01 sets the left end to wall and the right end to exposed.
+
+## Symbols and defaults
+
+Only W, D and H are entered. Everything else below is a default.
+
+| Symbol | Meaning | Default | Why |
+|---|---|---|---|
+| W, D, H | Cabinet width, depth, box height | entered | 60", 21", 30" for vanity 01 |
+| t | Box plywood thickness | 3/4" *(check before you cut)* | Standard sheet |
+| tb | Back panel thickness | 1/4" *(check before you cut)* | Standard sheet |
+| tf | Face frame thickness | 3/4" | Standard oak board |
+| S | Width of every face frame piece | 1 1/2" | A 1x2 oak board as sold; no lengthwise cut |
+| V | Overlay on each edge | 1/2" | Hides small errors; matches common hinges |
+| OL, OR | Frame overhang past the box, left and right | 1/4" on a wall end, 0 on an exposed end | Lets the frame be trimmed to an uneven wall |
+| ts, ws | Support board thickness and width | 3/4", 3 1/2" | A 1x4 pine board as sold |
+| FW | Shaker frame width | 2 1/2" | A 1x3 oak board as sold |
+| Lt, Lw | 2x4 thickness and width | 1 1/2", 3 1/2" | Standard lumber |
+| TS | Toe space | 3" | Standard room for toes |
+| tk | Toe kick thickness | 3/4" | A 1x4 oak board as sold |
+
+Two sizes are worked out first and used throughout:
+
+- **Box width** WB = W − OL − OR
+- **Box depth** DB = D − tf
 
 ---
 
 ## U. Units and numbers
 
-**U1. One exact unit.** Every length is stored as a whole number of *ticks*. One inch is 4,064 ticks, so 1/32" = 127 ticks, 1/16" = 254 ticks and 1 mm = 160 ticks. This is the largest unit that holds both 1/32" and 1 mm exactly. It also holds 1/10 mm exactly (16 ticks). The engine never uses decimals for a length.
+**U1. One exact unit.** Every length is stored as a whole number of *ticks*. One inch is 4,064 ticks, so 1/32" = 127 ticks, 1/16" = 254 ticks and 1 mm = 160 ticks. This is the largest unit that holds both 1/32" and 1 mm exactly. The engine never uses decimals for a length.
 
 **U2. What you may type.**
-- Fractional inches: `79 1/2`. The bottom number must be 2, 4, 8, 16 or 32. Anything else, such as thirds or fifths, is refused with an explanation, because it is not on a tape measure.
-- Decimal inches: `79.5`. If the value does not land on a tick it is rounded to the nearest tick (off by at most 1/8,128", about 0.003 mm) and the app shows you the nearest tape mark it will use.
-- Millimetres: `2019` or `2019.5`. Tenths of a millimetre are exact; finer than that is rounded to the nearest tick.
+- Fractional inches: `60 1/2`. The bottom number must be 2, 4, 8, 16 or 32. Anything else, such as thirds or fifths, is refused with an explanation, because it is not on a tape measure.
+- Decimal inches: `60.5`. If the value does not land on a tick it is rounded to the nearest tick (off by at most 1/8,128", about 0.003 mm) and the app shows the nearest tape mark it will use.
+- Millimetres: `1524` or `1524.5`. Tenths of a millimetre are exact; finer than that is rounded to the nearest tick.
 
 **U3. What the plan prints.** Only marks that exist on a tape: the nearest 1/16" by default (1/32" optional), or the nearest 1 mm in metric. All maths is done exactly in ticks first; rounding happens once, at printing. If a printed size had to be rounded, the part says so.
 
 **U4. Splitting a space evenly.** When a space is shared between several openings, each share is rounded down to the tape mark and the leftover goes to the last share, so the shares always add back up to the exact total.
 
-**U5. Confirmed or assumed.** Every input is marked *confirmed* (you measured or chose it) or *assumed* (a default or placeholder). A part is assumed if any number behind it is assumed. The plan shows which is which.
-
 ---
 
 ## B. The box
 
-**Method: plywood panels joined with pocket screws and glue.** Why: one inexpensive jig, no clamps the length of the cabinet, and joints pull tight on their own. Alternative: grooves and dados cut with a table saw or router, which are stronger but need more tools and accuracy.
+**Method: plywood panels joined with pocket screws and glue.** Why: one inexpensive jig, no long clamps, and joints pull tight on their own. Alternative: grooves cut with a router, which are stronger but need more accuracy.
 
-**B1. Box size.** W, H and D are entered once each and drive everything else. W is measured across the outside of the two side panels. D does not include the face frame or doors **(Q1)**.
+**B1. Box size.** WB = W − OL − OR and DB = D − tf. The box is never typed in; it follows from the cabinet size.
 
-**B2. Side panels (left: blue, right: green).** The sides run the full height and full depth; everything else fits between them.
+**B2. Side panels (left: blue, right: green).** The sides run the full height and the full box depth, back to the wall; everything else fits between them.
 - Length (up and down) = H
-- Width (front to back) = D
+- Width (front to back) = DB
 - Grain runs up and down. Quantity: 1 left, 1 right.
 
-**B3. Bottom panel (yellow).** Fits between the sides, flush with their bottom edges, and butts against the front of the back panel.
-- Length = W − 2 × t
-- Width = D − tb
-- Why flush with the bottom: the whole panel rests on the platform, so it cannot sag. Alternative: raise it level with the top of the bottom frame piece so there is no lip inside the door area **(Q4)**.
+**B3. Bottom panel (yellow).** Fits between the sides, flush with their bottom edges, and stops short of the wall by the back thickness.
+- Length = WB − 2 × t
+- Width = DB − tb
+- Why flush with the bottom: the whole panel rests on the platform, so it cannot sag. With a 1 1/2" bottom frame piece this leaves only a small lip inside the doors.
 
-**B4. Back panel (purple).** A full back that fits between the sides and runs the full height, so its edge never shows on an exposed side.
-- Length = W − 2 × t
+**B4. Back panel (purple).** A thin back that fits *between* the sides and runs the full height. It is glued and nailed to the back edges of the bottom, the dividers and the mounting strips.
+- Length = WB − 2 × t
 - Width (height) = H
-- Why a full back in the same plywood: it squares the box, needs no extra mounting strips, and you can screw through it into a wall stud anywhere. Alternative: a 1/4" back with two mounting strips, which is lighter and cheaper **(Q3)**.
+- Why between the sides: its edge never shows on an exposed end, and there is no groove to cut. Alternative: a router-cut recess in the sides **(Q)**.
 
 **B5. Interior dividers (red).** One upright divider at every bay boundary that touches a drawer column, so drawer slides have something to mount on. No divider between two doors.
 - Length (up and down) = H − t
-- Width (front to back) = D − tb
-- Position: the divider's face on the drawer side lines up with the edge of the frame opening, so a drawer slide can sit directly on it.
-- The divider must be no thicker than the vertical frame piece in front of it (t ≤ S), or it would show in the opening.
+- Width (front to back) = DB − tb
+- Position: the divider's face on the drawer side lines up with the edge of the frame opening, so a slide sits directly on it.
+- The divider must be no thicker than the frame piece in front of it (t ≤ S).
 
-**B6. Top front supports (grey, proposed) (Q9).** One strip across the top front of each section of the box, between the sides and dividers. It keeps the dividers upright and gives the top rail something to glue to.
-- Length = clear width of that section of the box
-- Width = top support width (entered; default 3")
-- The countertop rests on the sides, back, dividers and frame; no rear strip is needed because the back is full height.
+**B6. Top front supports (grey).** One board across the top front of each section. It keeps the dividers upright and gives the top frame piece something to glue to.
+- Length = clear width of that section
+- Width = ws (the board as sold)
 
-**B7. Drawer slide spacers (Q6).** At a cabinet side, the frame piece is wider than the plywood behind it, so a side-mounted slide needs a spacer strip to bring the mounting surface out level with the opening.
-- Spacer thickness = S − t
-- Only for side-mounted slides; skipped for other slide types.
+**B7. Mounting strips (grey).** One board across the top rear of each section, standing on edge against the back. Screws go through it into the wall studs.
+- Length = clear width of that section
+- Width = ws (the board as sold)
+
+**B8. Drawer slide spacers (grey).** At a cabinet side, the frame piece stands proud of the plywood, so the slide needs a spacer to bring its mounting surface out level with the opening.
+- Spacer thickness needed = S − overhang on that end − t
+- Built from layers of plywood offcuts (thickest first) that come closest without going over. Any shortfall must be 1/16" or less, and the drawer box width (X3) allows for it exactly.
+- Length = slide length. One behind each slide on a cabinet side; none on a divider **(Q)**.
 
 ---
 
 ## F. The face frame (brown)
 
-**Method: solid oak pieces joined with pocket screws and glue on the back face.** Why: no visible fasteners on the front and no long clamps. Alternative: dowels or mortise and tenon.
+**Method: solid oak boards joined with pocket screws and glue on the back face.** Why: no visible fasteners and no long clamps. Alternative: dowels.
 
-**F1. Frame size.** The frame is exactly as wide and as tall as the box, flush on all four edges.
+**F1. Frame size.** The frame is exactly as wide as the cabinet and as tall as the box.
 - Frame width = W, frame height = H
-- Why flush: nothing to remember and nothing to trim. Alternative: let the frame overhang 1/4" on a wall side so it can be shaved to fit an uneven wall **(Q2)**.
+- On a wall end it runs past the box by the overhang (default 1/4"); on an exposed end it is flush with the box side.
 
 **F2. End vertical pieces (end stiles).** Run the full height at each end.
-- Length = H
-- Width = S. Quantity: 2.
+- Length = H. Width = S. Quantity: 2.
 
 **F3. Top and bottom horizontal pieces (rails).** Fit between the two end pieces.
 - Length = W − 2 × S
-- Width = RT (top), RB (bottom). Quantity: 1 each.
+- Width = S each. Quantity: 1 top, 1 bottom.
 
-**F4. Inner vertical pieces (inner stiles).** One at every boundary between two bays, fitted between the top and bottom rails.
-- Length = H − RT − RB
+**F4. Inner vertical pieces (inner stiles).** One at every boundary between two bays, including between the two doors, fitted between the top and bottom pieces.
+- Length = H − 2 × S
 - Width = S. Quantity = number of bays − 1.
 
-**F5. Rails between drawers.** One between every two drawers in a column.
+**F5. Pieces between drawers (drawer rails).** One between every two drawers in a column.
 - Length = that column's opening width
-- Width = RD. Quantity = (drawers in the column − 1), for each column.
+- Width = S. Quantity = (drawers in the column − 1), for each column.
 
 ---
 
-## L. Layout: openings must add up
+## L. Layout: the app proposes it, and it must add up
 
-**L1. Across.** Vertical frame pieces plus opening widths must equal the box width exactly.
+**L0. Proposed layout.** For a vanity the app proposes, left to right: a drawer column, two doors, a drawer column, all four openings the same width. Each drawer column has two small drawers over one large one. She can change it. Other widths will get their own proposals later **(Q)**.
+
+**L1. Across.** Frame pieces plus opening widths must equal the cabinet width exactly.
 - (number of bays + 1) × S + sum of opening widths = W
-- If not, it is an error. The explanation is a picture: every frame piece and opening laid end to end under the box width, with the missing or extra amount marked.
+- If not, it is an error. The explanation is a picture: every frame piece and opening laid end to end under the cabinet width, with the missing or extra amount marked.
+- A layout left to the app can never fail this, because shared openings always take up exactly what is left.
 
-**L2. Up and down.** In every bay, rails plus opening heights must equal the box height exactly.
-- Door bay: RT + opening height + RB = H
-- Drawer column: RT + RB + (drawers − 1) × RD + sum of drawer opening heights = H
+**L2. Up and down.** In every bay, frame pieces plus opening heights must equal the box height exactly.
+- Door bay: S + opening height + S = H
+- Drawer column: 2 × S + (drawers − 1) × S + sum of drawer opening heights = H
 
-**L3. Shared space.** A bay or drawer marked "share what is left" takes an equal share of the space not used by fixed openings and frame pieces (see U4). At least one opening in each direction should be set to share, so the layout always closes.
+**L3. Shared space.** An opening marked "share what is left" takes an equal share of the space not used by fixed openings and frame pieces (see U4). The proposed layout shares all four widths, the door heights, and the large drawer's height.
 
-**L4. Openings from reused drawer boxes (Q6).**
-- Drawer opening width = drawer box outside width + total slide clearance
-- Drawer opening height = drawer box outside height + clearance above and below
-- Slide clearances are data that depend on the slide type.
+**L4. Small drawer openings from a board.** A small drawer front is one board at the width it is sold, so it needs no lengthwise cut.
+- Front height = actual width of the slab board (5 1/2" for a 1x6)
+- Opening height = front height − 2 × V
 
-**L5. An opening can also be given directly, or by front size.** If a front size is given, opening = front − 2 × V.
+**L5. A changed opening** may be given directly, or by its front size (opening = front − 2 × V). L1 and L2 still have to hold.
 
 ---
 
@@ -146,61 +179,83 @@ Where there is more than one legitimate way to build something, the rule picks t
 **D1. Front size.** Every door and drawer front laps over its opening by the overlay on all four edges.
 - Width = opening width + 2 × V
 - Height = opening height + 2 × V
-- Why partial overlay: it hides small errors in the frame and forgives hinge placement. Alternative: inset fronts, which sit flush inside the frame and need near-perfect fits.
+- Why partial overlay: it hides small errors in the frame and forgives hinge placement. Alternative: inset fronts, which need near-perfect fits.
 
-**D2. Slab front.** One solid piece. Length = front width, width = front height. Grain runs side to side.
+**D2. Slab front.** One solid board. Length = front width, width = front height. Grain runs side to side.
 
 **D3. Fronts must not touch.** Two fronts that share a frame piece must leave a gap.
-- Gap = frame piece width − 2 × V, and it must be at least 1/8"
+- Gap = S − 2 × V, and it must be at least 1/8"
 
-**D4. Shaker frame.** A frame of four pieces around a thin centre panel. Uprights run the full height; cross pieces fit between them and are joined with pocket screws on the back.
-- Uprights: length = front height, width = shaker frame width. Quantity 2.
-- Cross pieces: length = front width − 2 × shaker frame width, width = shaker frame width. Quantity 2.
-- Why pocket screws: no special joint to cut. Alternative: a short tongue on each cross piece (add 2 × groove depth to its length) **(Q7)**.
+**D4. Shaker frame.** Four boards around a thin centre panel. Uprights run the full height; cross pieces fit between them and are joined with pocket screws on the back.
+- Uprights: length = front height, width = FW. Quantity 2.
+- Cross pieces: length = front width − 2 × FW, width = FW. Quantity 2.
+- Why pocket screws: no special joint to cut. Alternative: a short tongue on each cross piece.
 
-**D5. Shaker centre panel.** Sits in a groove cut along the inside edge of the frame pieces.
-- Width = front width − 2 × shaker frame width + 2 × groove depth − 1/8"
-- Height = front height − 2 × shaker frame width + 2 × groove depth − 1/8"
-- The 1/8" is room for the panel to slide in. Grain runs up and down on doors, side to side on drawer fronts.
+**D5. Shaker centre panel.** Sits in a groove cut with the router along the inside edge of each frame piece. On the uprights the groove stops short of each end so it does not show on the top and bottom of the door **(Q)**.
+- Width = front width − 2 × FW + 2 × groove depth − 1/8"
+- Height = front height − 2 × FW + 2 × groove depth − 1/8"
+- Groove depth default 3/8". The 1/8" is room for the panel to slide in. Grain runs up and down on doors, side to side on drawer fronts.
 
-**D6. A shaker front must be big enough.** Its width and height must each be more than 2 × shaker frame width + 1", or there is no visible panel.
+**D6. A shaker front must be big enough.** Its width and height must each be more than 2 × FW + 1", or there is no visible panel.
+
+**D7. Hinges.** The app picks concealed face-frame hinges made for the overlay in use, two for each door. A hinge whose overlay does not match V is an error.
+
+---
+
+## X. Drawer boxes (white, proposed) (Q)
+
+New boxes on new side-mount slides. The app chooses the slides and sizes every box.
+
+**Method: plywood box joined with pocket screws, with the bottom glued and nailed on underneath.** Why: no groove to cut and the bottom squares the box. Alternative: a bottom set in a router-cut groove.
+
+**X1. Slide length.** The longest slide sold that fits.
+- Room for the slide = D − tb − ts − rear clearance (default 1")
+- Slide length = the longest stock length that is no more than that. One pair for each drawer.
+
+**X2. Box height** = opening height − 1".
+
+**X3. Box width** = opening width + any spacer shortfall (B8) − 2 × slide clearance. Side-mount slides need 1/2" on each side.
+
+**X4. Box depth** = slide length.
+
+**X5. Box parts.** Box plywood thickness is t; bottom thickness is tb.
+- Sides (2): length = box depth, width = box height − tb
+- Front and back (2): length = box width − 2 × t, width = box height − tb
+- Bottom (1): length = box depth, width = box width
 
 ---
 
 ## P. The platform (orange)
 
-**Method: a ladder of 2x4s on edge, screwed together.** Why: cheap, strong, easy to level on its own before the heavy box goes on. Alternative: legs or a plywood base.
+**Method: a ladder of 2x4s on edge, screwed together.** Why: cheap, strong, and easy to level before the heavy box goes on. Alternative: adjustable legs.
 
-**P1. Platform size.**
-- Height = Lw (the actual width of a 2x4, standing on edge)
-- Width PW = W (tied to the box width, not typed separately)
-- Depth PD = entered. The back of the platform lines up with the back of the box.
+**P1. Platform size.** The platform sits against the wall at the back. Its front, and any exposed end, sits back by the toe space so the toe kick board finishes exactly TS in from the cabinet.
+- Height = Lw (a 2x4 on edge)
+- Depth PD = D − TS − tk
+- Width PW = WB − (TS + tk) for each exposed end
+- On a wall end the platform is flush with the box side.
 
-**P2. Front and back rails.** Run the full width.
+**P2. Front and back rails.** Run the full platform width.
 - Length = PW. Quantity 2.
 
 **P3. Cross supports.** Fit *between* the front and back rails.
 - Length = PD − 2 × Lt
 - One at each end, plus one every 16" measured from the left end, until the remaining gap is 16" or less.
 
-**P4. Toe space.** How far the platform front sits back from the box front.
-- Toe space = D − PD − toe kick thickness
-- Warning if less than 2" or more than 4".
+**P4. Toe space check.** Warning if the toe space is changed to less than 2" or more than 4".
 
-**P5. Toe kick.** A solid oak board on the front of the platform.
-- Length = PW
-- Height = platform height (P1). It is worked out, not typed. If a different height is entered, it is an error.
-- An exposed end may need a second, short piece **(Q5)**.
+**P5. Toe kick (orange).** Solid oak boards covering the platform wherever it can be seen.
+- Height = platform height. It is worked out, not typed. If a different height is entered, it is an error. With a 2x4 platform this equals a 1x4 oak board as sold.
+- Front piece: length = PW + tk for each exposed end, so it covers the end of the return.
+- Return piece, one on each exposed end: length = PD.
 
 ---
 
 ## H. Overall size
 
-**H1. Finished height** = platform height + H + countertop thickness.
+**H1. Finished height** = platform height + H + countertop thickness. The countertop is made and installed by others; its thickness is a default used only for this note.
 
-**H2. Finished depth** = D + tf (to the front of the frame); doors add their own thickness.
-
-**H3. Fit.** If wall space, finished height or finished depth are given, the cabinet is checked against them.
+**H2. How far it stands out.** Face frame front = D from the wall. Doors and drawer fronts add their own thickness.
 
 ---
 
@@ -208,51 +263,81 @@ Where there is more than one legitimate way to build something, the rule picks t
 
 **J1.** Default joint everywhere: pocket screws and wood glue.
 
-**J2.** No screw or pocket hole may land on a face that will be seen. On an exposed side, pocket holes go in the piece that meets it (the bottom's underside, the back's rear face) or on the side's inside face.
+**J2.** No screw or pocket hole may land on a face that will be seen. On an exposed side, pocket holes go in the piece that meets it (the bottom's underside) or on the side's inside face.
 
 **J3.** Pocket holes on dividers go on the drawer side, where the drawers hide them.
 
 ---
 
-## M. Materials
+## M. Materials and tools
 
-**M1.** Material sizes are data. Nominal and actual sizes are stored separately (a 2x4 is 1 1/2" × 3 1/2"), and only actual sizes are used in maths.
+**M1.** Material and hardware sizes are data. Nominal and actual sizes are stored separately (a 2x4 is 1 1/2" × 3 1/2"), and only actual sizes are used in maths.
 
-**M2.** Plywood thickness is an input. It starts as the shop label, marked assumed, with a warning asking you to measure the real sheet (3/4" plywood is often 23/32").
+**M2.** Plywood thickness defaults to the standard sheet and is labelled *check before you cut* (G3). Every part that depends on it recalculates if she enters a different thickness.
 
 **M3.** A plywood part larger than its sheet is an error, with the suggested fix.
 
 **M4.** Grain direction is set by the rule that creates each part and is carried to the cutting diagrams.
 
+**M5. No lengthwise cuts in solid wood by default.** There is a router but no table saw, so every solid-wood part defaults to the width of a board as sold: frame pieces from 1x2, shaker frames from 1x3, small drawer fronts from 1x6, toe kick from 1x4, supports from 1x4. Plywood is cut with a circular saw and a straight edge. Changing a width to something no board matches gives a warning that a lengthwise cut is needed **(Q)**.
+
 ---
 
-## Worked example: vanity 01 with the assumed numbers
+## Worked example: vanity 01 (60" × 21" × 30", left end on a wall, right end exposed)
 
-This is here so the rules can be checked by eye. In the app, every one of these comes from the engine, and the tests will hold the engine to them.
+This is here so the rules can be checked by eye. I calculated it with a script using exact fractions; in the app every number comes from the engine, and the tests will hold the engine to them.
 
-| Part | Rule | Formula | Size |
-|---|---|---|---|
-| Left side, right side | B2 | H by D | 30" × 20 1/2" |
-| Bottom | B3 | (W − 2t) by (D − tb) | 78" × 19 3/4" |
-| Back | B4 | (W − 2t) by H | 78" × 30" |
-| Interior dividers (2) | B5 | (H − t) by (D − tb) | 29 1/4" × 19 3/4" |
-| End vertical frame pieces (2) | F2 | H | 30" long |
-| Top rail, bottom rail | F3 | W − 2S | 76 1/2" long |
-| Inner vertical frame pieces (3) | F4 | H − RT − RB | 24" long |
-| Platform front and back rails (2) | P2 | PW | 79 1/2" long |
-| Platform cross supports (6) | P3 | PD − 2 × Lt | 14 1/2" long |
-| Toe kick | P5 | PW by Lw | 79 1/2" × 3 1/2" |
-| Finished height | H1 | Lw + H + top | 34 3/4" |
+Box width WB = 59 3/4". Box depth DB = 20 1/4".
 
-### What the rules say about the mock-up
+| Part | Qty | Rule | Formula | Size |
+|---|---|---|---|---|
+| Left side, right side | 1 + 1 | B2 | H by DB | 30" × 20 1/4" |
+| Bottom | 1 | B3 | (WB − 2t) by (DB − tb) | 58 1/4" × 20" |
+| Back | 1 | B4 | (WB − 2t) by H | 58 1/4" × 30" |
+| Interior dividers | 2 | B5 | (H − t) by (DB − tb) | 29 1/4" × 20" |
+| Top front supports | 3 | B6 | section width | 13 5/8", 29 1/4", 13 7/8" long |
+| Mounting strips | 3 | B7 | section width | 13 5/8", 29 1/4", 13 7/8" long |
+| Slide spacers, wall side | 3 | B8 | S − OL − t | 1/2" thick |
+| Slide spacers, exposed side | 3 | B8 | S − OR − t | 3/4" thick |
+| End vertical frame pieces | 2 | F2 | H | 30" long |
+| Top and bottom frame pieces | 2 | F3 | W − 2S | 57" long |
+| Inner vertical frame pieces | 3 | F4 | H − 2S | 27" long |
+| Pieces between drawers | 4 | F5 | opening width | 13 1/8" long |
+| Doors | 2 | D1 | opening + 2V | 14 1/8" × 28" |
+| Small drawer fronts | 4 | D2, L4 | opening + 2V by board width | 14 1/8" × 5 1/2" |
+| Large drawer fronts | 2 | D1 | opening + 2V | 14 1/8" × 16" |
+| Door centre panels | 2 | D5 | see rule | 9 3/4" × 23 5/8" |
+| Large drawer front panels | 2 | D5 | see rule | 9 3/4" × 11 5/8" |
+| Shaker cross pieces | 8 | D4 | front width − 2FW | 9 1/8" long |
+| Drawer slides | 6 pairs | X1 | longest that fits in 19" | 18" |
+| Small drawer boxes | 4 | X2–X4 | see rules | 12 1/8" wide × 3 1/2" high × 18" deep |
+| Large drawer boxes | 2 | X2–X4 | see rules | 12 1/8" wide × 14" high × 18" deep |
+| Platform front and back rails | 2 | P2 | PW | 56" long |
+| Platform cross supports | 5 | P3 | PD − 2Lt | 14 1/4" long |
+| Toe kick, front | 1 | P5 | PW + tk | 56 3/4" × 3 1/2" |
+| Toe kick, return | 1 | P5 | PD | 17 1/4" × 3 1/2" |
+
+Layout checks:
+
+- Across (L1): 5 frame pieces × 1 1/2" + 4 openings × 13 1/8" = 7 1/2" + 52 1/2" = 60".
+- Drawer column (L2): 4 frame pieces × 1 1/2" + 4 1/2" + 4 1/2" + 15" = 30".
+- Door bay (L2): 1 1/2" + 27" + 1 1/2" = 30".
+- Gap between fronts (D3): 1 1/2" − 2 × 1/2" = 1/2".
+- Height before the countertop (H1): 3 1/2" + 30" = 33 1/2".
+
+---
+
+## The mock-up's errors, kept as tests
+
+The first mock-up (79 1/2" wide) is no longer the design, but its mistakes stay in the test list (`src/engine/fixtures/mockup-errors.ts`) so the engine can be shown to make each one impossible.
 
 | # | Mock-up | Rule | Result |
 |---|---|---|---|
-| 1 | Five overall widths | B1, U2 | One width. 79 2/3", 79 1/3" and 79 3/5" cannot even be typed. |
-| 2 | Side stiles 25 1/2" | F2 | 30". |
-| 3 | Drawn pieces missing from the cut list | F4, F5, B5 | 3 inner vertical pieces, 4 rails between drawers and 2 dividers are created by rule, so they are always listed and drawn. |
-| 4 | Columns do not fill the width | L1 | Error. 5 frame pieces (7 1/2") + 4 openings of 12" (48") = 55 1/2", leaving 24" unexplained. The brief's count of about 23" used front widths and 3 frame pieces. |
-| 5 | Platform end supports 17 1/2" | P3 | 14 1/2". |
-| 6 | Toe kick 4" on a 3 1/2" platform | P5 | 3 1/2"; entering 4" is an error. |
-| 7 | *New:* drawer heights | L2 | Error. 3" + 3" rails + 2 rails between drawers (3") + openings of 4", 4" and 9" = 26" on a 30" box. |
-| 8 | *New:* door height | L2 | Error. A 16" door covers a 15" opening; with both rails that is 21" on a 30" box. |
+| 1 | Five overall widths | G1, U2 | One width is entered. 79 2/3", 79 1/3" and 79 3/5" cannot even be typed. |
+| 2 | Side stiles 25 1/2" on a 30" box | F2 | 30". There is no input for it. |
+| 3 | Drawn pieces missing from the cut list | F4, F5, B5 | Inner frame pieces, pieces between drawers and dividers are created by rule, so they are always both listed and drawn. |
+| 4 | Columns do not fill the width | L1 | Error with a picture. 5 frame pieces (7 1/2") + 4 openings of 12" (48") = 55 1/2", leaving 24" unexplained. |
+| 5 | Platform end supports 17 1/2" on a 17 1/2" platform | P3 | 14 1/2". |
+| 6 | Toe kick 4" on a 3 1/2" platform | P5 | Error; the height is worked out as 3 1/2". |
+| 7 | Drawer heights | L2 | Error. 3" + 3" + two 1 1/2" pieces + openings of 4", 4" and 9" = 26" on a 30" box. |
+| 8 | Door height | L2 | Error. A 16" door covers a 15" opening; with both 3" pieces that is 21" on a 30" box. |

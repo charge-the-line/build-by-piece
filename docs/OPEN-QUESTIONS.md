@@ -1,32 +1,40 @@
 # Open questions for Max
 
-Each has a default the rules already use, so answering "keep the default" is fine. Rule numbers refer to [RULES.md](RULES.md).
+Rule numbers refer to [RULES.md](RULES.md).
 
-## Decisions
+## New questions from the design change
 
-1. **What does "20 1/2" deep" measure?** Default: the plywood box only, so the cabinet is 21 1/4" deep with the face frame and about 22" with doors (rule B1). Or should 20 1/2" include the face frame?
-2. **Which ends touch a wall?** The brief says the right side is exposed. Is the left end against a wall? If so, do you want the frame to overhang 1/4" on that end so it can be trimmed to an uneven wall? Default: no overhang (rule F1).
-3. **Back panel thickness.** Default: a full back in the same 3/4" plywood (rule B4). The alternative is a 1/4" back with mounting strips. Which did "full back panel" mean?
-4. **Lip inside the doors.** Default: the cabinet floor sits flush with the bottom of the box, which leaves a 2 1/4" lip behind the 3" bottom frame piece (rule B3). Fine, or raise the floor level with the frame, or use a narrower bottom frame piece?
-5. **Exposed end of the platform.** On the exposed right end, the 2x4 ends would show. Options: add a short oak return piece there, or stop the platform short of that end like the front. Default: front toe kick only until you choose (rule P5).
-6. **Slides.** What type of slides do the reused drawers run on (side, under, centre, or wood runners)? This decides the clearances in rule L4 and whether the spacers in rule B7 are needed.
-7. **Tools for shaker doors.** The default shaker door needs a 1/4" groove for the centre panel (rule D5), which takes a table saw or a router. Do you have either? If not, the rule will change to a no-groove method.
-8. **Between the two doors.** Default: a vertical frame piece between the doors, so each door closes against the frame (rule F4). The alternative is one wide opening with two doors meeting in the middle.
-9. **Colours for parts the brief did not list.** Top front supports, slide spacers and the toe kick have no colour in the brief. Proposed: a tenth role, grey "support pieces", for supports and spacers, and orange (platform) for the toe kick. OK?
-10. **Overlay.** Default 1/2" on every edge (rule D1). Do you have hinges already, or a preference?
+Each has a default the rules already use, so "keep the default" is a fine answer.
 
-## Problems found in the mock-up beyond the six in the brief
+1. **Three labels instead of two.** The brief says every input is confirmed or assumed. With the app now choosing most values, I show three labels: *You entered*, *App's choice*, and *Check before you cut* (rule G3). Underneath, an app's choice is still stored as "assumed" until she changes it. OK?
+2. **No lengthwise cuts in solid wood.** With a router but no table saw, I changed three mock-up sizes to boards as sold (rule M5): the top frame piece is 1 1/2" (was 3"), shaker frames are 2 1/2" (were 2 1/4"), and small drawer fronts are 5 1/2" tall (were 5"). OK, or can lumber be bought or cut to exact width?
+3. **Other tools.** I have assumed a circular saw with a straight edge for plywood, a way to cut boards to length, a drill, a pocket-hole jig and the router. Anything missing?
+4. **Drawer column.** Default is two small drawers over one large one, as in the mock-up. At 30" high that makes the large drawer box 14" tall. Keep it, or one small drawer over two medium ones (about 8 3/4" tall each)?
+5. **Drawer boxes.** Default: 3/4" plywood sides with pocket screws and a 1/4" bottom glued and nailed on underneath, so there is nothing to groove and no extra sheet thickness to buy (rule X). The usual alternative is 1/2" plywood with a grooved bottom. OK?
+6. **Colour for drawer box parts.** The brief has none. Proposed: white with a dark outline. OK?
+7. **Back panel fit.** Default: the 1/4" back fits between the sides and is glued and nailed to the bottom, dividers and mounting strips (rule B4). The alternative is a router-cut recess in the sides, which is stronger but harder. OK?
+8. **Slide spacer on the wall side.** The 1/4" overhang means the wall-side spacer is 1/2" thick, made from two layers of 1/4" plywood offcut; the exposed side uses one layer of 3/4" (rule B8). OK?
+9. **Door grooves.** Default: the router groove stops short of the ends on the two uprights so it does not show on the top and bottom edges of the door (rule D5). This needs a little care. The easier alternative is to run it full length and accept a small notch showing on those edges. Which?
+10. **Toe space at the exposed end.** I used the same 3" as the front, measured from the face of the cabinet to the face of the toe kick (rule P1). OK?
+11. **Default when the ends are not specified.** Both ends exposed and flush (rule G4). OK?
+12. **Proposed layout for other widths.** Rule L0 covers this vanity. Should Phase 1 include proposals for narrower or wider vanities, or only this one?
 
-11. **Heights do not add up either.** The drawer fronts (5" + 5" + 10") and the 16" doors do not account for a 30" box (RULES.md, lines 7 and 8 of the mock-up table). I have added tests for this. The real drawer box heights will settle the drawer side; for the doors, default is to let them fill the opening.
-12. **"16" × 13" doors.** I read this as 13" wide by 16" tall, since the brief counts four 13" columns. Correct?
+## Decided
 
-## Measurements still needed
+| # | Question | Max's answer | Where |
+|---|---|---|---|
+| 1 | What depth measures | 21" is wall to the front of the face frame. The top is by others and does not limit the cabinet. | G2, B1 |
+| 2 | Ends | Left end on a wall with a 1/4" frame overhang; right end exposed. | G4, F1 |
+| 3 | Back panel | 1/4" back with mounting strips. | B4, B7 |
+| 4 | Lip inside the doors | 1 1/2" bottom frame piece; floor stays at the bottom of the box. | B3, F3 |
+| 5 | Exposed end of the platform | Set back to match the front, with an oak toe kick return. | P1, P5 |
+| 6 | Slides | New drawer boxes on new side-mount slides; the app chooses slides and sizes boxes. | X1–X5 |
+| 7 | Tools for shaker doors | Router, no table saw. Grooves are cut with the router. | D5, M5 |
+| 8 | Between the doors | Keep the vertical frame piece. | F4 |
+| 9 | Extra colours | Grey "support pieces"; toe kick is orange. | colour roles |
+| 10 | Overlay | 1/2"; the app specifies the hinges. | D1, D7 |
+| 11 | Heights in the mock-up | Agreed they do not add up; kept as tests. | L2 |
+| 12 | Door size reading | No longer applies; the app proposes and sizes the layout. | L0 |
+| 13 | Publishing | Done; the repo is public. | |
 
-13. Wall space available (width).
-14. Finished height and depth wanted.
-15. Actual plywood thickness, measured on the sheet.
-16. Each reused drawer box: outside width, height and depth.
-
-## Setup
-
-17. **Publishing.** The repo is private. GitHub Pages on a private repo needs a paid GitHub plan; on the free plan the repo must be public for the link to work. Which do you prefer?
+Also decided: the user enters only width, depth and height (rule G1); the test case is 60" × 21" × 30"; plywood defaults to standard 3/4" with a prompt to check at the cutting step (rule M2).
