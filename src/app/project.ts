@@ -20,42 +20,59 @@ function isDesign(value: unknown): value is VanityDesign {
   return d.projectType === 'vanity' && isLength(d.width) && isLength(d.depth) && isLength(d.height) && typeof d.overrides === 'object' && d.overrides !== null;
 }
 
-export function toProjectFile(design: VanityDesign): ProjectFile {
-  return { format: 'build-by-piece-project', schemaVersion: 1, savedAt: new Date().toISOString(), design, catalog: defaultCatalog };
+export type Checked = Readonly<Record<string, boolean>>;
+
+export function toProjectFile(design: VanityDesign, checked: Checked = {}): ProjectFile {
+  return { format: 'build-by-piece-project', schemaVersion: 1, savedAt: new Date().toISOString(), design, catalog: defaultCatalog, checked };
+}
+
+interface Project {
+  readonly design: VanityDesign;
+  readonly checked: Checked;
 }
 
 /** Reads a project file's text. Returns undefined if it is not one of ours. */
-export function fromProjectText(text: string): VanityDesign | undefined {
+export function fromProjectText(text: string): Project | undefined {
   try {
     const parsed: unknown = JSON.parse(text);
     const file = parsed as Partial<ProjectFile>;
-    return file.format === 'build-by-piece-project' && isDesign(file.design) ? file.design : undefined;
+    if (file.format !== 'build-by-piece-project' || !isDesign(file.design)) return undefined;
+    const checked = typeof file.checked === 'object' && file.checked !== null ? file.checked : {};
+    return { design: file.design, checked };
   } catch {
     return undefined;
   }
 }
 
-function load(): VanityDesign {
+function load(): Project {
+  const fresh: Project = { design: startingDesign, checked: {} };
   try {
     const saved = localStorage.getItem(STORAGE_KEY);
-    return (saved && fromProjectText(saved)) || startingDesign;
+    return (saved && fromProjectText(saved)) || fresh;
   } catch {
-    return startingDesign;
+    return fresh;
   }
 }
 
 export function useProject() {
-  const [design, setDesign] = useState<VanityDesign>(load);
+  const [project, setProject] = useState<Project>(load);
 
   useEffect(() => {
     try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(toProjectFile(design)));
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(toProjectFile(project.design, project.checked)));
     } catch {
       // Private browsing or a full disk: the project still works, it just is not saved.
     }
-  }, [design]);
+  }, [project]);
 
-  return { design, setDesign };
+  return {
+    design: project.design,
+    checked: project.checked,
+    setDesign: (design: VanityDesign) => setProject((p) => ({ ...p, design })),
+    setChecked: (key: string, value: boolean) => setProject((p) => ({ ...p, checked: { ...p.checked, [key]: value } })),
+    /** Replaces everything, as when a backup file is opened or the project is started over. */
+    replace: (next: Project) => setProject(next),
+  };
 }
 
 export const withSize = (design: VanityDesign, which: 'width' | 'depth' | 'height', entered: string): VanityDesign => ({

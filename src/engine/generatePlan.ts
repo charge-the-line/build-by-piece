@@ -1,8 +1,9 @@
 /**
  * The engine's front door: a design, the defaults and a catalog go in;
- * inputs, issues, openings, parts, cutting diagrams, materials and hardware come out.
+ * inputs, issues, openings, parts, cutting diagrams, materials, hardware and assembly steps come out.
  * Pure TypeScript: no UI, DOM or network.
  */
+import { assemblySteps } from './assembly';
 import { layOut } from './layout';
 import { cutDiagrams, shoppingList } from './cutting';
 import { resolveVanity } from './resolve';
@@ -17,6 +18,7 @@ const blocked = (base: Pick<PlanResult, 'inputs' | 'issues'>): PlanResult => ({
   cutDiagrams: [],
   materials: [],
   hardware: [],
+  placements: [],
   steps: [],
 });
 
@@ -47,7 +49,7 @@ export const generatePlan: GeneratePlan = (design, defaults, catalog) => {
     cutDiagrams: diagrams,
     materials: shoppingList(diagrams, built.parts, catalog),
     hardware: built.hardware,
-    // Assembly steps arrive in Phase 3.
-    steps: [],
+    placements: built.placements,
+    steps: assemblySteps(resolved, built),
   };
 };

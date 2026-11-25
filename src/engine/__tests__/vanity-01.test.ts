@@ -559,8 +559,3 @@ describe('one width drives every part', () => {
     expect(result.inputs.filter((i) => /platform\.(width|depth)/.test(i.path))).toEqual([]);
   });
 });
-
-describe('still to come', () => {
-  it.todo('puts no screw or pocket hole on the outside face of the exposed side (rule J2, Phase 3)');
-  it.todo('puts divider pocket holes on the drawer side (rule J3, Phase 3)');
-});
