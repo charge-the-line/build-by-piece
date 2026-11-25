@@ -133,7 +133,7 @@ nav {
   right: 0;
   bottom: 0;
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(5, 1fr);
   background: var(--paper);
   border-top: 2px solid var(--ink);
   padding-bottom: env(safe-area-inset-bottom);
@@ -476,4 +476,84 @@ summary {
 
 .frontSizes li {
   padding: 0.15rem 0;
+}
+
+/* Cutting diagrams */
+.diagram {
+  margin-top: 1.5rem;
+}
+
+.diagram:first-child {
+  margin-top: 0;
+}
+
+.diagram svg {
+  margin-top: 0.5rem;
+}
+
+.stock {
+  fill: var(--paper);
+  stroke: var(--ink);
+  stroke-width: 4;
+}
+
+.piece {
+  stroke: #000000;
+  stroke-width: 3;
+}
+
+.offcut {
+  stroke: var(--ink);
+  stroke-width: 1;
+}
+
+.scrapFill {
+  fill: var(--panel);
+}
+
+.scrapLine {
+  stroke: var(--ink);
+  stroke-width: 3;
+  opacity: 0.45;
+}
+
+.offcutLabel {
+  fill: var(--ink);
+  font-weight: 700;
+  paint-order: stroke;
+  stroke: var(--paper);
+  stroke-width: 10px;
+}
+
+.grain line,
+.grain path {
+  stroke: var(--ink);
+  stroke-width: 4;
+  fill: none;
+}
+
+.grain text {
+  fill: var(--ink);
+}
+
+.cuts {
+  margin: 0;
+  padding-left: 1.75rem;
+  font-size: 0.95rem;
+}
+
+.cuts li {
+  padding: 0.35rem 0;
+}
+
+.beforeCut {
+  padding: 1rem;
+  border: 3px solid var(--ink);
+  border-radius: 10px;
+  background: var(--warn-bg);
+}
+
+header + .beforeCut {
+  padding: 1rem;
+  border: 3px solid var(--ink);
 }
