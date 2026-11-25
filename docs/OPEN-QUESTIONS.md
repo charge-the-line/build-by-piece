@@ -2,24 +2,26 @@
 
 Rule numbers refer to [RULES.md](RULES.md).
 
-## New questions from the design change
+Nothing is waiting on an answer right now.
 
-Each has a default the rules already use, so "keep the default" is a fine answer.
+## Approved defaults (design-change questions)
 
-1. **Three labels instead of two.** The brief says every input is confirmed or assumed. With the app now choosing most values, I show three labels: *You entered*, *App's choice*, and *Check before you cut* (rule G3). Underneath, an app's choice is still stored as "assumed" until she changes it. OK?
-2. **No lengthwise cuts in solid wood.** With a router but no table saw, I changed three mock-up sizes to boards as sold (rule M5): the top frame piece is 1 1/2" (was 3"), shaker frames are 2 1/2" (were 2 1/4"), and small drawer fronts are 5 1/2" tall (were 5"). OK, or can lumber be bought or cut to exact width?
-3. **Other tools.** I have assumed a circular saw with a straight edge for plywood, a way to cut boards to length, a drill, a pocket-hole jig and the router. Anything missing?
-4. **Drawer column.** Default is two small drawers over one large one, as in the mock-up. At 30" high that makes the large drawer box 14" tall. Keep it, or one small drawer over two medium ones (about 8 3/4" tall each)?
-5. **Drawer boxes.** Default: 3/4" plywood sides with pocket screws and a 1/4" bottom glued and nailed on underneath, so there is nothing to groove and no extra sheet thickness to buy (rule X). The usual alternative is 1/2" plywood with a grooved bottom. OK?
-6. **Colour for drawer box parts.** The brief has none. Proposed: white with a dark outline. OK?
-7. **Back panel fit.** Default: the 1/4" back fits between the sides and is glued and nailed to the bottom, dividers and mounting strips (rule B4). The alternative is a router-cut recess in the sides, which is stronger but harder. OK?
-8. **Slide spacer on the wall side.** The 1/4" overhang means the wall-side spacer is 1/2" thick, made from two layers of 1/4" plywood offcut; the exposed side uses one layer of 3/4" (rule B8). OK?
-9. **Door grooves.** Default: the router groove stops short of the ends on the two uprights so it does not show on the top and bottom edges of the door (rule D5). This needs a little care. The easier alternative is to run it full length and accept a small notch showing on those edges. Which?
-10. **Toe space at the exposed end.** I used the same 3" as the front, measured from the face of the cabinet to the face of the toe kick (rule P1). OK?
-11. **Default when the ends are not specified.** Both ends exposed and flush (rule G4). OK?
-12. **Proposed layout for other widths.** Rule L0 covers this vanity. Should Phase 1 include proposals for narrower or wider vanities, or only this one?
+Max approved all twelve as proposed:
 
-## Decided
+1. Three labels on values: You entered, App's choice, Check before you cut (rule G3).
+2. No lengthwise cuts in solid wood: 1 1/2" top frame piece, 2 1/2" shaker frames, 5 1/2" small drawer fronts (rule M5).
+3. Tools assumed: circular saw with a straight edge, a way to cut boards to length, drill, pocket-hole jig, router.
+4. Drawer column: two small drawers over one large one (rule L0).
+5. Drawer boxes: 3/4" plywood sides with pocket screws, 1/4" bottom glued and nailed on underneath (rule X).
+6. Drawer box parts are white with a dark outline.
+7. The 1/4" back fits between the sides (rule B4).
+8. Wall-side slide spacer is 1/2", from two layers of 1/4" plywood (rule B8).
+9. Door grooves stop short of the ends on the uprights (rule D5).
+10. Toe space at the exposed end is 3", the same as the front (rule P1).
+11. When the ends are not specified, both are exposed and flush (rule G4).
+12. Phase 1 proposes a layout for this vanity only (rule L0).
+
+## Decided earlier
 
 | # | Question | Max's answer | Where |
 |---|---|---|---|
