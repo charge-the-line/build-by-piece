@@ -131,6 +131,7 @@ export interface Resolved {
   readonly toeKickHeight?: Val;
 
   readonly kerf: Val;
+  readonly keepOffcutsFrom: Val;
   readonly countertopThickness: Val;
 }
 
@@ -333,6 +334,7 @@ export function resolveVanity(design: VanityDesign, defaults: VanityOptions, cat
     : undefined;
 
   const kerf = length(options.cutting.kerf, 'cutting.kerf', 'saw blade width');
+  const keepOffcutsFrom = length(options.cutting.keepOffcutsFrom, 'cutting.keepOffcutsFrom', 'smallest leftover worth keeping');
   const countertopThickness = length(options.countertop.thickness, 'countertop.thickness', 'countertop thickness');
 
   const resolved: Resolved = {
@@ -377,6 +379,7 @@ export function resolveVanity(design: VanityDesign, defaults: VanityOptions, cat
     toeKickBoard,
     ...(toeKickHeight ? { toeKickHeight } : {}),
     kerf,
+    keepOffcutsFrom,
     countertopThickness,
   };
 

@@ -1,10 +1,10 @@
 /**
  * The engine's front door: a design, the defaults and a catalog go in;
- * inputs, issues, openings, parts, materials and hardware come out.
+ * inputs, issues, openings, parts, cutting diagrams, materials and hardware come out.
  * Pure TypeScript: no UI, DOM or network.
  */
 import { layOut } from './layout';
-import { shoppingList } from './materials';
+import { cutDiagrams, shoppingList } from './cutting';
 import { resolveVanity } from './resolve';
 import type { GeneratePlan, PlanResult } from './types';
 import { buildVanity, toeKickIssue } from './vanity';
@@ -14,6 +14,7 @@ const blocked = (base: Pick<PlanResult, 'inputs' | 'issues'>): PlanResult => ({
   canGeneratePlan: false,
   openings: [],
   parts: [],
+  cutDiagrams: [],
   materials: [],
   hardware: [],
   steps: [],
@@ -34,6 +35,8 @@ export const generatePlan: GeneratePlan = (design, defaults, catalog) => {
   const issues = [...inputIssues, ...layout.issues, ...built.issues];
   if (issues.some((issue) => issue.severity === 'error')) return blocked({ inputs, issues });
 
+  const diagrams = cutDiagrams(built.parts, catalog, { kerf: resolved.kerf.value, keepOffcutsFrom: resolved.keepOffcutsFrom.value });
+
   return {
     inputs,
     issues,
@@ -41,7 +44,8 @@ export const generatePlan: GeneratePlan = (design, defaults, catalog) => {
     overall: built.overall,
     openings: built.openings,
     parts: built.parts,
-    materials: shoppingList(built.parts, catalog, resolved.kerf.value),
+    cutDiagrams: diagrams,
+    materials: shoppingList(diagrams, built.parts, catalog),
     hardware: built.hardware,
     // Assembly steps arrive in Phase 3.
     steps: [],

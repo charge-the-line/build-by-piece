@@ -561,7 +561,6 @@ describe('one width drives every part', () => {
 });
 
 describe('still to come', () => {
-  it.todo('draws every part that is in the cut list, and lists every part that is drawn (Phase 2)');
   it.todo('puts no screw or pocket hole on the outside face of the exposed side (rule J2, Phase 3)');
   it.todo('puts divider pocket holes on the drawer side (rule J3, Phase 3)');
 });
