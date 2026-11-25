@@ -787,6 +787,44 @@ button.quiet {
   border-top: 1px solid var(--rule);
 }
 
+/* Tools and methods */
+.toolTicks li {
+  border-top: 1px solid var(--rule);
+}
+
+.toolTicks label {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  min-height: 56px;
+  padding: 0.5rem 0;
+  cursor: pointer;
+}
+
+.toolTicks input {
+  flex: none;
+  width: 32px;
+  height: 32px;
+  accent-color: var(--brand);
+}
+
+.toolTicks .hint {
+  display: block;
+}
+
+.methodPick li {
+  padding: 0.5rem 0;
+}
+
+.methodPick button {
+  width: 100%;
+  text-align: left;
+}
+
+.issue h3 {
+  margin: 0 0 0.25rem;
+}
+
 /* Paper */
 .printPlan {
   display: none;

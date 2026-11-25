@@ -2,9 +2,11 @@ import { useState } from 'react';
 import type { PlanResult, ResolvedInput, VanityDesign } from '../engine/types';
 import { formatLength } from '../engine/units';
 import { choiceWords, fmt } from './format';
+import { toolList } from '../engine/defaults/tools';
+import type { PanelMethod, ToolId } from '../engine/types';
 import { glossary } from './glossary';
 import { LengthField } from './LengthField';
-import { type Checked, fromProjectText, isChangeable, startingDesign, toProjectFile, withChange } from './project';
+import { type Checked, fromProjectText, isChangeable, startingDesign, toProjectFile, withChange, withPanelMethod, withTool } from './project';
 
 interface Props {
   readonly design: VanityDesign;
@@ -61,9 +63,19 @@ function Row({ input, design, onChange }: { input: ResolvedInput } & Pick<Props,
 
 export function ChoicesTab({ design, plan, onChange, checked, onReplace }: Props) {
   const [importError, setImportError] = useState('');
-  const yours = plan.inputs.filter((i) => i.origin === 'user');
-  const toCheck = plan.inputs.filter((i) => i.origin !== 'user' && i.checkAt === 'cutting');
-  const apps = plan.inputs.filter((i) => i.origin !== 'user' && i.checkAt !== 'cutting');
+  // Tools and the panel method have their own controls below.
+  const listed = plan.inputs.filter((i) => !i.path.startsWith('tools.') && i.path !== 'fronts.panelMethod');
+  const has = (id: ToolId) => plan.inputs.find((i) => i.path === `tools.${id}`)?.value === true;
+  const chosenPanel = (plan.inputs.find((i) => i.path === 'fronts.panelMethod')?.value ?? 'auto') as 'auto' | PanelMethod;
+  const panelOptions: readonly ['auto' | PanelMethod, string, string][] = [
+    ['auto', "The app's choice", 'The easiest method your tools allow.'],
+    ['routedRecess', 'Recess routed after assembly', 'Build the frame, then rout a recess round the back and glue the panel in. Needs a router.'],
+    ['stoppedGroove', 'Groove before assembly (advanced)', 'A groove in each frame piece, stopped short of the ends. Needs a router and some care.'],
+    ['panelOnBack', 'Panel on the back', 'No router needed. The panel is glued and nailed to the back of the frame.'],
+  ];
+  const yours = listed.filter((i) => i.origin === 'user');
+  const toCheck = listed.filter((i) => i.origin !== 'user' && i.checkAt === 'cutting');
+  const apps = listed.filter((i) => i.origin !== 'user' && i.checkAt !== 'cutting');
 
   const group = (title: string, blurb: string, inputs: readonly ResolvedInput[]) =>
     inputs.length > 0 && (
@@ -96,6 +108,44 @@ export function ChoicesTab({ design, plan, onChange, checked, onReplace }: Props
 
   return (
     <>
+      <section>
+        <h2>Your tools</h2>
+        <p>Tick what you have. The plan picks its methods to suit, and tells you if it needs something you do not have.</p>
+        <ul className="toolTicks">
+          {toolList.map((tool) => (
+            <li key={tool.id}>
+              <label>
+                <input type="checkbox" checked={has(tool.id)} onChange={(e) => onChange(withTool(design, tool.id, e.target.checked))} />
+                <span>
+                  <strong>{tool.name}</strong>
+                  <span className="hint">{tool.changes}</span>
+                </span>
+              </label>
+            </li>
+          ))}
+        </ul>
+      </section>
+
+      <section>
+        <h2>Framed doors and drawer fronts</h2>
+        <p>How the thin centre panel is held in its frame.</p>
+        <ul className="methodPick">
+          {panelOptions.map(([value, name, note]) => (
+            <li key={value}>
+              <button type="button" aria-pressed={chosenPanel === value} onClick={() => onChange(withPanelMethod(design, value))}>
+                {name}
+              </button>
+              <p className="hint">{note}</p>
+            </li>
+          ))}
+        </ul>
+        {plan.methods && chosenPanel === 'auto' && (
+          <p>
+            <strong>Using now:</strong> {panelOptions.find(([value]) => value === plan.methods!.panel)?.[1] ?? 'Groove cut on the table saw'}.
+          </p>
+        )}
+      </section>
+
       {group('You entered', 'Your numbers and anything you changed.', yours)}
       {group('Check before you cut', 'Standard sizes the app is using for now. Measure the real sheet before cutting and change the number if it differs.', toCheck)}
       {group("The app's choices", 'Nothing here needs your attention. Change any of them if you want to.', apps)}
