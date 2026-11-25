@@ -3,12 +3,14 @@ import type { PlanResult, ResolvedInput, VanityDesign } from '../engine/types';
 import { formatLength } from '../engine/units';
 import { choiceWords, fmt } from './format';
 import { LengthField } from './LengthField';
-import { fromProjectText, isChangeable, startingDesign, toProjectFile, withChange } from './project';
+import { type Checked, fromProjectText, isChangeable, startingDesign, toProjectFile, withChange } from './project';
 
 interface Props {
   readonly design: VanityDesign;
   readonly plan: PlanResult;
   readonly onChange: (design: VanityDesign) => void;
+  readonly checked: Checked;
+  readonly onReplace: (project: { design: VanityDesign; checked: Checked }) => void;
 }
 
 const shown = (input: ResolvedInput) => (typeof input.value === 'number' ? fmt(input.value as never) : choiceWords(input.value));
@@ -56,7 +58,7 @@ function Row({ input, design, onChange }: { input: ResolvedInput } & Pick<Props,
   );
 }
 
-export function ChoicesTab({ design, plan, onChange }: Props) {
+export function ChoicesTab({ design, plan, onChange, checked, onReplace }: Props) {
   const [importError, setImportError] = useState('');
   const yours = plan.inputs.filter((i) => i.origin === 'user');
   const toCheck = plan.inputs.filter((i) => i.origin !== 'user' && i.checkAt === 'cutting');
@@ -76,7 +78,7 @@ export function ChoicesTab({ design, plan, onChange }: Props) {
     );
 
   const exportFile = () => {
-    const blob = new Blob([JSON.stringify(toProjectFile(design), null, 2)], { type: 'application/json' });
+    const blob = new Blob([JSON.stringify(toProjectFile(design, checked), null, 2)], { type: 'application/json' });
     const link = document.createElement('a');
     link.href = URL.createObjectURL(blob);
     link.download = 'build-by-piece-project.json';
@@ -88,7 +90,7 @@ export function ChoicesTab({ design, plan, onChange }: Props) {
     if (!file) return;
     const loaded = fromProjectText(await file.text());
     setImportError(loaded ? '' : 'That file is not a Build by Piece project.');
-    if (loaded) onChange(loaded);
+    if (loaded) onReplace(loaded);
   };
 
   return (
@@ -108,7 +110,7 @@ export function ChoicesTab({ design, plan, onChange }: Props) {
             Open a backup file
             <input type="file" accept="application/json,.json" onChange={(e) => void importFile(e.target.files?.[0])} />
           </label>
-          <button type="button" onClick={() => onChange(startingDesign)}>
+          <button type="button" onClick={() => onReplace({ design: startingDesign, checked: {} })}>
             Start over
           </button>
         </div>

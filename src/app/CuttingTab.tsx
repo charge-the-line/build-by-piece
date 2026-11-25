@@ -8,6 +8,8 @@ interface Props {
   readonly design: VanityDesign;
   readonly plan: PlanResult;
   readonly onChange: (design: VanityDesign) => void;
+  /** On paper: no text boxes, and every cut list opened out. */
+  readonly forPrint?: boolean;
 }
 
 // One drawing unit is one tape mark, so every shape is an exact whole number.
@@ -140,7 +142,7 @@ function sentence(step: CutStep, diagram: CutDiagram, parts: ReadonlyMap<string,
     : `Measure ${size} along ${step.from} and cut. This is ${named}.`;
 }
 
-function Diagram({ diagram, parts }: { diagram: CutDiagram; parts: ReadonlyMap<string, Part> }) {
+function Diagram({ diagram, parts, open }: { diagram: CutDiagram; parts: ReadonlyMap<string, Part>; open: boolean }) {
   const kept = diagram.offcuts.filter((o) => o.label);
   return (
     <article className="diagram">
@@ -151,7 +153,7 @@ function Diagram({ diagram, parts }: { diagram: CutDiagram; parts: ReadonlyMap<s
           : `${fmt(diagram.stockLength)} long. Length is to scale; the width is drawn larger so the numbers fit.`}
       </p>
       {diagram.kind === 'sheet' ? <SheetPicture diagram={diagram} parts={parts} /> : <BoardPicture diagram={diagram} parts={parts} />}
-      <details open={diagram.kind === 'board'}>
+      <details open={open || diagram.kind === 'board'}>
         <summary>
           {diagram.steps.length} {diagram.steps.length === 1 ? 'step' : 'steps'}, in order
         </summary>
@@ -171,7 +173,7 @@ function Diagram({ diagram, parts }: { diagram: CutDiagram; parts: ReadonlyMap<s
   );
 }
 
-export function CuttingTab({ design, plan, onChange }: Props) {
+export function CuttingTab({ design, plan, onChange, forPrint = false }: Props) {
   if (!plan.canGeneratePlan) {
     return (
       <section>
@@ -187,21 +189,23 @@ export function CuttingTab({ design, plan, onChange }: Props) {
 
   return (
     <>
-      <section className="beforeCut">
-        <h2>Before you cut</h2>
-        <p>Measure how thick your plywood really is. If it is different, type what you measure and every size updates.</p>
-        {toCheck.map((input) => (
-          <LengthField
-            key={input.path}
-            label={input.label.charAt(0).toUpperCase() + input.label.slice(1)}
-            value={formatLength(input.value as never, '1/32in').text.replace('"', '')}
-            hint={input.origin === 'user' ? 'You measured this' : 'Standard size, not measured yet'}
-            onValid={(entered) => onChange(withChange(design, input.path, entered))}
-          />
-        ))}
-      </section>
+      {!forPrint && (
+        <section className="beforeCut">
+          <h2>Before you cut</h2>
+          <p>Measure how thick your plywood really is. If it is different, type what you measure and every size updates.</p>
+          {toCheck.map((input) => (
+            <LengthField
+              key={input.path}
+              label={input.label.charAt(0).toUpperCase() + input.label.slice(1)}
+              value={formatLength(input.value as never, '1/32in').text.replace('"', '')}
+              hint={input.origin === 'user' ? 'You measured this' : 'Standard size, not measured yet'}
+              onValid={(entered) => onChange(withChange(design, input.path, entered))}
+            />
+          ))}
+        </section>
+      )}
 
-      <section>
+      <section className="cuttingIntro">
         <h2>Cutting diagrams</h2>
         <p>
           One picture for each sheet and board on the shopping list. Each cut is measured from the fresh edge the
@@ -215,7 +219,7 @@ export function CuttingTab({ design, plan, onChange }: Props) {
           {plan.cutDiagrams
             .filter((d) => d.materialId === id)
             .map((d) => (
-              <Diagram key={d.id} diagram={d} parts={parts} />
+              <Diagram key={d.id} diagram={d} parts={parts} open={forPrint} />
             ))}
         </section>
       ))}

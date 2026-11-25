@@ -133,7 +133,7 @@ nav {
   right: 0;
   bottom: 0;
   display: grid;
-  grid-template-columns: repeat(5, 1fr);
+  grid-template-columns: repeat(6, 1fr);
   background: var(--paper);
   border-top: 2px solid var(--ink);
   padding-bottom: env(safe-area-inset-bottom);
@@ -141,10 +141,10 @@ nav {
 
 nav button {
   min-height: 64px;
-  padding: 0.25rem;
+  padding: 0.25rem 0;
   border: 0;
   border-radius: 0;
-  font-size: 0.9rem;
+  font-size: 0.78rem;
 }
 
 nav button[aria-current='page'] {
@@ -556,4 +556,274 @@ summary {
 header + .beforeCut {
   padding: 1rem;
   border: 3px solid var(--ink);
+}
+
+/* Build steps */
+.progress p {
+  margin-bottom: 0.4rem;
+}
+
+progress {
+  width: 100%;
+  height: 16px;
+  accent-color: var(--brand);
+}
+
+.stepDots {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin: 0.6rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.stepDots button {
+  min-width: 48px;
+  min-height: 48px;
+  padding: 0;
+}
+
+.stepDots button.done {
+  background: var(--panel);
+  text-decoration: underline;
+}
+
+.stepDots button[aria-current='step'] {
+  background: var(--brand);
+  color: var(--on-brand);
+  border-color: var(--brand);
+}
+
+.step {
+  margin-top: 1.25rem;
+}
+
+.step h3 {
+  margin-top: 1.25rem;
+}
+
+.stepPicture {
+  margin-top: 0.5rem;
+  background: var(--paper);
+}
+
+.stepPicture .now path {
+  stroke: #000000;
+  stroke-width: 1.5;
+  stroke-linejoin: round;
+}
+
+.stepPicture .before path {
+  stroke: #7f8791;
+  stroke-width: 0.75;
+  stroke-linejoin: round;
+}
+
+.stepLabel {
+  font-weight: 700;
+  fill: #000000;
+  paint-order: stroke;
+  stroke: #ffffff;
+  stroke-width: 6px;
+  stroke-linejoin: round;
+}
+
+.need li {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.35rem 0;
+}
+
+.needSize {
+  display: block;
+  font-size: 0.85rem;
+}
+
+.partId.hardware {
+  background: var(--paper);
+  color: var(--ink);
+}
+
+.todo,
+.joints {
+  margin: 0;
+  padding-left: 1.5rem;
+}
+
+.joints {
+  list-style: disc;
+  font-size: 0.9rem;
+}
+
+.todo li,
+.joints li {
+  padding: 0.3rem 0;
+}
+
+.checks li {
+  border-top: 1px solid var(--rule);
+}
+
+.checks label {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  min-height: 56px;
+  padding: 0.4rem 0;
+  cursor: pointer;
+}
+
+.checks input {
+  flex: none;
+  width: 32px;
+  height: 32px;
+  accent-color: var(--brand);
+}
+
+.stepNav {
+  display: grid;
+  grid-template-columns: 1fr 2fr;
+  gap: 0.5rem;
+  margin-top: 1.25rem;
+}
+
+button.primary {
+  background: var(--brand);
+  color: var(--on-brand);
+  border-color: var(--brand);
+}
+
+button:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+/* Paper */
+.printPlan {
+  display: none;
+}
+
+@media print {
+  :root {
+    --ink: #000000;
+    --paper: #ffffff;
+    --panel: #ffffff;
+    --brand: #000000;
+    --rule: #999999;
+    --warn-bg: #ffffff;
+    font-size: 11pt;
+    color-scheme: light;
+  }
+
+  main,
+  nav {
+    display: none;
+  }
+
+  .printPlan {
+    display: block;
+  }
+
+  .printPlan svg {
+    max-width: 16cm;
+  }
+
+  .printPlan .frontView svg {
+    max-width: 14cm;
+  }
+
+  .printPlan .stepPicture {
+    max-width: 11cm;
+  }
+
+  .printPlan .step h3 {
+    margin-top: 0.6rem;
+  }
+
+  .part,
+  .issue,
+  .need li,
+  .checks li,
+  figure,
+  svg {
+    break-inside: avoid;
+  }
+
+  .step,
+  .cutTable,
+  .printPlan .cuttingIntro {
+    break-before: page;
+  }
+
+  * {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  .printPlan section {
+    margin-top: 0.75rem;
+    padding-top: 0.5rem;
+  }
+
+  .printPlan .shop li {
+    padding: 0.15rem 0;
+  }
+
+  .printPlan .diagram svg {
+    max-width: 9cm;
+  }
+
+  .printPlan .diagram details + svg,
+  .printPlan .cuts {
+    font-size: 9pt;
+  }
+
+  .printPlan .cuts li {
+    padding: 0.05rem 0;
+  }
+
+  .cutTable table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 9pt;
+  }
+
+  .cutTable th,
+  .cutTable td {
+    padding: 2pt 4pt;
+    border-bottom: 1px solid var(--rule);
+    text-align: left;
+    vertical-align: middle;
+  }
+
+  .cutTable tr {
+    break-inside: avoid;
+  }
+
+  .cutTable .partId {
+    display: inline-block;
+    min-width: 0;
+    padding: 0 4pt;
+    border-width: 1px;
+  }
+
+  h2,
+  h3 {
+    break-after: avoid;
+  }
+
+  .checks label {
+    min-height: 0;
+  }
+
+  .checks input {
+    width: 14pt;
+    height: 14pt;
+  }
+
+  details > summary {
+    list-style: none;
+  }
 }

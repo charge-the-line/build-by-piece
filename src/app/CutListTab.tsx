@@ -49,7 +49,51 @@ function PartCard({ part }: { part: Part }) {
   );
 }
 
-export function CutListTab({ plan }: { plan: PlanResult }) {
+/** The whole cut list as one compact table, for paper. */
+function CutTable({ plan }: { plan: PlanResult }) {
+  return (
+    <section className="cutTable">
+      <h2>Cut list</h2>
+      <p>Length runs with the grain of the wood. Write the part number on each piece as you cut it.</p>
+      <table>
+        <thead>
+          <tr>
+            <th>Part</th>
+            <th>Name</th>
+            <th>How many</th>
+            <th>Length</th>
+            <th>Width</th>
+            <th>Thick</th>
+            <th>Cut from</th>
+          </tr>
+        </thead>
+        <tbody>
+          {plan.parts.map((p) => {
+            const color = colorOf(p.colorRole);
+            return (
+              <tr key={p.id}>
+                <td>
+                  <span className="partId" style={{ background: color.hex, color: color.textHex }}>
+                    {p.id}
+                  </span>
+                </td>
+                <td>{p.name}</td>
+                <td>{p.quantity}</td>
+                <td>{fmt(p.length)}</td>
+                <td>{fmt(p.width)}</td>
+                <td>{fmt(p.thickness)}</td>
+                <td>{materialName(p.materialId)}</td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+    </section>
+  );
+}
+
+export function CutListTab({ plan, forPrint = false }: { plan: PlanResult; forPrint?: boolean }) {
+  if (forPrint) return <CutTable plan={plan} />;
   if (!plan.canGeneratePlan) {
     return (
       <section>
