@@ -240,7 +240,7 @@ New boxes on new side-mount slides. The app chooses the slides and sizes every b
 
 **P3. Cross supports.** Fit *between* the front and back rails.
 - Length = PD − 2 × Lt
-- One at each end, plus one every 16" measured from the left end, until the remaining gap is 16" or less.
+- One at each end, plus one centred every 16" measured from the left end. The last of these is left out if it would touch the end support or sit closer to it than one 2x4 thickness.
 
 **P4. Toe space check.** Warning if the toe space is changed to less than 2" or more than 4".
 

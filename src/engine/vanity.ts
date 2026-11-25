@@ -564,8 +564,10 @@ export function buildVanity(r: Resolved, bays: readonly LaidBay[]): VanityBuild 
     add({ name: 'Platform rail (front and back)', role: 'platform', assembly: 'Platform', material: r.lumber, length: derive('P2', 'platform width', PW), width: platformHeight, quantity: 2 }),
   ];
   // P3: one at each end, plus one every `spacing` from the left end until the last gap is no more than the spacing.
-  // The last support's centre is half a 2x4 thickness in from the end; whole-number maths only.
-  const innerSupports = Math.max(0, Math.ceil((2 * PW.value - Lt.value) / (2 * r.supportSpacing.value)) - 1);
+  // Inner supports are centred every `spacing` from the left end. One is left out if it would
+  // touch the end support or sit closer to it than one 2x4 thickness. Whole-number maths only:
+  // k x spacing + half a thickness + one thickness of clear gap must stop short of the end support.
+  const innerSupports = Math.max(0, Math.floor((2 * PW.value - 5 * Lt.value) / (2 * r.supportSpacing.value)));
   platformParts.push(
     add({
       name: 'Platform cross support',

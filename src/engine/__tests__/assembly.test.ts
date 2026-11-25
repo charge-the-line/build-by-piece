@@ -3,7 +3,7 @@
  * J1-J3). The step pictures are drawn from these positions.
  */
 import { describe, expect, it } from 'vitest';
-import { proposedVanityLayout } from '../defaults/vanity';
+import { choicesOf, layoutFrom, proposedVanityLayout, type BayChoice } from '../defaults/vanity';
 import { userChoice, userEntered } from '../defaults/values';
 import type { Placement, PlanResult } from '../types';
 import { inches, part, plan, vanityWith } from './helpers';
@@ -108,6 +108,24 @@ describe('where every piece sits (rule A0)', () => {
   });
 });
 
+describe('platform cross supports at every width (rule P3)', () => {
+  it('never touch each other, and never leave a gap wider than 16" plus two 2x4 thicknesses', () => {
+    const thickness = inches('1 1/2');
+    for (let half = 30 * 2; half <= 96 * 2; half += 1) {
+      const width = half % 2 === 0 ? `${half / 2}` : `${(half - 1) / 2} 1/2`;
+      const r = plan(vanityWith({ width }));
+      if (!r.canGeneratePlan) continue;
+      const xs = placed(r, 'Platform cross support').map((p) => p.x).sort((a, b) => a - b);
+      expect(xs.length, width).toBe(part(r, 'Platform cross support').quantity);
+      for (let i = 1; i < xs.length; i += 1) {
+        const clearGap = xs[i]! - xs[i - 1]! - thickness;
+        expect(clearGap, `${width}: supports ${i} and ${i + 1}`).toBeGreaterThanOrEqual(thickness);
+        expect(clearGap, `${width}: supports ${i} and ${i + 1}`).toBeLessThanOrEqual(inches('16') + 2 * thickness);
+      }
+    }
+  });
+});
+
 describe('assembly steps (rules A1-A12)', () => {
   const steps = result.steps;
 
@@ -174,5 +192,56 @@ describe('assembly steps (rules A1-A12)', () => {
 
   it('produces no steps or positions while an error blocks the plan', () => {
     expect(plan(vanityWith({ depth: '12' }))).toMatchObject({ steps: [], placements: [] });
+  });
+});
+
+describe('layouts she can choose (rules L0-L3)', () => {
+  const withLayout = (choices: readonly BayChoice[], width = '60') => plan(vanityWith({ width }, { layout: layoutFrom(choices) }));
+
+  it('gives the same sizes as the proposed layout when the same choices are made', () => {
+    expect(choicesOf(proposedVanityLayout)).toEqual([3, 'door', 'door', 3]);
+    const same = withLayout([3, 'door', 'door', 3]);
+    expect(same.parts.map((p) => [p.id, p.length, p.width, p.quantity])).toEqual(result.parts.map((p) => [p.id, p.length, p.width, p.quantity]));
+  });
+
+  it('builds a sound cabinet for every sensible mix of doors and drawers', () => {
+    const layouts: [BayChoice[], string][] = [
+      [['door'], '24'],
+      [['door', 'door'], '36'],
+      [[2, 'door'], '36'],
+      [['door', 3], '36'],
+      [[1, 'door', 'door', 1], '60'],
+      [[4, 'door', 'door', 4], '60'],
+      [[3, 3, 3], '48'],
+      [['door', 2, 'door'], '54'],
+      [[3, 'door', 'door', 'door', 3], '84'],
+    ];
+    for (const [choices, width] of layouts) {
+      const r = withLayout(choices, width);
+      const context = `${choices.join(',')} at ${width}":`;
+      checkPlacements(r, context);
+      // Frame pieces and openings fill the width exactly.
+      const widths = r.openings.filter((o, i, all) => all.findIndex((x) => x.bayId === o.bayId) === i).map((o) => o.width.result);
+      expect((choices.length + 1) * inches('1 1/2') + widths.reduce((a, b) => a + b, 0), context).toBe(inches(width));
+      expect(r.openings.filter((o) => o.kind === 'door'), context).toHaveLength(choices.filter((c) => c === 'door').length);
+      expect(r.openings.filter((o) => o.kind === 'drawer'), context).toHaveLength(choices.reduce<number>((n, c) => n + (c === 'door' ? 0 : c), 0));
+      expect(r.cutDiagrams.flatMap((d) => d.pieces), context).toHaveLength(r.placements.length);
+    }
+  });
+
+  it('names the bays of a chosen layout by what they are', () => {
+    const r = withLayout(['door', 2, 'door'], '54');
+    expect([...new Set(r.openings.map((o) => o.label))]).toEqual(['Door 1', 'Drawers 1, drawer 1', 'Drawers 1, drawer 2', 'Door 2']);
+  });
+
+  it('puts a spacer on the divider side when two drawer columns sit next to each other (rule B8)', () => {
+    const r = withLayout([3, 3, 3], '48');
+    expect(r.parts.filter((p) => p.name.includes('divider side')).map((p) => p.name)).toEqual(['Slide spacer (drawers 2, divider side)', 'Slide spacer (drawers 3, divider side)']);
+  });
+
+  it('explains why a layout with too many bays cannot be built', () => {
+    const r = withLayout(['door', 'door', 'door', 'door', 'door', 'door'], '40');
+    expect(r.canGeneratePlan).toBe(false);
+    expect(r.issues.map((i) => i.code)).toContain('FRAMED_FRONT_TOO_SMALL');
   });
 });
