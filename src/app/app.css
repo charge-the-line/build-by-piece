@@ -98,8 +98,89 @@ ol li {
   padding: 0.5rem 1rem;
   border-radius: 10px;
   font-weight: 700;
+  border: 2px solid var(--ink);
 }
 
 .colorName {
   font-weight: 500;
+}
+
+.guide figure {
+  margin: 1rem 0 0;
+}
+
+.guide figcaption {
+  font-weight: 700;
+}
+
+.guide svg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.guide text {
+  fill: var(--ink);
+  font-size: 13px;
+}
+
+.guide text.dim {
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.guide .bracket line,
+.guide .leader {
+  stroke: var(--ink);
+  stroke-width: 2;
+}
+
+.guide .leader {
+  stroke-width: 1;
+}
+
+.guide .floor {
+  stroke: var(--ink);
+  stroke-width: 2;
+}
+
+.guide .wall {
+  fill: var(--rule);
+  stroke: var(--ink);
+}
+
+.guide .top,
+.guide .outside {
+  fill: none;
+  stroke: var(--ink);
+  stroke-width: 2;
+  stroke-dasharray: 6 4;
+}
+
+.guide .outside {
+  stroke-width: 3;
+}
+
+.guide .box {
+  fill: none;
+  stroke: var(--ink);
+  stroke-width: 2;
+}
+
+.includes {
+  margin: 1rem 0 0;
+}
+
+.includes dt {
+  font-weight: 700;
+  margin-top: 0.75rem;
+}
+
+.includes dd {
+  margin: 0;
+}
+
+.note {
+  margin-top: 0.75rem;
+  font-size: 0.85rem;
 }

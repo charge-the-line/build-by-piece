@@ -1,0 +1,113 @@
+/**
+ * The app's defaults for a vanity: every value beyond width, depth and
+ * height. Data only. Each one is shown to the user with its note and can be
+ * changed (docs/RULES.md, rule G1). Rule numbers refer to docs/RULES.md.
+ */
+import type { Bay, DrawerSpec, VanityOptions } from '../types';
+import { appDefault, defaultChoice } from './values';
+
+
+const drawerColumn = (column: 'left' | 'right'): readonly DrawerSpec[] => [
+  {
+    id: `${column}-drawer-1`,
+    frontStyle: defaultChoice('slab', 'Too short for a framed front.'),
+    height: { by: 'frontBoard' },
+  },
+  {
+    id: `${column}-drawer-2`,
+    frontStyle: defaultChoice('slab', 'Too short for a framed front.'),
+    height: { by: 'frontBoard' },
+  },
+  {
+    id: `${column}-drawer-3`,
+    frontStyle: defaultChoice('shaker', 'Matches the doors.'),
+    height: { by: 'fill' },
+  },
+];
+
+/**
+ * Rule L0: drawers, two doors, drawers, all four the same width. Kept as
+ * data so it is visible and so other widths can get other proposals later.
+ */
+export const proposedVanityLayout: readonly Bay[] = [
+  { kind: 'drawerColumn', id: 'left-drawers', width: { by: 'fill' }, drawers: drawerColumn('left') },
+  {
+    kind: 'door',
+    id: 'left-door',
+    width: { by: 'fill' },
+    height: { by: 'fill' },
+    style: defaultChoice('shaker', 'Framed door with a flat centre panel.'),
+    hingeSide: defaultChoice('left', 'The two doors open away from each other.'),
+  },
+  {
+    kind: 'door',
+    id: 'right-door',
+    width: { by: 'fill' },
+    height: { by: 'fill' },
+    style: defaultChoice('shaker', 'Framed door with a flat centre panel.'),
+    hingeSide: defaultChoice('right', 'The two doors open away from each other.'),
+  },
+  { kind: 'drawerColumn', id: 'right-drawers', width: { by: 'fill' }, drawers: drawerColumn('right') },
+];
+
+export const vanityDefaults: VanityOptions = {
+  displayUnit: 'in',
+  tapeIncrement: '1/16in',
+  joinery: defaultChoice('pocketHolesAndGlue', 'One jig, no long clamps, joints pull themselves tight.'),
+
+  ends: {
+    left: defaultChoice('exposed', 'Finished and flush, which is safe whichever way the cabinet ends up.'),
+    right: defaultChoice('exposed', 'Finished and flush, which is safe whichever way the cabinet ends up.'),
+    wallOverhang: appDefault('1/4', 'Lets the frame be trimmed to fit a wall that is not straight.'),
+  },
+
+  box: {
+    caseMaterial: 'oak-ply-3-4',
+    backMaterial: 'oak-ply-1-4',
+    supportMaterial: 'pine-1x4',
+    spacerMaterials: ['oak-ply-3-4', 'oak-ply-1-4'],
+  },
+
+  faceFrame: {
+    material: 'oak-1x2',
+    stileWidth: 'boardWidth',
+    topRailWidth: 'boardWidth',
+    bottomRailWidth: 'boardWidth',
+    drawerRailWidth: 'boardWidth',
+  },
+
+  layout: 'auto',
+
+  fronts: {
+    overlay: appDefault('1/2', 'Hides small errors in the frame and matches common hinges.'),
+    minimumGap: appDefault('1/8', 'Smallest gap that keeps two fronts from rubbing.'),
+    slabMaterial: 'oak-1x6',
+    shakerFrameMaterial: 'oak-1x3',
+    shakerFrameWidth: 'boardWidth',
+    shakerPanelMaterial: 'oak-ply-1-4',
+    panelGrooveDepth: appDefault('3/8', 'Deep enough to hold the panel; cut with a router.'),
+    panelClearance: appDefault('1/8', 'Room for the panel to slide into its groove.'),
+    hinge: 'hinge-face-frame-half-inch',
+  },
+
+  drawers: {
+    slide: 'slide-side-mount',
+    boxMaterial: 'oak-ply-3-4',
+    bottomMaterial: 'oak-ply-1-4',
+    heightClearance: appDefault('1', 'Room above and below the drawer box so it never rubs.'),
+    rearClearance: appDefault('1', 'Room behind the slide.'),
+  },
+
+  platform: {
+    lumber: 'stud-2x4',
+    toeSpace: appDefault('3', 'Standard room for your toes.'),
+    supportSpacing: appDefault('16', 'Close enough that the cabinet floor cannot sag.'),
+    toeKickMaterial: 'oak-1x4',
+  },
+
+  countertop: {
+    description: 'Stone top, installed by others',
+    thickness: appDefault('1 1/4', 'Typical 3 cm stone. Only used to estimate the finished height.'),
+  },
+};
+

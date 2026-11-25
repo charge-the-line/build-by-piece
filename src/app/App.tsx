@@ -1,4 +1,6 @@
 import { colorRoles } from '../engine/colorRoles';
+import { vanity01 } from '../engine/fixtures/vanity-01';
+import { MeasureGuide } from './MeasureGuide';
 
 /** Phase 0 placeholder. It shows no dimensions: those only ever come from the engine. */
 export function App() {
@@ -20,6 +22,15 @@ export function App() {
           <strong>Phase 0: foundation.</strong> The construction rules are written and waiting for
           review. The plan builder comes next.
         </p>
+      </section>
+
+      <section aria-labelledby="numbers">
+        <h2 id="numbers">Three numbers are all you enter</h2>
+        <p>
+          Width, depth and height. The app decides everything else, shows you each choice, and lets you
+          change it. Here is the first test cabinet.
+        </p>
+        <MeasureGuide design={vanity01} />
       </section>
 
       <section aria-labelledby="colors">
