@@ -7,47 +7,66 @@ import type { Bay, DrawerSpec, VanityOptions } from '../types';
 import { appDefault, defaultChoice } from './values';
 
 
-const drawerColumn = (column: 'left' | 'right'): readonly DrawerSpec[] => [
-  {
-    id: `${column}-drawer-1`,
-    frontStyle: defaultChoice('slab', 'Too short for a framed front.'),
-    height: { by: 'frontBoard' },
-  },
-  {
-    id: `${column}-drawer-2`,
-    frontStyle: defaultChoice('slab', 'Too short for a framed front.'),
-    height: { by: 'frontBoard' },
-  },
-  {
-    id: `${column}-drawer-3`,
-    frontStyle: defaultChoice('shaker', 'Matches the doors.'),
-    height: { by: 'fill' },
-  },
-];
+/**
+ * A drawer column of `count` drawers: small flat fronts on top, each one
+ * board high, and one large framed front at the bottom that takes the rest.
+ */
+const drawersFor = (bayId: string, count: number): readonly DrawerSpec[] =>
+  Array.from({ length: count }, (_, i): DrawerSpec => {
+    const last = i === count - 1;
+    return {
+      id: `${bayId.replace(/-drawers$/, '')}-drawer-${i + 1}`,
+      frontStyle: last ? defaultChoice('shaker', 'Matches the doors.') : defaultChoice('slab', 'Too short for a framed front.'),
+      height: last ? { by: 'fill' } : { by: 'frontBoard' },
+    };
+  });
+
+const drawerBay = (id: string, count: number): Bay => ({ kind: 'drawerColumn', id, width: { by: 'fill' }, drawers: drawersFor(id, count) });
+
+const doorBay = (id: string, hinge: 'left' | 'right'): Bay => ({
+  kind: 'door',
+  id,
+  width: { by: 'fill' },
+  height: { by: 'fill' },
+  style: defaultChoice('shaker', 'Framed door with a flat centre panel.'),
+  hingeSide: defaultChoice(hinge, 'Neighbouring doors open away from each other.'),
+});
+
+/** What goes in one bay: a door, or a column of this many drawers. */
+export type BayChoice = 'door' | number;
+
+export const MAX_DRAWERS_PER_COLUMN = 4;
+export const MAX_BAYS = 6;
+
+/**
+ * Builds a layout from a simple left-to-right list, e.g. [3, 'door', 'door', 3].
+ * Every bay shares the width equally and every size is left to the rules,
+ * so a layout made this way always adds up (rule L1).
+ */
+export function layoutFrom(choices: readonly BayChoice[]): readonly Bay[] {
+  let doors = 0;
+  return choices.map((choice, i) => {
+    const id = `bay-${i + 1}`;
+    if (choice === 'door') {
+      doors += 1;
+      return doorBay(id, doors % 2 === 1 ? 'left' : 'right');
+    }
+    return drawerBay(id, choice);
+  });
+}
+
+/** The reverse of layoutFrom, for showing a layout as simple choices. */
+export const choicesOf = (layout: readonly Bay[]): BayChoice[] => layout.map((bay) => (bay.kind === 'door' ? 'door' : bay.drawers.length));
 
 /**
  * Rule L0: drawers, two doors, drawers, all four the same width. Kept as
  * data so it is visible and so other widths can get other proposals later.
  */
 export const proposedVanityLayout: readonly Bay[] = [
-  { kind: 'drawerColumn', id: 'left-drawers', width: { by: 'fill' }, drawers: drawerColumn('left') },
-  {
-    kind: 'door',
-    id: 'left-door',
-    width: { by: 'fill' },
-    height: { by: 'fill' },
-    style: defaultChoice('shaker', 'Framed door with a flat centre panel.'),
-    hingeSide: defaultChoice('left', 'The two doors open away from each other.'),
-  },
-  {
-    kind: 'door',
-    id: 'right-door',
-    width: { by: 'fill' },
-    height: { by: 'fill' },
-    style: defaultChoice('shaker', 'Framed door with a flat centre panel.'),
-    hingeSide: defaultChoice('right', 'The two doors open away from each other.'),
-  },
-  { kind: 'drawerColumn', id: 'right-drawers', width: { by: 'fill' }, drawers: drawerColumn('right') },
+  drawerBay('left-drawers', 3),
+  doorBay('left-door', 'left'),
+  doorBay('right-door', 'right'),
+  drawerBay('right-drawers', 3),
 ];
 
 export const vanityDefaults: VanityOptions = {

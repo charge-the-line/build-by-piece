@@ -2,6 +2,7 @@ import type { EndCondition, PlanResult, VanityDesign } from '../engine/types';
 import { fmt } from './format';
 import { FrontView } from './FrontView';
 import { IssueList } from './IssueList';
+import { LayoutEditor } from './LayoutEditor';
 import { LengthField } from './LengthField';
 import { MeasureGuide } from './MeasureGuide';
 import { withEnd, withSize } from './project';
@@ -59,6 +60,8 @@ export function SizeTab({ design, plan, onChange }: Props) {
           </dl>
         </section>
       )}
+
+      <LayoutEditor design={design} onChange={onChange} />
 
       <section>
         <h2>What each number includes</h2>

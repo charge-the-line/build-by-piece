@@ -27,20 +27,21 @@ From Ashley, the first user.
 
 ## Current status
 
-**Phase 3 complete, waiting for Max's review. Nothing further is planned until Max says what is next.**
+**Version 1 is feature-complete and waiting for Max's review. Nothing further is planned until Max says what is next.**
 
-The engine builds a full plan from three numbers: openings, cut list, cutting diagrams, shopping list, hardware, validation, a 3D position for every piece, and assembly steps. The app has six screens: Size, Choices, Parts, Cutting, Shop, Build. The Build screen shows one step at a time with a picture, checklist and progress, and prints the whole plan (or saves it as a PDF).
+The engine builds a full plan from three numbers: openings, cut list, cutting diagrams, shopping list, hardware, validation, a 3D position for every piece, and assembly steps. The app has six screens: Size, Choices, Parts, Cutting, Shop, Build. She can change the door and drawer layout on the Size screen, tap a part to see its trade term, and print the whole plan.
 
 Test case: vanity 01, 60" wide × 21" deep × 30" high, left end on a wall, right end exposed. The earlier AI mock-up survives only as a fixture of known errors.
 
-Not done yet: changing the door and drawer layout in the app (the engine supports it; there is no screen for it), a tap-to-explain glossary, and everything under "Later".
+Known limits: front styles (flat or framed) cannot be changed in the app; amounts of screws, glue and other supplies are not worked out; only the vanity exists. Everything under "Later" needs its rules agreed with Max first, as in Phase 0.
 
 | Phase | What | Status |
 |---|---|---|
 | 0 | Scaffold, rules, data model, fixture, test list | Done |
 | 1 | Engine and vanity: questionnaire, validation, cut list, shopping list | Done |
 | 2 | Cutting diagrams: kerf, grain, cut order, offcuts | Done |
-| 3 | Assembly steps, checklists, print to PDF | Done, in review |
+| 3 | Assembly steps, checklists, print to PDF | Done |
+| 4 | Finish v1: layout editor, glossary, supplies list | Done, in review |
 | Later | Tool inventory, other cabinets, kitchen | Not started |
 
 Update this section at the end of every phase.
@@ -65,6 +66,8 @@ src/engine/      Pure TypeScript. Design + defaults + catalog in; parts, diagram
 src/app/         React UI: Size, Choices, Parts, Cutting, Shop and Build screens. Imports from the engine; never the reverse.
   steps/           Step pictures (drawn from the engine's positions) and the written step templates.
   PrintPlan.tsx    The whole plan on paper; built only when Print is pressed.
+  LayoutEditor.tsx Doors and drawers by space; sizes stay with the rules (rule L0a).
+  glossary.ts      Plain words and their trade terms.
                  The UI does no arithmetic on dimensions and prints lengths only through `fmt` (src/app/format.ts).
 docs/RULES.md    Construction rules with formulas. The engine implements exactly these.
 docs/OPEN-QUESTIONS.md   Decisions waiting on Max, and the record of what he decided.

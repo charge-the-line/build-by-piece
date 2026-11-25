@@ -108,4 +108,14 @@ export const defaultCatalog: MaterialCatalog = {
       overlay: standardSize('1/2'),
     },
   ],
+  supplies: [
+    { id: 'pocket-screws-coarse', name: 'Pocket screws for 3/4" plywood and pine (coarse thread)', use: 'The box, the drawer boxes and the supports.' },
+    { id: 'pocket-screws-fine', name: 'Pocket screws for 3/4" hardwood (fine thread)', use: 'The oak face frame, doors and framed drawer fronts.' },
+    { id: 'wood-glue', name: 'Wood glue', use: 'Every joint.' },
+    { id: 'brad-nails', name: 'Small nails (brads) for 1/4" plywood', use: 'The back panel and the drawer bottoms.' },
+    { id: 'construction-screws', name: 'Construction screws for 2x4s', use: 'The platform.' },
+    { id: 'cabinet-screws', name: 'Cabinet screws long enough to reach the wall studs', use: 'Fixing the cabinet to the wall through the mounting strips.' },
+    { id: 'shims', name: 'Shims', use: 'Levelling the platform.' },
+    { id: 'sandpaper', name: 'Sandpaper', use: 'Smoothing edges and faces before finishing.' },
+  ],
 };

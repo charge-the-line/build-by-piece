@@ -289,7 +289,9 @@ export function resolveVanity(design: VanityDesign, defaults: VanityOptions, cat
 
   const layout = options.layout === 'auto' ? proposedVanityLayout : options.layout;
   const bays: ResolvedBay[] = layout.map((bay, index) => {
-    const label = BAY_LABELS[bay.id] ?? `Bay ${index + 1}`;
+    // A custom layout names each bay by what it is and its place among its kind: "Door 2", "Drawers 1".
+    const ordinal = layout.slice(0, index + 1).filter((b) => b.kind === bay.kind).length;
+    const label = BAY_LABELS[bay.id] ?? `${bay.kind === 'door' ? 'Door' : 'Drawers'} ${ordinal}`;
     const base = `layout.${bay.id}`;
     const width = sizeValue(bay.width, `${base}.width`, `${label}: ${bay.width.by === 'front' ? 'front' : 'opening'} width`);
     if (bay.kind === 'door') {

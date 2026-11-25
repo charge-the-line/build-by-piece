@@ -159,9 +159,18 @@ export interface HingeHardware {
 
 export type Hardware = SlideHardware | HingeHardware;
 
+/** Something used up while building: screws, glue, sandpaper. Amounts are not worked out. */
+export interface Supply {
+  readonly id: string;
+  readonly name: string;
+  /** What it is for, in plain words. */
+  readonly use: string;
+}
+
 export interface MaterialCatalog {
   readonly stock: readonly Stock[];
   readonly hardware: readonly Hardware[];
+  readonly supplies: readonly Supply[];
 }
 
 // ---------------------------------------------------------------------------
