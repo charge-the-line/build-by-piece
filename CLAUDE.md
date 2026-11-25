@@ -27,7 +27,7 @@ From Ashley, the first user.
 
 ## Current status
 
-**Version 1 is feature-complete and waiting for Max's review. Nothing further is planned until Max says what is next.**
+**Version 1 is complete and live. Next is the tool inventory: its rules are proposed in `docs/TOOLS-PROPOSAL.md` and waiting for Max's approval. Do not write tool-inventory code until Max approves that document and answers its questions.**
 
 The engine builds a full plan from three numbers: openings, cut list, cutting diagrams, shopping list, hardware, validation, a 3D position for every piece, and assembly steps. The app has six screens: Size, Choices, Parts, Cutting, Shop, Build. She can change the door and drawer layout on the Size screen, tap a part to see its trade term, and print the whole plan.
 
@@ -41,8 +41,9 @@ Known limits: front styles (flat or framed) cannot be changed in the app; amount
 | 1 | Engine and vanity: questionnaire, validation, cut list, shopping list | Done |
 | 2 | Cutting diagrams: kerf, grain, cut order, offcuts | Done |
 | 3 | Assembly steps, checklists, print to PDF | Done |
-| 4 | Finish v1: layout editor, glossary, supplies list | Done, in review |
-| Later | Tool inventory, other cabinets, kitchen | Not started |
+| 4 | Finish v1: layout editor, glossary, supplies list | Done |
+| 5 | Tool inventory driving the method | Rules proposed, in review |
+| Later | Other cabinets, kitchen | Not started |
 
 Update this section at the end of every phase.
 
@@ -71,6 +72,7 @@ src/app/         React UI: Size, Choices, Parts, Cutting, Shop and Build screens
                  The UI does no arithmetic on dimensions and prints lengths only through `fmt` (src/app/format.ts).
 docs/RULES.md    Construction rules with formulas. The engine implements exactly these.
 docs/OPEN-QUESTIONS.md   Decisions waiting on Max, and the record of what he decided.
+docs/TOOLS-PROPOSAL.md   Proposed rules for the tool inventory (not yet approved or built).
 public/          Web app manifest and icons.
 ```
 

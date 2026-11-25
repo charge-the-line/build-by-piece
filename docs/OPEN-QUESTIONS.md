@@ -2,7 +2,9 @@
 
 Rule numbers refer to [RULES.md](RULES.md).
 
-Nothing is waiting on an answer right now.
+## Waiting on Max
+
+The tool inventory proposal has seven questions: see [TOOLS-PROPOSAL.md](TOOLS-PROPOSAL.md). Each has a default, so "keep the defaults" is a fine answer.
 
 ## Approved defaults (design-change questions)
 
