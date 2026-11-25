@@ -94,7 +94,7 @@ export type ColorRole =
   | 'door' // teal
   | 'drawerFront' // pink
   | 'support' // grey: top supports, mounting strips, slide spacers
-  | 'drawerBox'; // white with a dark outline — PROPOSED; see docs/OPEN-QUESTIONS.md
+  | 'drawerBox'; // white with a dark outline
 
 // ---------------------------------------------------------------------------
 // Materials — sizes are data, not constants in code
@@ -442,9 +442,11 @@ export interface Opening {
   /** Where the opening sits in the face frame: from its left end and from its top. */
   readonly left: Ticks;
   readonly top: Ticks;
-  /** Size of the door or drawer front that covers it (rule D1). */
+  /** Size and place of the door or drawer front that covers it (rule D1). */
   readonly frontWidth: Ticks;
   readonly frontHeight: Ticks;
+  readonly frontLeft: Ticks;
+  readonly frontTop: Ticks;
   /** The door, drawer front and drawer box parts that belong to this opening. */
   readonly partIds: readonly PartId[];
 }

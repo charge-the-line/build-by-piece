@@ -426,6 +426,8 @@ export function buildVanity(r: Resolved, bays: readonly LaidBay[]): VanityBuild 
       top: o.top.value,
       frontWidth: asTicks(o.width.value + 2 * V.value),
       frontHeight: asTicks(o.height.value + 2 * V.value),
+      frontLeft: asTicks(o.left.value - V.value),
+      frontTop: asTicks(o.top.value - V.value),
       partIds,
     });
   }
