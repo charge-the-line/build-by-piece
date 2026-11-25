@@ -4,6 +4,7 @@ import { vanityDefaults } from '../engine/defaults/vanity';
 import { generatePlan } from '../engine/generatePlan';
 import { ChoicesTab } from './ChoicesTab';
 import { CutListTab } from './CutListTab';
+import { CuttingTab } from './CuttingTab';
 import { useProject } from './project';
 import { ShoppingTab } from './ShoppingTab';
 import { SizeTab } from './SizeTab';
@@ -11,8 +12,9 @@ import { SizeTab } from './SizeTab';
 const TABS = [
   ['size', 'Size'],
   ['choices', 'Choices'],
-  ['cut', 'Cut list'],
-  ['shop', 'Shopping'],
+  ['cut', 'Parts'],
+  ['cutting', 'Cutting'],
+  ['shop', 'Shop'],
 ] as const;
 
 type Tab = (typeof TABS)[number][0];
@@ -37,6 +39,7 @@ export function App() {
         {tab === 'size' && <SizeTab design={design} plan={plan} onChange={setDesign} />}
         {tab === 'choices' && <ChoicesTab design={design} plan={plan} onChange={setDesign} />}
         {tab === 'cut' && <CutListTab plan={plan} />}
+        {tab === 'cutting' && <CuttingTab design={design} plan={plan} onChange={setDesign} />}
         {tab === 'shop' && <ShoppingTab plan={plan} />}
       </main>
       <nav aria-label="Screens">

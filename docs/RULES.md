@@ -281,7 +281,28 @@ New boxes on new side-mount slides. The app chooses the slides and sizes every b
 
 **M5. No lengthwise cuts in solid wood by default.** There is a router but no table saw, so every solid-wood part defaults to the width of a board as sold: frame pieces from 1x2, shaker frames from 1x3, small drawer fronts from 1x6, toe kick from 1x4, supports from 1x4. Plywood is cut with a circular saw and a straight edge. Changing a width to something no board matches gives a warning that a lengthwise cut is needed.
 
-**M6. Counting sheets and boards.** The shopping list lays every piece out on its sheet or board, with the saw blade's width (default 1/8") between pieces and plywood grain running the right way, so the number bought is always enough. Each board is bought at the shortest length sold that holds its pieces.
+**M6. Counting sheets and boards.** The shopping list is the cutting diagrams, counted (rule C6).
+
+---
+
+## C. Cutting diagrams
+
+**C1. One diagram for each sheet and each board.** Every piece in the cut list is placed on exactly one diagram, with its part number.
+
+**C2. The saw blade takes wood.** The blade's width (default 1/8") is left between neighbouring pieces. Each cut is measured from the fresh edge the last cut left, so the measurement is always the size of the piece.
+
+**C3. Grain.** On plywood, a part's length always runs along the sheet's length, which is the grain direction. Pieces are never turned sideways to save wood.
+
+**C4. Cut order for a sheet.** Three kinds of cut, always in this order:
+1. Cut across the sheet into *sections*. These are short cuts across the grain, and they turn a heavy sheet into pieces that are easy to handle.
+2. Cut each section into *strips* along the grain.
+3. Cut each strip to length to make the parts.
+
+A strip only holds parts of exactly its own width, so no part needs a fourth trimming cut. Why sections first: a 4-foot cut with a circular saw and a straight edge is far easier to keep straight than an 8-foot one. Alternative: long cuts first, which can waste less but needs a track saw or table saw.
+
+**C5. Offcuts.** A leftover at least 6" both ways (6" long, for a board) is labelled "Offcut 1", "Offcut 2", and listed with its size so it can be kept. Smaller leftovers are shown striped, without a label.
+
+**C6. Shopping follows the diagrams.** The number of sheets and boards to buy is the number of diagrams. Each board is bought at the shortest length sold that holds its pieces. The layout tries more than one order of placing pieces and keeps the one that needs the fewest sheets.
 
 ---
 

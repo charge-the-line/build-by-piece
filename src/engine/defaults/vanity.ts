@@ -109,6 +109,7 @@ export const vanityDefaults: VanityOptions = {
 
   cutting: {
     kerf: appDefault('1/8', 'The width of wood a saw blade turns to dust.'),
+    keepOffcutsFrom: appDefault('6', 'Leftovers this big both ways are worth labelling and keeping.'),
   },
 
   measuredThickness: {},

@@ -296,8 +296,10 @@ export interface VanityOptions {
   };
 
   readonly cutting: {
-    /** Width of wood the saw blade removes; used when counting sheets and boards (rule M6). */
+    /** Width of wood the saw blade removes, left between pieces on every diagram (rule C2). */
     readonly kerf: Measurement;
+    /** A leftover at least this big both ways is labelled as worth keeping (rule C5). */
+    readonly keepOffcutsFrom: Measurement;
   };
 
   /**
@@ -426,6 +428,71 @@ export interface HardwareLine {
 }
 
 // ---------------------------------------------------------------------------
+// Output — cutting diagrams (rules C1-C6)
+// ---------------------------------------------------------------------------
+
+/** One piece laid out on a sheet or board. Positions are from one end and one edge of the stock. */
+export interface CutPiece {
+  readonly partId: PartId;
+  /** Which copy of the part this is: 1, 2, ... up to the part's quantity. */
+  readonly copy: number;
+  /** Size along the stock's length (the grain on plywood) and across it. */
+  readonly along: Ticks;
+  readonly across: Ticks;
+  readonly fromEnd: Ticks;
+  readonly fromEdge: Ticks;
+}
+
+/** A leftover rectangle. Large ones get a label so they can be kept and reused. */
+export interface Offcut {
+  /** "Offcut 1", ... for a piece worth keeping; empty for scrap. */
+  readonly label: string;
+  readonly along: Ticks;
+  readonly across: Ticks;
+  readonly fromEnd: Ticks;
+  readonly fromEdge: Ticks;
+}
+
+/**
+ * One saw cut, in the order to make them. The app turns each into a sentence
+ * from a written template.
+ *  - section: across the whole sheet, across the grain
+ *  - strip:   along the grain, within a section
+ *  - piece:   a strip or board cut to length
+ */
+export interface CutStep {
+  readonly number: number;
+  readonly kind: 'section' | 'strip' | 'piece';
+  /** What is being cut: "the sheet", "section A", "strip A1", "the board". */
+  readonly from: string;
+  /** Measure this far from the fresh end or edge, then cut. */
+  readonly measure: Ticks;
+  /** What the cut produces: "section A", "strip A1", or a part ID. */
+  readonly makes: string;
+  readonly partId?: PartId;
+  /** True when the piece is already this size, so there is nothing to cut. */
+  readonly noCutNeeded: boolean;
+}
+
+/** Everything needed to cut one sheet or one board. */
+export interface CutDiagram {
+  readonly id: string;
+  readonly materialId: MaterialId;
+  /** e.g. '3/4" oak plywood, sheet 1 of 2'. */
+  readonly title: string;
+  readonly kind: 'sheet' | 'board';
+  readonly stockLength: Ticks;
+  readonly stockWidth: Ticks;
+  /** True when grain runs along the stock's length and pieces must follow it. */
+  readonly hasGrain: boolean;
+  /** Width of the saw cut left between pieces. */
+  readonly kerf: Ticks;
+  readonly pieces: readonly CutPiece[];
+  readonly offcuts: readonly Offcut[];
+  readonly steps: readonly CutStep[];
+}
+
+// ---------------------------------------------------------------------------
 // Output — the layout the engine settled on
 // ---------------------------------------------------------------------------
 
@@ -534,6 +601,8 @@ export interface PlanResult {
   readonly overall?: OverallSizes;
   readonly openings: readonly Opening[];
   readonly parts: readonly Part[];
+  /** One per sheet and per board to buy (rule C1). */
+  readonly cutDiagrams: readonly CutDiagram[];
   readonly materials: readonly MaterialLine[];
   readonly hardware: readonly HardwareLine[];
   readonly steps: readonly Step[];
