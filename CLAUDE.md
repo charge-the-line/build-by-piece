@@ -27,7 +27,9 @@ From Ashley, the first user.
 
 ## Current status
 
-**Version 1 is complete and live. Next is the tool inventory: its rules are proposed in `docs/TOOLS-PROPOSAL.md` and waiting for Max's approval. Do not write tool-inventory code until Max approves that document and answers its questions.**
+**The tool inventory (Phase 5) is built and waiting for Max's review. Do not start another cabinet type or the kitchen until its rules are agreed with Max first.**
+
+She ticks her tools on the Choices screen (defaults are her own tools). The plan picks the method for each job from those ticks, lists "Tools for this plan" with the exact bits and safety gear, and never blocks on a missing tool: it says what to buy or borrow.
 
 The engine builds a full plan from three numbers: openings, cut list, cutting diagrams, shopping list, hardware, validation, a 3D position for every piece, and assembly steps. The app has six screens: Size, Choices, Parts, Cutting, Shop, Build. She can change the door and drawer layout on the Size screen, tap a part to see its trade term, and print the whole plan.
 
@@ -42,7 +44,7 @@ Known limits: front styles (flat or framed) cannot be changed in the app; amount
 | 2 | Cutting diagrams: kerf, grain, cut order, offcuts | Done |
 | 3 | Assembly steps, checklists, print to PDF | Done |
 | 4 | Finish v1: layout editor, glossary, supplies list | Done |
-| 5 | Tool inventory driving the method | Rules proposed, in review |
+| 5 | Tool inventory driving the method | Done, in review |
 | Later | Other cabinets, kitchen | Not started |
 
 Update this section at the end of every phase.
@@ -57,11 +59,12 @@ src/engine/      Pure TypeScript. Design + defaults + catalog in; parts, diagram
   resolve.ts       Lays the user's changes over the defaults and reads every value, with its label and status.
   layout.ts        Sizes and places every opening; the "does not add up" checks (rules L1-L5).
   vanity.ts        The construction rules: one block per rule in docs/RULES.md. Also places every piece in 3D (rule A0).
-  assembly.ts      The assembly steps: parts, joints, hardware and the numbers each step quotes (rules A1-A12).
+  methods.ts       Chooses a method for each job from the tools ticked, and lists the tools a plan needs (rules T1-T8).
+  assembly.ts      The assembly steps: parts, joints, hardware and the numbers each step quotes (rules A1-A13).
   cutting.ts       Cutting diagrams (rules C1-C6); the shopping list is the diagrams, counted.
   generatePlan.ts  The engine's single entry point.
   colorRoles.ts    The fixed instructional colours (data).
-  defaults/        Every value the app decides: vanity.ts (options, proposed layout), catalog.ts (materials, hardware).
+  defaults/        Every value the app decides: vanity.ts (options, layouts), catalog.ts (materials, hardware, supplies), tools.ts (tool list, default ticks, safety gear).
   fixtures/        vanity-01.ts is the test case (three numbers). mockup-errors.ts holds the old mock-up's mistakes.
   __tests__/       Vitest tests. The expected sizes are the worked example in docs/RULES.md.
 src/app/         React UI: Size, Choices, Parts, Cutting, Shop and Build screens. Imports from the engine; never the reverse.
@@ -72,7 +75,7 @@ src/app/         React UI: Size, Choices, Parts, Cutting, Shop and Build screens
                  The UI does no arithmetic on dimensions and prints lengths only through `fmt` (src/app/format.ts).
 docs/RULES.md    Construction rules with formulas. The engine implements exactly these.
 docs/OPEN-QUESTIONS.md   Decisions waiting on Max, and the record of what he decided.
-docs/TOOLS-PROPOSAL.md   Proposed rules for the tool inventory (not yet approved or built).
+docs/TOOLS-PROPOSAL.md   The approved tool-inventory proposal: what changed on approval, and Max's answers.
 public/          Web app manifest and icons.
 ```
 
@@ -84,7 +87,8 @@ Engine rules:
 - Every value has a status (`confirmed` or `assumed`) and an origin (`user` or `appDefault`). Plans show three labels: You entered, App's choice, Check before you cut (rule G3).
 - Every part has a stable ID (P01, P02, ...), plain-English name, colour role, material, thickness, length, width, grain, quantity, and a derivation (rule number, formula, inputs).
 - Material and hardware sizes are data: nominal versus actual lumber, sheet sizes, slide clearances and lengths. Plywood thickness defaults to the standard sheet and is checked at the cutting step.
-- Tools on hand: a router, no table saw. Solid-wood parts default to boards as sold, with no lengthwise cuts (rule M5).
+- Tools are data (`src/engine/defaults/tools.ts`) and ticks are choices with defaults. A method that changes a size is a rule with its own formulas (D5, D9, D10). Solid-wood parts default to boards as sold whatever the tools (rules M5, T3).
+- A missing tool never blocks a plan; it becomes a "buy or borrow" line (rule T2).
 - Validation returns structured issues: severity, parts, explanation, suggested fix. Any error blocks plan generation.
 - Every rule in the engine cites its number in `docs/RULES.md`. Change the document and the code together.
 - No AI calls, no accounts, no backend in v1. Explanations are written templates filled with the user's numbers. Projects save on the device, with export and import of a project file.
