@@ -98,6 +98,11 @@ export const stepTemplates: Readonly<Record<string, StepTemplate>> = {
     say: () => 'Screw through both mounting strips of every upper cabinet into each stud. Then take the ledge off.',
     more: () => ['Two screws at every stud: one through the top strip and one through the lower strip.', 'Do not let go of a cabinet until it has screws in two studs.', 'Fill the holes the ledge left in the wall.'],
   },
+  runGapStrip: {
+    title: (v) => (is(v, 'upper') ? 'Fit the upper gap strip' : 'Fit the gap strip'),
+    say: () => 'Hold the strip flush with the front of the frame, tight against the cabinets on the other wall. Clamp it and screw it on from inside the cabinet.',
+    more: () => ['The strip closes the gap that lets doors and drawers open past the handles on the other wall.', 'Drill through the vertical frame piece into the edge of the strip.', 'If the other wall is not quite square, plane or sand the strip to fit.'],
+  },
   runToeKick: {
     title: fixed('Cover the platforms'),
     say: (_v, m) => `Glue the toe kick pieces to the platforms and nail them ${nailIt(m)}. Where an end can be seen, fix the short piece first.`,
@@ -186,6 +191,11 @@ export const stepTemplates: Readonly<Record<string, StepTemplate>> = {
     title: fixed('Add the short cross pieces'),
     say: () => 'Glue and screw the short pieces between the uprights, where shown.',
     more: () => ['Pocket holes go in the back of each short piece, at both ends.', 'They separate one opening from the next. Set the same heights on both sides so the fronts line up.'],
+  },
+  blindPanel: {
+    title: fixed('Close the hidden part of the front'),
+    say: () => 'Glue the panel to the front edges of the box, tight against the end of the frame. Screw it to the frame from behind.',
+    more: () => ['This part sits in the corner, behind the cabinets on the other wall. Nobody sees it.', 'Keep its face flush with the face of the frame.', 'You reach the space behind it through the door.'],
   },
   frameOn: {
     title: fixed('Fix the frame to the box'),

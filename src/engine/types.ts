@@ -234,7 +234,7 @@ export interface StackBay {
 }
 
 /** Which cabinet this is. Each kind has its own starting sizes and proposed layout (section K). */
-export type CabinetType = 'vanity' | 'base' | 'drawerBase' | 'sinkBase' | 'upper';
+export type CabinetType = 'vanity' | 'base' | 'drawerBase' | 'sinkBase' | 'upper' | 'cornerBase';
 
 export interface DrawerColumnBay {
   readonly kind: 'drawerColumn';
@@ -480,7 +480,7 @@ export type ApplianceType = 'range' | 'dishwasher' | 'fridge';
 
 /** One thing along the wall, left to right. A width is only stored if she fixed it (rule R2). */
 export type RunItem =
-  | { readonly id: string; readonly kind: 'cabinet'; readonly cabinet: 'base' | 'drawerBase' | 'sinkBase'; readonly width?: Measurement }
+  | { readonly id: string; readonly kind: 'cabinet'; readonly cabinet: 'base' | 'drawerBase' | 'sinkBase' | 'cornerBase'; readonly width?: Measurement }
   | { readonly id: string; readonly kind: 'appliance'; readonly appliance: ApplianceType; readonly width?: Measurement };
 
 export interface RunDesign {
@@ -495,6 +495,24 @@ export interface RunDesign {
   readonly items: readonly RunItem[];
   /** Only what she changed from the defaults. Shared by every cabinet in the run. */
   readonly overrides: Overrides<VanityOptions>;
+  /**
+   * A second wall meeting this one at a corner (section N). The first wall's
+   * cabinets run into the corner; the second wall's start in front of them.
+   */
+  readonly corner?: {
+    /** Which end of the first wall the second wall is on. */
+    readonly side: 'left' | 'right';
+    /** Length of the second wall, from the corner to its far end. */
+    readonly length: Measurement;
+    /** What goes along the second wall, left to right as she faces it. */
+    readonly items: readonly RunItem[];
+    /** What is at the far end of the second wall. */
+    readonly end?: EndCondition;
+    /** Width of the corner cabinet the app adds to the first wall (N3). */
+    readonly cabinetWidth?: Measurement;
+    /** By item id, for the second wall: her changes to the row above (W1). */
+    readonly above?: Readonly<Record<string, 'upper' | 'none'>>;
+  };
   /** The row of upper cabinets (section W). Only what she changed; the app proposes the rest. */
   readonly uppers?: {
     readonly depth?: Measurement;
@@ -517,6 +535,11 @@ export interface PlanContext {
   readonly ends?: { readonly left: EndCondition; readonly right: EndCondition };
   /** Part numbers start with this instead of "P": "C01-" (rule R5). */
   readonly idPrefix?: `${'C' | 'U'}${string}`;
+  /**
+   * N3: at a corner, the box runs on past this end of the face frame, behind the
+   * other wall's cabinets. `width` is then the frame only; the box is longer by `by`.
+   */
+  readonly blind?: { readonly side: 'left' | 'right'; readonly by: Ticks };
   /** The run builds one platform for the stretch, so the cabinet builds none (rule R4). */
   readonly sharedPlatform?: boolean;
 }
@@ -548,6 +571,16 @@ export interface RunSpace {
   /** For the drawing: the space from the floor to the top of the base cabinets. */
   readonly fromTop: Ticks;
   readonly height: Ticks;
+}
+
+/** One cabinet or space seen from above. x runs along the first wall, z out from it. */
+export interface FloorBox {
+  readonly label: string;
+  readonly kind: 'cabinet' | 'space';
+  readonly x: Ticks;
+  readonly z: Ticks;
+  readonly sizeX: Ticks;
+  readonly sizeZ: Ticks;
 }
 
 /** What is above one position in the bottom row (rule W1). */
@@ -752,6 +785,8 @@ export interface Opening {
   readonly frontTop: Ticks;
   /** For a door: which edge the hinges are on. */
   readonly hingeSide?: 'left' | 'right';
+  /** Set on openings of the second wall of a corner. */
+  readonly wall?: 2;
   /** The door, drawer front and drawer box parts that belong to this opening. */
   readonly partIds: readonly PartId[];
 }
@@ -876,6 +911,8 @@ export type StepChapter = 'platform' | 'box' | 'faceFrame' | 'drawerBoxes' | 'fr
 export interface Step {
   readonly id: string;
   readonly number: number;
+  /** Set on steps of the second wall of a corner: its picture is drawn facing that wall. */
+  readonly wall?: 2;
   readonly chapter: StepChapter;
   /** In a run: which cabinet this step builds. Absent for steps that deal with the whole run. */
   readonly cabinet?: { readonly id: string; readonly name: string };
@@ -948,6 +985,19 @@ export interface PlanResult {
     readonly pictureHeight: Ticks;
     /** Floor to the bottom of the upper cabinets (rule W3), when there are any. */
     readonly upperBottom?: Derivation;
+    /** The second wall of a corner, as she faces it (section N). */
+    readonly second?: {
+      readonly side: 'left' | 'right';
+      readonly length: Ticks;
+      readonly cabinets: readonly RunCabinet[];
+      readonly uppers: readonly RunCabinet[];
+      readonly spaces: readonly RunSpace[];
+      readonly above: readonly RunAbove[];
+      /** Every piece in the project, placed as seen facing the second wall. */
+      readonly placements: readonly Placement[];
+    };
+    /** Both walls from above: where each cabinet and space stands on the floor. */
+    readonly fromAbove?: { readonly width: Ticks; readonly depth: Ticks; readonly boxes: readonly FloorBox[] };
   };
   /** Overall sizes worked out from the three numbers. Absent when the plan is blocked. */
   readonly overall?: OverallSizes;

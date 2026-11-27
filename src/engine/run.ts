@@ -11,7 +11,8 @@
  */
 import { cutDiagrams, shoppingList } from './cutting';
 import { cabinetKind } from './defaults/cabinets';
-import { aboveFor, applianceKind, runLimits, upperRow } from './defaults/run';
+import { aboveFor, applianceKind, CORNER_ITEM, cornerDefaults, runLimits, upperRow } from './defaults/run';
+import { defaultChoice, userChoice } from './defaults/values';
 import { deriveByRule, needsCheck, statusOf, type Val } from './derive';
 import { generatePlan } from './generatePlan';
 import { contact, screwsAlong } from './geometry';
@@ -19,6 +20,7 @@ import { effectiveOptions, resolveVanity, type BoardValues, type Resolved } from
 import type {
   Derivation,
   EndCondition,
+  FloorBox,
   HardwareLine,
   MaterialCatalog,
   Part,
@@ -32,6 +34,7 @@ import type {
   RunAbove,
   RunCabinet,
   RunDesign,
+  RunItem,
   RunSpace,
   Step,
   StepPiece,
@@ -62,7 +65,39 @@ const blocked = (inputs: readonly ResolvedInput[], issues: readonly ValidationIs
 
 const key = (ref: PieceRef) => `${ref.partId}#${ref.copy}`;
 
-export function generateRun(run: RunDesign, defaults: VanityOptions, catalog: MaterialCatalog): PlanResult {
+type Phase = 'buildBase' | 'buildUpper' | 'installBase' | 'installUpper' | 'fit';
+
+/** Where one wall stands in the project. A single run is wall 1 with no corner. */
+interface WallContext {
+  readonly wall: 1 | 2;
+  /** How many cabinets, uppers and run parts were numbered before this wall (N8). */
+  readonly first: { readonly cabinet: number; readonly upper: number; readonly runPart: number };
+  readonly corner?: {
+    /** Which end of this wall, as she faces it, is at the corner. */
+    readonly side: 'left' | 'right';
+    /** N2: this wall's cabinets run into the corner, or start in front of the other wall's. */
+    readonly role: 'into' | 'front';
+    /** Whether the other wall has an upper cabinet at the corner (N7). */
+    readonly otherHasUpper: boolean;
+  };
+}
+
+/** One wall's plan, with what is needed to put two walls together. */
+interface WallPlan extends PlanResult {
+  readonly extras?: {
+    readonly phaseOf: ReadonlyMap<string, Phase>;
+    /** Everything standing once this wall's base cabinets, or its uppers, are in. */
+    readonly installedBase: readonly PieceRef[];
+    readonly installedUpper: readonly PieceRef[];
+    readonly depth: Ticks;
+    readonly cutting: Parameters<typeof cutDiagrams>[2];
+  };
+}
+
+function planWall(run: RunDesign, defaults: VanityOptions, catalog: MaterialCatalog, wall: WallContext): WallPlan {
+  const corner = wall.corner;
+  const RUN = wall.wall === 2 ? 'run2' : 'run';
+  const numberOf = (id: string) => Number(id.slice(1));
   const issues: ValidationIssue[] = [];
   const inputs: ResolvedInput[] = [];
   const text = (ticks: number) => formatLength(asTicks(ticks)).text;
@@ -86,6 +121,11 @@ export function generateRun(run: RunDesign, defaults: VanityOptions, catalog: Ma
   const options = effectiveOptions(asCabinet('base', 'shared'), defaults);
   const runEnds = { left: options.ends.left, right: options.ends.right };
   for (const side of ['left', 'right'] as const) {
+    // At a corner that end is not hers to choose: nothing overhangs and nothing shows (N3, N5).
+    if (corner?.side === side) {
+      runEnds[side] = { ...runEnds[side], value: 'joined' };
+      continue;
+    }
     const c = runEnds[side];
     inputs.push({ path: `ends.${side}`, label: `${side} end of the run`, value: c.value, status: c.status, origin: c.origin, ...(c.note ? { note: c.note } : {}) });
   }
@@ -104,6 +144,23 @@ export function generateRun(run: RunDesign, defaults: VanityOptions, catalog: Ma
     error('RUN_IS_EMPTY', 'R1', 'There is nothing in the run yet.', 'Add a cabinet.', []);
     return blocked(inputs, issues);
   }
+
+  // --- N4, N5: at a corner ---------------------------------------------------
+  // The gap strip is an oak board at the width it is sold, and the gap is that wide.
+  const stripBoard = corner ? [r.toeKickBoard, r.frameBoard, r.supportBoard, r.slabBoard, r.shakerBoard].find((b) => b.stock.id === cornerDefaults.stripMaterial) : undefined;
+  if (corner && !stripBoard) {
+    error('CORNER_STRIP_BOARD', 'N4', 'The board for the gap strip at the corner is not in the materials list.', 'Put the oak 1x4 back in the materials.', []);
+    return blocked(inputs, issues);
+  }
+  const gap = stripBoard?.width;
+  const cornerIndex = corner?.side === 'left' ? 0 : run.items.length - 1;
+  if (corner?.role === 'front' && run.items[cornerIndex]!.kind !== 'cabinet') {
+    error('CORNER_NEEDS_CABINET', 'N5', 'An appliance space cannot be the first thing at the corner: there would be nothing to fix the gap strip to.', 'Put a cabinet between the corner and the appliance.', []);
+    return blocked(inputs, issues);
+  }
+  // N5: the second wall's cabinets start in front of the first wall's, after the gap.
+  const reserved = corner?.role === 'front' ? r.D.value + gap!.value : 0;
+  const usable = length - reserved;
 
   // --- R2: sharing the length out ------------------------------------------
   const narrowest = lengthOf(runLimits.narrowest);
@@ -129,15 +186,15 @@ export function generateRun(run: RunDesign, defaults: VanityOptions, catalog: Ma
 
   const fixedTotal = given.reduce((total, g) => total + (g?.width ?? 0), 0);
   const sharers = given.filter((g) => g === undefined).length;
-  const left = length - fixedTotal;
+  const left = usable - fixedTotal;
   const mark = lengthOf({ entered: '1/16', unit: 'in', status: 'confirmed', origin: 'appDefault' });
   const share = sharers > 0 ? Math.floor(left / sharers / mark) * mark : 0;
   const runPicture = (widths: readonly (number | undefined)[]): SumDiagram => ({
     direction: 'horizontal',
     totalLabel: 'length of the run',
-    total: length,
+    total: asTicks(usable),
     segments: run.items.flatMap((item, i) => (widths[i] === undefined ? [] : [{ label: item.kind === 'cabinet' ? cabinetKind(item.cabinet).name : applianceKind(item.appliance).name, length: asTicks(widths[i]!), colorRole: item.kind === 'cabinet' ? ('faceFrame' as const) : ('support' as const) }])),
-    difference: asTicks(length - widths.reduce<number>((total, w) => total + (w ?? 0), 0)),
+    difference: asTicks(usable - widths.reduce<number>((total, w) => total + (w ?? 0), 0)),
   });
   const itemPaths = ['length', ...run.items.map((item) => `items.${item.id}.width`)];
   if (sharers === 0 && left !== 0) {
@@ -145,8 +202,8 @@ export function generateRun(run: RunDesign, defaults: VanityOptions, catalog: Ma
       'RUN_WIDTH_MISMATCH',
       'R2',
       left > 0
-        ? `The cabinets and spaces add up to ${text(fixedTotal)}, but the run is ${text(length)}. That leaves ${text(left)} unexplained.`
-        : `The cabinets and spaces add up to ${text(fixedTotal)}, which is ${text(-left)} more than the run of ${text(length)}.`,
+        ? `The cabinets and spaces add up to ${text(fixedTotal)}, but the run is ${text(usable)}. That leaves ${text(left)} unexplained.`
+        : `The cabinets and spaces add up to ${text(fixedTotal)}, which is ${text(-left)} more than the run of ${text(usable)}.`,
       'Let one cabinet share the leftover width, or change the widths so they add up.',
       itemPaths,
       runPicture(given.map((g) => g?.width)),
@@ -174,7 +231,7 @@ export function generateRun(run: RunDesign, defaults: VanityOptions, catalog: Ma
     if (anyUpper) inputs.push({ path: `uppers.${which}`, label, value, status: m.status, origin: m.origin, ...(m.note ? { note: m.note } : {}) });
     return { label, value, status: m.status, origin: m.origin, source: `uppers.${which}` };
   };
-  upperValue('depth', 'upper cabinets: depth');
+  const upperDepth = upperValue('depth', 'upper cabinets: depth');
   const upperHeight = upperValue('height', 'upper cabinets: height');
   const aboveCounter = upperValue('aboveCounter', 'upper cabinets: gap above the countertop');
   const ceiling = upperValue('ceiling', 'ceiling height');
@@ -188,7 +245,7 @@ export function generateRun(run: RunDesign, defaults: VanityOptions, catalog: Ma
   const upperTop = asTicks(upperBottom.result + upperHeight.value);
 
   // --- R5: where everything sits, and its number ---------------------------
-  type Unit = RunCabinet & { readonly ends: { left: EndCondition; right: EndCondition } };
+  type Unit = RunCabinet & { readonly ends: { left: EndCondition; right: EndCondition }; readonly blind?: { readonly side: 'left' | 'right'; readonly by: Ticks } };
   const cabinets: Unit[] = [];
   const spaces: RunSpace[] = [];
   // The base boxes stand on the platform; the drawing runs from the floor up.
@@ -197,7 +254,7 @@ export function generateRun(run: RunDesign, defaults: VanityOptions, catalog: Ma
   const pictureHeight = anyUpper ? asTicks(Math.max(upperTop, baseTop)) : baseTop;
   const baseFromTop = asTicks(pictureHeight - baseTop);
   const lefts: number[] = [];
-  let x = 0;
+  let x = corner?.role === 'front' && corner.side === 'left' ? reserved : 0;
   run.items.forEach((item, i) => {
     const width = widths[i]!;
     lefts.push(x);
@@ -207,7 +264,18 @@ export function generateRun(run: RunDesign, defaults: VanityOptions, catalog: Ma
       spaces.push({ itemId: item.id, appliance: item.appliance, name: label, left: asTicks(x), width: asTicks(width), fromTop: baseFromTop, height: baseTop });
     } else {
       const neighbour = (other: (typeof run.items)[number] | undefined, runEnd: EndCondition): EndCondition => (other === undefined ? runEnd : other.kind === 'appliance' ? 'exposed' : 'joined');
-      const id = `C${String(cabinets.length + 1).padStart(2, '0')}`;
+      const id = `C${String(cabinets.length + 1 + wall.first.cabinet).padStart(2, '0')}`;
+      // N3: the corner cabinet's box runs on behind the other wall's cabinets and the gap.
+      const blindBy = item.cabinet === 'cornerBase' && corner ? asTicks(r.D.value + gap!.value) : undefined;
+      if (blindBy !== undefined && width - blindBy < narrowest) {
+        error(
+          'CORNER_CABINET_NARROW',
+          'N3',
+          `${id} ${label} is ${text(Math.max(width, 0))} wide, but ${text(blindBy)} of it is hidden in the corner. That leaves less than ${text(narrowest)} for its door.`,
+          'Make the corner cabinet wider.',
+          [`items.${item.id}.width`],
+        );
+      }
       cabinets.push({
         id,
         row: 'base',
@@ -220,6 +288,7 @@ export function generateRun(run: RunDesign, defaults: VanityOptions, catalog: Ma
         left: asTicks(Math.max(x, 0)),
         width: asTicks(Math.max(width, 0)),
         ends: { left: neighbour(run.items[i - 1], runEnds.left.value), right: neighbour(run.items[i + 1], runEnds.right.value) },
+        ...(blindBy !== undefined ? { blind: { side: corner!.side, by: blindBy } } : {}),
       });
       if (width < narrowest || width > widest) {
         error(
@@ -241,7 +310,7 @@ export function generateRun(run: RunDesign, defaults: VanityOptions, catalog: Ma
       status: item.width ? item.width.status : 'assumed',
       origin: item.width ? item.width.origin : 'appDefault',
       ...(item.width ? {} : standard?.checkAt ? { checkAt: standard.checkAt } : {}),
-      note: item.width ? 'You set this width.' : fixed ? (standard?.note ?? 'A common sink base width.') : 'Shares the run with the other cabinets.',
+      note: item.width ? (item.width.origin === 'user' ? 'You set this width.' : (item.width.note ?? '')) : fixed ? (standard?.note ?? 'A common sink base width.') : 'Shares the run with the other cabinets.',
     });
     x += width;
   });
@@ -256,8 +325,29 @@ export function generateRun(run: RunDesign, defaults: VanityOptions, catalog: Ma
     if (choice === 'none') return { itemId: item.id, under, choice, proposed, reason };
     // W4: a side beside a gap can be seen; beside another upper it is joined.
     const neighbour = (j: number, runEnd: EndCondition): EndCondition => (j < 0 || j >= run.items.length ? runEnd : aboveOf[j]!.choice === 'upper' ? 'joined' : 'exposed');
-    const id = `U${String(uppers.length + 1).padStart(2, '0')}`;
-    const width = widths[i]!;
+    const id = `U${String(uppers.length + 1 + wall.first.upper).padStart(2, '0')}`;
+    let width = widths[i]!;
+    let left = lefts[i]!;
+    let blind: Unit['blind'];
+    let cornerEnd: EndCondition | undefined;
+    if (corner && i === cornerIndex) {
+      if (corner.role === 'front') {
+        // N7: uppers are shallower, so this one reaches further towards the corner than the cabinet under it.
+        const further = r.D.value - upperDepth.value;
+        width += further;
+        if (corner.side === 'left') left -= further;
+        cornerEnd = corner.otherHasUpper ? 'joined' : 'exposed';
+      } else if (corner.otherHasUpper) {
+        blind = { side: corner.side, by: asTicks(upperDepth.value + gap!.value) };
+        cornerEnd = 'joined';
+      } else {
+        cornerEnd = 'wall';
+      }
+      if (blind && width - blind.by < narrowest) {
+        error('CORNER_CABINET_NARROW', 'N7', `${id} ${cabinetKind('upper').name} is ${text(Math.max(width, 0))} wide, but ${text(blind.by)} of it is hidden in the corner. That leaves less than ${text(narrowest)} for its doors.`, 'Make the corner cabinet wider, or leave the space above it empty.', [`uppers.above.${item.id}`, `items.${item.id}.width`]);
+      }
+    }
+    const endAt = (side: 'left' | 'right'): EndCondition => (cornerEnd && corner!.side === side ? cornerEnd : neighbour(side === 'left' ? i - 1 : i + 1, runEnds[side].value));
     uppers.push({
       id,
       row: 'upper',
@@ -267,9 +357,10 @@ export function generateRun(run: RunDesign, defaults: VanityOptions, catalog: Ma
       itemId: item.id,
       kind: 'upper',
       name: cabinetKind('upper').name,
-      left: asTicks(Math.max(lefts[i]!, 0)),
+      left: asTicks(Math.max(left, 0)),
       width: asTicks(Math.max(width, 0)),
-      ends: { left: neighbour(i - 1, runEnds.left.value), right: neighbour(i + 1, runEnds.right.value) },
+      ends: { left: endAt('left'), right: endAt('right') },
+      ...(blind ? { blind } : {}),
     });
     if (width < narrowest || width > widest) {
       error(
@@ -304,8 +395,9 @@ export function generateRun(run: RunDesign, defaults: VanityOptions, catalog: Ma
   // --- R3: each cabinet, planned by the usual rules -------------------------
   const plans = units.map((cabinet) =>
     generatePlan(cabinet.row === 'upper' ? asUpper(cabinet.itemId) : asCabinet(cabinet.kind, cabinet.itemId), defaults, catalog, {
-      width: cabinet.width,
+      width: cabinet.blind ? asTicks(cabinet.width - cabinet.blind.by) : cabinet.width,
       ends: cabinet.ends,
+      ...(cabinet.blind ? { blind: cabinet.blind } : {}),
       idPrefix: `${cabinet.id}-` as `${'C' | 'U'}${string}`,
       sharedPlatform: true,
     }),
@@ -324,7 +416,9 @@ export function generateRun(run: RunDesign, defaults: VanityOptions, catalog: Ma
   if (plans.some((p) => !p.canGeneratePlan)) return blocked(inputs, issues);
 
   // A base cabinet is placed from the floor already; an upper is lifted to its height on the wall (W3).
-  const shift = <T extends { readonly x: Ticks; readonly y: Ticks }>(thing: T, unit: Unit): T => ({ ...thing, x: asTicks(thing.x + unit.left), y: asTicks(thing.y + (unit.row === 'upper' ? unit.bottom : 0)) });
+  // A cabinet measures from the left end of its frame, which a corner cabinet's box can run past (N3).
+  const originOf = (unit: Unit) => unit.left + (unit.blind?.side === 'left' ? unit.blind.by : 0);
+  const shift = <T extends { readonly x: Ticks; readonly y: Ticks }>(thing: T, unit: Unit): T => ({ ...thing, x: asTicks(thing.x + originOf(unit)), y: asTicks(thing.y + (unit.row === 'upper' ? unit.bottom : 0)) });
   const parts: Part[] = plans.flatMap((plan, c) => plan.parts.map((p) => ({ ...p, assembly: `${units[c]!.id} ${units[c]!.name}: ${p.assembly}` })));
   const placements: Placement[] = plans.flatMap((plan, c) => plan.placements.map((p) => shift(p, units[c]!)));
   const openings = plans.flatMap((plan, c) =>
@@ -333,8 +427,9 @@ export function generateRun(run: RunDesign, defaults: VanityOptions, catalog: Ma
       id: `${units[c]!.id}-${o.id}`,
       bayId: `${units[c]!.id}-${o.bayId}`,
       label: `${units[c]!.id} ${o.label.charAt(0).toLowerCase()}${o.label.slice(1)}`,
-      left: asTicks(o.left + units[c]!.left),
-      frontLeft: asTicks(o.frontLeft + units[c]!.left),
+      left: asTicks(o.left + originOf(units[c]!)),
+      frontLeft: asTicks(o.frontLeft + originOf(units[c]!)),
+      ...(wall.wall === 2 ? { wall: 2 as const } : {}),
       top: asTicks(o.top + units[c]!.fromTop),
       frontTop: asTicks(o.frontTop + units[c]!.fromTop),
     })),
@@ -343,15 +438,15 @@ export function generateRun(run: RunDesign, defaults: VanityOptions, catalog: Ma
   // --- R4: one platform and toe kick for each stretch ----------------------
   const runParts: Part[] = [];
   const runPlacements: Placement[] = [];
-  const addPart = (name: string, material: BoardValues, lengthD: Derivation, widthD: Derivation, quantity: number, boxes: readonly (readonly [number, number, number, number, number, number])[]): PartId => {
-    const id = `R-${String(runParts.length + 1).padStart(2, '0')}` as PartId;
+  const addPart = (name: string, material: BoardValues, lengthD: Derivation, widthD: Derivation, quantity: number, boxes: readonly (readonly [number, number, number, number, number, number])[], look?: { readonly colorRole: Part['colorRole']; readonly assembly: string }): PartId => {
+    const id = `R-${String(runParts.length + 1 + wall.first.runPart).padStart(2, '0')}` as PartId;
     const thickness = deriveByRule('M1', `actual thickness of the ${material.stock.name}`, [material.thickness], material.thickness.value);
     const derivations = [thickness, lengthD, widthD];
     runParts.push({
       id,
       name,
-      colorRole: 'platform',
-      assembly: 'The whole run: platform and toe kick',
+      colorRole: look?.colorRole ?? 'platform',
+      assembly: look?.assembly ?? 'The whole run: platform and toe kick',
       materialId: material.stock.id,
       thickness: thickness.result,
       length: lengthD.result,
@@ -365,18 +460,30 @@ export function generateRun(run: RunDesign, defaults: VanityOptions, catalog: Ma
     boxes.forEach((b, i) => runPlacements.push({ partId: id, copy: i + 1, x: asTicks(b[0]), y: asTicks(b[1]), z: asTicks(b[2]), sizeX: asTicks(b[3]), sizeY: asTicks(b[4]), sizeZ: asTicks(b[5]) }));
     return id;
   };
-  const platform = buildPlatforms(r, cabinets, addPart);
+  const platform = buildPlatforms(r, cabinets, addPart, corner?.role === 'front' ? { side: corner.side, length } : undefined);
+
+  // --- N4, N7: a gap strip where this wall starts in front of the other ------
+  let baseStrip: PartId | undefined;
+  let upperStrip: PartId | undefined;
+  if (corner?.role === 'front') {
+    const g = gap!.value;
+    const thick = stripBoard!.thickness.value;
+    const look = { colorRole: 'faceFrame', assembly: 'The corner' } as const;
+    // In line with the face frames, between this wall's first cabinet and the front of the other wall's.
+    const at = (depth: number) => (corner.side === 'left' ? depth : length - depth - g);
+    const asSold = deriveByRule('N4', 'width of the board as sold', [gap!], gap!.value);
+    baseStrip = addPart('Gap strip', stripBoard!, deriveByRule('N4', 'height of the face frame', [r.H], r.H.value), asSold, 1, [[at(r.D.value), baseBottom, r.D.value - thick, g, r.H.value, thick]], look);
+    if (corner.otherHasUpper && aboveOf[cornerIndex]!.choice === 'upper') {
+      upperStrip = addPart('Gap strip (upper cabinets)', stripBoard!, deriveByRule('N7', 'height of the upper cabinets', [upperHeight], upperHeight.value), asSold, 1, [[at(upperDepth.value), upperBottom.result, upperDepth.value - thick, g, upperHeight.value, thick]], look);
+    }
+  }
 
   // --- R6: one set of cutting diagrams and one shopping list ---------------
   const allParts = [...parts, ...runParts];
   const methods = plans[0]!.methods!;
-  const diagrams = cutDiagrams(allParts, catalog, {
-    kerf: r.kerf.value,
-    keepOffcutsFrom: r.keepOffcutsFrom.value,
-    allowLongCutsFirst: methods.sheetSaw === 'trackSaw',
-    sheetSaw: methods.sheetSaw,
-    boardSaw: methods.boardSaw,
-  });
+  const cutting = { kerf: r.kerf.value, keepOffcutsFrom: r.keepOffcutsFrom.value, allowLongCutsFirst: methods.sheetSaw === 'trackSaw', sheetSaw: methods.sheetSaw, boardSaw: methods.boardSaw };
+  // With a corner, both walls are cut together afterwards (N8).
+  const diagrams = corner ? [] : cutDiagrams(allParts, catalog, cutting);
 
   const hardware = new Map<string, HardwareLine>();
   for (const line of plans.flatMap((p) => p.hardware)) {
@@ -393,6 +500,8 @@ export function generateRun(run: RunDesign, defaults: VanityOptions, catalog: Ma
   const steps: Omit<Step, 'number'>[] = [];
   const later: Omit<Step, 'number'>[] = [];
   const installed: PieceRef[][] = [];
+  const phaseOf = new Map<string, Phase>();
+  let installing: Phase = 'installBase';
   plans.forEach((plan, c) => {
     const cabinet = units[c]!;
     const inPlace = new Map<string, PieceRef>();
@@ -407,6 +516,7 @@ export function generateRun(run: RunDesign, defaults: VanityOptions, catalog: Ma
       const afterInstall = step.chapter === 'drawers' || step.chapter === 'doors';
       // The run sets cabinets in place itself; a cabinet keeps only its pipe openings from that chapter.
       if (step.chapter === 'install' && step.id !== 'plumbing') continue;
+      phaseOf.set(mine.id, afterInstall ? 'fit' : cabinet.row === 'base' ? 'buildBase' : 'buildUpper');
       if (afterInstall) later.push(mine);
       else {
         steps.push(mine);
@@ -429,7 +539,8 @@ export function generateRun(run: RunDesign, defaults: VanityOptions, catalog: Ma
         return patch ? screwsAlong(patch, screwRule) : [];
       }),
     );
-  const runStep = (step: Pick<Step, 'id' | 'templateId' | 'pieces'> & Partial<Step>) =>
+  const runStep = (step: Pick<Step, 'id' | 'templateId' | 'pieces'> & Partial<Step>) => {
+    phaseOf.set(step.id, installing);
     steps.push({
       chapter: 'install',
       scene: 'cabinet',
@@ -446,6 +557,7 @@ export function generateRun(run: RunDesign, defaults: VanityOptions, catalog: Ma
       tools: ['measuring'],
       ...step,
     });
+  };
   const count = (supplyId: string, points: readonly Point3[]) => {
     if (points.length > 0) supplyCounts.set(supplyId, (supplyCounts.get(supplyId) ?? 0) + points.length);
     return points.length > 0 ? [{ supplyId, quantity: points.length }] : [];
@@ -456,7 +568,7 @@ export function generateRun(run: RunDesign, defaults: VanityOptions, catalog: Ma
     const supports = copiesOf([section.supports]);
     const screws = screwsBetween(rails, supports);
     runStep({
-      id: `run:platform-${s + 1}`,
+      id: `${RUN}:platform-${s + 1}`,
       templateId: 'runPlatform',
       scene: 'bench',
       values: { supports: supports.length, spacing: r.supportSpacing.value, section: s + 1, sections: platform.sections.length },
@@ -467,31 +579,43 @@ export function generateRun(run: RunDesign, defaults: VanityOptions, catalog: Ma
     });
   });
   const platformPieces = copiesOf(platform.sections.flatMap((s) => [s.rails, s.supports]));
-  runStep({ id: 'run:place-platforms', templateId: 'setPlatform', values: { height: r.lumber.width.value }, pieces: still(platformPieces), tools: ['measuring', 'drill'] });
+  runStep({ id: `${RUN}:place-platforms`, templateId: 'setPlatform', values: { height: r.lumber.width.value }, pieces: still(platformPieces), tools: ['measuring', 'drill'] });
 
   const endStiles = (c: number) => installed[c]!.filter((ref) => parts.find((p) => p.id === ref.partId)!.name === 'Vertical frame piece (end)');
-  cabinets.forEach((cabinet, c) => {
-    const joins = cabinet.ends.left === 'joined';
-    const screws = joins ? screwsBetween(endStiles(c - 1), endStiles(c)) : [];
+  // N8: at a corner the cabinets go in starting from the corner; otherwise from the left.
+  const fromRight = corner?.side === 'right';
+  const stripStep = (id: string, strip: PartId, against: number, earlier: readonly PieceRef[], upper: boolean) => {
+    const pieces = copiesOf([strip]);
+    const screws = screwsBetween(pieces, endStiles(against));
+    runStep({ id, templateId: 'runGapStrip', values: { upper: upper ? 1 : 0 }, pieces: pieces.map((ref): StepPiece => ({ ...ref, from: 'front' })), earlierPieces: earlier, screws, fasteners: count('joining-screws', screws), tools: ['measuring', 'clamps', 'drill'] });
+  };
+  const setOrder = cabinets.map((_, c) => c);
+  if (fromRight) setOrder.reverse();
+  setOrder.forEach((c, k) => {
+    const cabinet = cabinets[c]!;
+    const joins = k > 0 && (fromRight ? cabinet.ends.right : cabinet.ends.left) === 'joined';
+    const screws = joins ? screwsBetween(endStiles(fromRight ? c + 1 : c - 1), endStiles(c)) : [];
+    const earlier = [...platformPieces, ...setOrder.slice(0, k).flatMap((done) => installed[done]!)];
     runStep({
-      id: `run:set-${cabinet.id}`,
+      id: `${RUN}:set-${cabinet.id}`,
       templateId: 'runSetCabinet',
-      values: { cabinet: c + 1, joins: joins ? 1 : 0 },
+      values: { cabinet: numberOf(cabinet.id), joins: joins ? 1 : 0 },
       pieces: installed[c]!.map((ref): StepPiece => ({ ...ref, from: 'above' })),
-      earlierPieces: [...platformPieces, ...installed.slice(0, c).flat()],
+      earlierPieces: earlier,
       screws,
       fasteners: count('joining-screws', screws),
       tools: joins ? ['measuring', 'clamps', 'drill'] : ['measuring'],
     });
+    if (k === 0 && baseStrip) stripStep(`${RUN}:gap-strip`, baseStrip, c, [...earlier, ...installed[c]!], false);
   });
   const isStrip = (ref: PieceRef) => parts.find((p) => p.id === ref.partId)!.name.includes('ounting strip');
-  const everything = [...platformPieces, ...installed.slice(0, cabinets.length).flat()];
+  const everything = [...platformPieces, ...installed.slice(0, cabinets.length).flat(), ...(baseStrip ? copiesOf([baseStrip]) : [])];
   const strips = installed.slice(0, cabinets.length).flat().filter(isStrip);
-  runStep({ id: 'run:wall', templateId: 'wallScrews', pieces: still(strips), earlierPieces: everything.filter((ref) => !strips.some((s) => key(s) === key(ref))), tools: ['measuring', 'drill'] });
+  runStep({ id: `${RUN}:wall`, templateId: 'wallScrews', pieces: still(strips), earlierPieces: everything.filter((ref) => !strips.some((s) => key(s) === key(ref))), tools: ['measuring', 'drill'] });
   const kick = copiesOf(platform.toeKick);
   const kickPlaces = kick.map((ref) => ({ ref, place: placeOf.get(key(ref))! }));
   runStep({
-    id: 'run:toe-kick',
+    id: `${RUN}:toe-kick`,
     templateId: 'runToeKick',
     values: { toeSpace: r.toeSpace.value, pieces: kick.length },
     // A return runs front to back and arrives from its end of the run; a front piece arrives from the front.
@@ -502,39 +626,48 @@ export function generateRun(run: RunDesign, defaults: VanityOptions, catalog: Ma
   });
 
   // --- W6: one ledge for the row, then each upper hung and screwed to the last
+  installing = 'installUpper';
+  let hungPieces: PieceRef[] = [];
   if (uppers.length > 0) {
     const piecesOf = (u: number) => installed[cabinets.length + u]!;
     const upperStrips = uppers.flatMap((_, u) => piecesOf(u).filter(isStrip));
     const below = [...everything, ...kick];
+    const cornerIndexOfUppers = uppers.findIndex((u) => u.itemId === run.items[cornerIndex]?.id);
     runStep({
-      id: 'run:ledger',
+      id: `${RUN}:ledger`,
       templateId: 'runLedger',
       values: { height: upperBottom.result, gap: aboveCounter.value, uppers: uppers.length },
       pieces: still(upperStrips),
       earlierPieces: below,
       tools: ['measuring', 'drill'],
     });
-    uppers.forEach((upper, u) => {
-      const joins = upper.ends.left === 'joined';
-      const screws = joins ? screwsBetween(endStiles(cabinets.length + u - 1), endStiles(cabinets.length + u)) : [];
+    const hangOrder = uppers.map((_, u) => u);
+    if (fromRight) hangOrder.reverse();
+    hangOrder.forEach((u, k) => {
+      const upper = uppers[u]!;
+      const joins = k > 0 && (fromRight ? upper.ends.right : upper.ends.left) === 'joined';
+      const screws = joins ? screwsBetween(endStiles(cabinets.length + (fromRight ? u + 1 : u - 1)), endStiles(cabinets.length + u)) : [];
+      const earlier = [...below, ...hangOrder.slice(0, k).flatMap((done) => piecesOf(done))];
       runStep({
-        id: `run:hang-${upper.id}`,
+        id: `${RUN}:hang-${upper.id}`,
         templateId: 'runHangUpper',
-        values: { cabinet: u + 1, joins: joins ? 1 : 0 },
+        values: { cabinet: numberOf(upper.id), joins: joins ? 1 : 0 },
         pieces: piecesOf(u).map((ref): StepPiece => ({ ...ref, from: 'front' })),
-        earlierPieces: [...below, ...uppers.slice(0, u).flatMap((_, earlier) => piecesOf(earlier))],
+        earlierPieces: earlier,
         screws,
         fasteners: count('joining-screws', screws),
         tools: joins ? ['measuring', 'clamps', 'drill'] : ['measuring', 'drill'],
       });
+      if (upperStrip && u === cornerIndexOfUppers) stripStep(`${RUN}:upper-gap-strip`, upperStrip, cabinets.length + u, [...earlier, ...piecesOf(u)], true);
     });
-    const hung = uppers.flatMap((_, u) => piecesOf(u));
+    const hung = [...uppers.flatMap((_, u) => piecesOf(u)), ...(upperStrip ? copiesOf([upperStrip]) : [])];
+    hungPieces = hung;
     runStep({
-      id: 'run:upper-wall',
+      id: `${RUN}:upper-wall`,
       templateId: 'runUpperWall',
       values: { uppers: uppers.length },
       pieces: still(upperStrips),
-      earlierPieces: [...below, ...hung.filter((ref) => !isStrip(ref))],
+      earlierPieces: [...below, ...hung.filter((ref) => !upperStrips.some((s) => key(s) === key(ref)))],
       tools: ['measuring', 'drill'],
     });
   }
@@ -561,11 +694,144 @@ export function generateRun(run: RunDesign, defaults: VanityOptions, catalog: Ma
     tools: [...tools.values()],
     supplies,
     placements: allPlacements,
+    steps: steps.map((step, i) => ({ ...step, ...(wall.wall === 2 ? { wall: 2 as const } : {}), number: i + 1 })),
+    extras: { phaseOf, installedBase: [...everything, ...kick], installedUpper: hungPieces, depth: r.D.value, cutting },
+  };
+}
+
+/**
+ * The engine's entry point for a run. One wall is planned as it stands; with a
+ * corner (section N), each wall is planned by the same rules and the two are
+ * put together in one room, with one set of lists and one build.
+ */
+export function generateRun(run: RunDesign, defaults: VanityOptions, catalog: MaterialCatalog): PlanResult {
+  const start = { cabinet: 0, upper: 0, runPart: 0 };
+  if (!run.corner) {
+    const { extras: _extras, ...plan } = planWall(run, defaults, catalog, { wall: 1, first: start });
+    return plan;
+  }
+  const c = run.corner;
+  // Facing the second wall, the corner is on the other hand.
+  const side2 = c.side === 'right' ? 'left' : 'right';
+  const far2 = c.side;
+
+  // N3: the app adds the corner cabinet to the first wall itself.
+  const cornerItem: RunItem = { id: CORNER_ITEM, kind: 'cabinet', cabinet: 'cornerBase', width: c.cabinetWidth ?? cornerDefaults.cabinetWidth };
+  const run1: RunDesign = { ...run, items: c.side === 'right' ? [...run.items, cornerItem] : [cornerItem, ...run.items] };
+  const end2 = c.end === undefined ? defaultChoice(cornerDefaults.end, 'Open, until you say there is a wall.') : userChoice(c.end);
+  const { above: _wallOneAbove, ...upperSizes } = run.uppers ?? {};
+  const run2: RunDesign = {
+    ...run,
+    length: c.length,
+    items: c.items,
+    uppers: { ...upperSizes, ...(c.above ? { above: c.above } : {}) },
+    overrides: { ...run.overrides, ends: { ...run.overrides.ends, [far2]: end2 } },
+  };
+  const atCorner2 = c.items[side2 === 'left' ? 0 : c.items.length - 1];
+  const upperOn2 = atCorner2 !== undefined && aboveFor(atCorner2, run2.uppers).choice === 'upper';
+  const upperOn1 = aboveFor(cornerItem, run.uppers).choice === 'upper';
+
+  const wall1 = planWall(run1, defaults, catalog, { wall: 1, first: start, corner: { side: c.side, role: 'into', otherHasUpper: upperOn2 } });
+  const wall2 = planWall(run2, defaults, catalog, {
+    wall: 2,
+    first: { cabinet: wall1.run?.cabinets.length ?? 0, upper: wall1.run?.uppers.length ?? 0, runPart: wall1.parts.filter((p) => p.id.startsWith('R-')).length },
+    corner: { side: side2, role: 'front', otherHasUpper: upperOn1 },
+  });
+
+  // --- One list of values and problems, saying which wall each belongs to ---
+  const onSecond = (path: string) => (path === 'length' ? 'corner.length' : path === `ends.${far2}` ? 'corner.end' : path.startsWith('items.') ? `corner.${path}` : path.startsWith('uppers.above.') ? `corner.above.${path.slice('uppers.above.'.length)}` : path);
+  const inputs: ResolvedInput[] = [...wall1.inputs];
+  for (const input of wall2.inputs) {
+    const path = onSecond(input.path);
+    if (path === input.path) {
+      // Shared by both walls: listed once.
+      if (!inputs.some((i) => i.path === path)) inputs.push(input);
+    } else inputs.push({ ...input, path, label: `second wall: ${input.label}` });
+  }
+  const issues: ValidationIssue[] = [...wall1.issues];
+  for (const issue of wall2.issues) {
+    if (issues.some((i) => i.code === issue.code && i.explanation === issue.explanation)) continue;
+    issues.push(issue.code === 'TOOL_TO_BUY_OR_BORROW' ? issue : { ...issue, inputPaths: issue.inputPaths.map(onSecond), explanation: `Second wall: ${issue.explanation}` });
+  }
+  if (!wall1.canGeneratePlan || !wall2.canGeneratePlan || !wall1.extras || !wall2.extras || !wall1.run || !wall2.run) return blocked(inputs, issues);
+
+  // --- N8: both walls in one room -------------------------------------------
+  // x runs along the first wall and z out from it. Facing the second wall, its
+  // own x runs along it and its z out from it; these turn one into the other.
+  const L1 = wall1.run.length;
+  const L2 = wall2.run.length;
+  type Flat = { readonly x: Ticks; readonly z: Ticks; readonly sizeX: Ticks; readonly sizeZ: Ticks };
+  const toRoom = <T extends Flat>(p: T): T =>
+    c.side === 'right' ? { ...p, x: asTicks(L1 - p.z - p.sizeZ), z: p.x, sizeX: p.sizeZ, sizeZ: p.sizeX } : { ...p, x: p.z, z: asTicks(L2 - p.x - p.sizeX), sizeX: p.sizeZ, sizeZ: p.sizeX };
+  const toSecond = <T extends Flat>(p: T): T =>
+    c.side === 'right' ? { ...p, x: p.z, z: asTicks(L1 - p.x - p.sizeX), sizeX: p.sizeZ, sizeZ: p.sizeX } : { ...p, x: asTicks(L2 - p.z - p.sizeZ), z: p.x, sizeX: p.sizeZ, sizeZ: p.sizeX };
+
+  const parts = [...wall1.parts, ...wall2.parts];
+  const placements = [...wall1.placements, ...wall2.placements.map(toRoom)];
+  const depth = wall1.extras.depth;
+  const floor = (label: string, kind: FloorBox['kind'], left: Ticks, width: Ticks): FloorBox => ({ label, kind, x: left, z: asTicks(0), sizeX: width, sizeZ: depth });
+  const boxes: FloorBox[] = [
+    ...wall1.run.cabinets.map((cab) => floor(cab.id, 'cabinet', cab.left, cab.width)),
+    ...wall1.run.spaces.map((sp) => floor(sp.name, 'space', sp.left, sp.width)),
+    ...wall2.run.cabinets.map((cab) => toRoom(floor(cab.id, 'cabinet', cab.left, cab.width))),
+    ...wall2.run.spaces.map((sp) => toRoom(floor(sp.name, 'space', sp.left, sp.width))),
+  ];
+
+  // --- R6, W7: one set of cutting diagrams, one shopping list ---------------
+  const diagrams = cutDiagrams(parts, catalog, wall1.extras.cutting);
+  const hardware = new Map<string, HardwareLine>();
+  for (const line of [...wall1.hardware, ...wall2.hardware]) {
+    const id = `${line.hardwareId}|${line.length?.result ?? ''}`;
+    const known = hardware.get(id);
+    hardware.set(id, known ? { ...known, quantity: known.quantity + line.quantity } : line);
+  }
+  const tools = new Map<string, PlanTool>();
+  for (const tool of [...wall1.tools, ...wall2.tools]) if (!tools.has(tool.id)) tools.set(tool.id, tool);
+  const supplies: SupplyLine[] = wall1.supplies.map((supply) => {
+    const other = wall2.supplies.find((x) => x.id === supply.id)?.quantity;
+    return supply.quantity === undefined && other === undefined ? supply : { ...supply, quantity: (supply.quantity ?? 0) + (other ?? 0) };
+  });
+
+  // --- N8: build everything, then set each wall from the corner --------------
+  const phased = (wallPlan: WallPlan, phase: Phase, alreadyThere: readonly PieceRef[] = []) =>
+    wallPlan.steps.filter((step) => wallPlan.extras!.phaseOf.get(step.id) === phase).map((step) => (alreadyThere.length > 0 ? { ...step, earlierPieces: [...alreadyThere, ...step.earlierPieces] } : step));
+  const steps = [
+    ...phased(wall1, 'buildBase'),
+    ...phased(wall2, 'buildBase'),
+    ...phased(wall1, 'buildUpper'),
+    ...phased(wall2, 'buildUpper'),
+    ...phased(wall1, 'installBase'),
+    ...phased(wall2, 'installBase', wall1.extras.installedBase),
+    ...phased(wall1, 'installUpper', wall2.extras.installedBase),
+    ...phased(wall2, 'installUpper', [...wall1.extras.installedBase, ...wall1.extras.installedUpper]),
+    ...phased(wall1, 'fit'),
+    ...phased(wall2, 'fit'),
+  ];
+
+  return {
+    inputs,
+    issues,
+    canGeneratePlan: true,
+    run: {
+      ...wall1.run,
+      second: { side: c.side, length: L2, cabinets: wall2.run.cabinets, uppers: wall2.run.uppers, spaces: wall2.run.spaces, above: wall2.run.above, placements: [...wall1.placements.map(toSecond), ...wall2.placements] },
+      fromAbove: { width: L1, depth: asTicks(Math.max(L2, depth)), boxes },
+    },
+    ...(wall1.overall ? { overall: wall1.overall } : {}),
+    openings: [...wall1.openings, ...wall2.openings],
+    parts,
+    cutDiagrams: diagrams,
+    materials: shoppingList(diagrams, parts, catalog),
+    hardware: [...hardware.values()],
+    ...(wall1.methods ? { methods: wall1.methods } : {}),
+    tools: [...tools.values()],
+    supplies,
+    placements,
     steps: steps.map((step, i) => ({ ...step, number: i + 1 })),
   };
 }
 
-type AddPart = (name: string, material: BoardValues, length: Derivation, width: Derivation, quantity: number, boxes: readonly (readonly [number, number, number, number, number, number])[]) => PartId;
+type AddPart = (name: string, material: BoardValues, length: Derivation, width: Derivation, quantity: number, boxes: readonly (readonly [number, number, number, number, number, number])[], look?: { readonly colorRole: Part['colorRole']; readonly assembly: string }) => PartId;
 
 interface PlatformSection {
   readonly rails: PartId;
@@ -578,7 +844,7 @@ interface PlatformSection {
  * any end that can be seen. The same rules as a single cabinet's platform
  * (P1 to P5), applied to the stretch.
  */
-function buildPlatforms(r: Resolved, cabinets: readonly (RunCabinet & { readonly ends: { left: EndCondition; right: EndCondition } })[], add: AddPart): { sections: PlatformSection[]; toeKick: PartId[] } {
+function buildPlatforms(r: Resolved, cabinets: readonly (RunCabinet & { readonly ends: { left: EndCondition; right: EndCondition } })[], add: AddPart, corner?: { readonly side: 'left' | 'right'; readonly length: number }): { sections: PlatformSection[]; toeKick: PartId[] } {
   const sections: PlatformSection[] = [];
   const toeKick: PartId[] = [];
   const Lt = r.lumber.thickness.value;
@@ -605,8 +871,10 @@ function buildPlatforms(r: Resolved, cabinets: readonly (RunCabinet & { readonly
     const lastCabinet = stretch.at(-1)!;
     const seenLeft = firstCabinet.ends.left === 'exposed';
     const seenRight = lastCabinet.ends.right === 'exposed';
-    const start = firstCabinet.left + overhang(firstCabinet.ends.left) + (seenLeft ? setback : 0);
-    const end = lastCabinet.left + lastCabinet.width - overhang(lastCabinet.ends.right) - (seenRight ? setback : 0);
+    // N6: at a corner this platform runs on across the gap to meet the other wall's toe kick.
+    const meet = depth + tk;
+    const start = corner?.side === 'left' && n === 0 ? meet : firstCabinet.left + overhang(firstCabinet.ends.left) + (seenLeft ? setback : 0);
+    const end = corner?.side === 'right' && n === stretches.length - 1 ? corner.length - meet : lastCabinet.left + lastCabinet.width - overhang(lastCabinet.ends.right) - (seenRight ? setback : 0);
     // Break only where two cabinets meet, taking as many cabinets as fit on one board.
     const joints = stretch.slice(1).map((c) => c.left);
     const breaks: number[] = [start];

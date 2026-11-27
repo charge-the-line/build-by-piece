@@ -17,6 +17,8 @@ export interface CabinetKind {
   readonly hasPlatform: boolean;
   /** Needs openings for pipes (step A8). */
   readonly hasPlumbing: boolean;
+  /** Only made as part of a kitchen with a corner (section N), never on its own. */
+  readonly onlyAtACorner?: boolean;
   /** Defaults that differ from the vanity's. */
   readonly options: Overrides<VanityOptions>;
 }
@@ -30,6 +32,7 @@ export const cabinetKinds: readonly CabinetKind[] = [
   { type: 'base', name: 'Base cabinet', blurb: 'A drawer over a door, with a shelf.', start: { width: '18', depth: '24', height: '31' }, hasPlatform: true, hasPlumbing: false, options: kitchenTop },
   { type: 'drawerBase', name: 'Drawer base', blurb: 'A stack of three drawers.', start: { width: '18', depth: '24', height: '31' }, hasPlatform: true, hasPlumbing: false, options: kitchenTop },
   { type: 'sinkBase', name: 'Sink base', blurb: 'Doors, with room for the sink.', start: { width: '36', depth: '24', height: '31' }, hasPlatform: true, hasPlumbing: true, options: kitchenTop },
+  { type: 'cornerBase', name: 'Corner base cabinet', blurb: 'Runs into the corner. A door, with a shelf.', start: { width: '18', depth: '24', height: '31' }, hasPlatform: true, hasPlumbing: false, onlyAtACorner: true, options: kitchenTop },
   { type: 'upper', name: 'Upper cabinet', blurb: 'Hangs on the wall. Doors and shelves.', start: { width: '30', depth: '12', height: '30' }, hasPlatform: false, hasPlumbing: false, options: {} },
 ];
 
@@ -68,7 +71,7 @@ export function doorSpaces(width: number, stile: number, maxDoor: number): numbe
 }
 
 /** L0 and K3-K7: the layout the app proposes for a cabinet of this kind and width. */
-export function proposeLayout(type: CabinetType, width: number, stile: number, maxDoor: number): readonly Bay[] {
+export function proposeLayout(type: CabinetType, width: number, stile: number, maxDoor: number, blindSide?: 'left' | 'right'): readonly Bay[] {
   if (type === 'vanity') return proposedVanityLayout;
   if (type === 'drawerBase') {
     return [{ kind: 'stack', id: 'bay-1', width: { by: 'fill' }, items: [drawer('bay-1-drawer-1', true), drawer('bay-1-drawer-2', false), drawer('bay-1-drawer-3', false)] }];
@@ -77,7 +80,8 @@ export function proposeLayout(type: CabinetType, width: number, stile: number, m
   return Array.from({ length: spaces }, (_, i): Bay => {
     const id = `bay-${i + 1}`;
     // Doors open away from each other; a single door is hinged on the left.
-    const hinge = i % 2 === 0 ? 'left' : 'right';
+    // N3: beside a corner, a single door is hinged on the side away from the corner, so she can reach in.
+    const hinge = spaces === 1 && blindSide === 'left' ? 'right' : i % 2 === 0 ? 'left' : 'right';
     const top = type === 'base' ? [drawer(`${id}-drawer-1`, true)] : type === 'sinkBase' ? [fixedPanel(`${id}-panel`)] : [];
     return { kind: 'stack', id, width: { by: 'fill' }, items: [...top, door(`${id}-door`, hinge)] };
   });

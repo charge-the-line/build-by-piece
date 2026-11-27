@@ -7,7 +7,7 @@ import { defaultCatalog } from '../engine/defaults/catalog';
 import { userChoice, userEntered } from '../engine/defaults/values';
 import { vanity01 } from '../engine/fixtures/vanity-01';
 import { cabinetKind } from '../engine/defaults/cabinets';
-import { startingRun } from '../engine/defaults/run';
+import { CORNER_ITEM, startingCorner, startingRun } from '../engine/defaults/run';
 import type { Approach, CabinetType, Design, EndCondition, PanelMethod, ProjectFile, RunDesign, RunItem, ToolId, VanityDesign } from '../engine/types';
 
 const STORAGE_KEY = 'build-by-piece:project';
@@ -27,7 +27,9 @@ function isDesign(value: unknown): value is Design {
 /** The three sizes of a project, as she typed them, for the project list. */
 export const sizeText = (design: Design): string =>
   design.projectType === 'run'
-    ? `${design.length.entered}" long, ${design.items.filter((i) => i.kind === 'cabinet').length} cabinets`
+    ? design.corner
+      ? `${design.length.entered}" and ${design.corner.length.entered}" walls`
+      : `${design.length.entered}" long, ${design.items.filter((i) => i.kind === 'cabinet').length} cabinets`
     : `${design.width.entered}" × ${design.depth.entered}" × ${design.height.entered}"`;
 
 export type Checked = Readonly<Record<string, boolean>>;
@@ -114,16 +116,17 @@ export function useProject() {
     open: (id: string) => setShelf((s) => ({ ...s, currentId: id })),
     rename: (name: string) => update((p) => ({ ...p, design: { ...p.design, name } })),
     /** A new cabinet of a kind, at its starting sizes. It keeps the open project's tools and approach, so the tool list is only set up once. */
-    create: (type: CabinetType | 'run') =>
+    create: (type: CabinetType | 'run' | 'corner') =>
       setShelf((s) => {
         const taken = new Set(s.projects.map((p) => p.design.id));
         let n = s.projects.length + 1;
         while (taken.has(`project-${n}`)) n += 1;
         const { tools, approach } = project.design.overrides;
         const kept = { ...(tools ? { tools } : {}), ...(approach ? { approach } : {}) };
-        if (type === 'run') {
-          const runs = s.projects.filter((p) => p.design.projectType === 'run').length;
-          const design: RunDesign = { ...startingRun, id: `project-${n}`, name: runs === 0 ? startingRun.name : `${startingRun.name} ${runs + 1}`, overrides: { ...startingRun.overrides, ...kept } };
+        if (type === 'run' || type === 'corner') {
+          const start = type === 'corner' ? startingCorner : startingRun;
+          const runs = s.projects.filter((p) => p.design.projectType === 'run' && (p.design.corner !== undefined) === (type === 'corner')).length;
+          const design: RunDesign = { ...start, id: `project-${n}`, name: runs === 0 ? start.name : `${start.name} ${runs + 1}`, overrides: { ...start.overrides, ...kept } };
           return { currentId: design.id, projects: [...s.projects, { design, checked: {} }] };
         }
         const kind = cabinetKind(type);
@@ -208,7 +211,7 @@ const withOverride = <T extends Design>(design: T, path: string, entered: string
 });
 
 /** True when this path is a default the user can change on the choices screen. */
-export const isChangeable = (path: string): boolean => !['width', 'depth', 'height', 'length'].includes(path) && !path.startsWith('layout.') && !path.startsWith('items.');
+export const isChangeable = (path: string): boolean => !['width', 'depth', 'height', 'length'].includes(path) && !path.startsWith('layout.') && !path.startsWith('items.') && !path.startsWith('corner.');
 
 // --- A run of cabinets ---------------------------------------------------------
 
@@ -217,24 +220,53 @@ export const withRunSize = (run: RunDesign, which: 'length' | 'depth' | 'height'
 export const withRunItems = (run: RunDesign, items: readonly RunItem[]): RunDesign => ({ ...run, items });
 
 /** Fixes one cabinet or space at a width she typed, or (with no text) lets it share again. */
-export const withItemWidth = (run: RunDesign, id: string, entered: string | undefined): RunDesign => ({
-  ...run,
-  items: run.items.map((item) => {
+export const itemsWithWidth = (items: readonly RunItem[], id: string, entered: string | undefined): RunItem[] =>
+  items.map((item) => {
     if (item.id !== id) return item;
     const { width: _dropped, ...rest } = item;
     return entered === undefined ? rest : { ...rest, width: userEntered(entered) };
-  }),
-});
+  });
+
+/** Changes something about the second wall of a corner (section N). */
+export const withCorner = (run: RunDesign, change: Partial<NonNullable<RunDesign['corner']>>): RunDesign => (run.corner ? { ...run, corner: { ...run.corner, ...change } } : run);
+
+/** Sets the corner cabinet's width, or (with no text) puts the app's choice back (N3). */
+export const withCornerWidth = (run: RunDesign, entered: string | undefined): RunDesign => {
+  if (!run.corner) return run;
+  const { cabinetWidth: _dropped, ...rest } = run.corner;
+  return { ...run, corner: entered === undefined ? rest : { ...rest, cabinetWidth: userEntered(entered) } };
+};
+
+/**
+ * N2: makes the other wall the one whose cabinets run into the corner. The
+ * walls change places, so the corner is at the other end of the new first wall.
+ */
+export function withWallsSwapped(run: RunDesign): RunDesign {
+  if (!run.corner) return run;
+  const { side, length, items, end, above, cabinetWidth } = run.corner;
+  const far = side === 'right' ? 'left' : 'right';
+  const { above: firstAbove, ...upperSizes } = run.uppers ?? {};
+  const firstEnd = run.overrides.ends?.[far]?.value;
+  // The corner cabinet's own "above" choice stays with the corner.
+  const cornerAbove = firstAbove?.[CORNER_ITEM];
+  const { [CORNER_ITEM]: _corner, ...firstRest } = firstAbove ?? {};
+  return {
+    ...run,
+    length,
+    items,
+    uppers: { ...upperSizes, above: { ...above, ...(cornerAbove ? { [CORNER_ITEM]: cornerAbove } : {}) } },
+    overrides: { ...run.overrides, ends: { ...run.overrides.ends, [side]: userChoice(end ?? 'exposed') } },
+    corner: { side: far, length: run.length, items: run.items, above: firstRest, ...(firstEnd ? { end: firstEnd } : {}), ...(cabinetWidth ? { cabinetWidth } : {}) },
+  };
+}
 
 /** Puts an upper cabinet above one position, or leaves it empty (rule W1). */
-export const withAbove = (run: RunDesign, itemId: string, choice: 'upper' | 'none'): RunDesign => ({
-  ...run,
-  uppers: { ...run.uppers, above: { ...run.uppers?.above, [itemId]: choice } },
-});
+export const withAbove = (run: RunDesign, itemId: string, choice: 'upper' | 'none', wall: 1 | 2 = 1): RunDesign =>
+  wall === 2 ? withCorner(run, { above: { ...run.corner?.above, [itemId]: choice } }) : { ...run, uppers: { ...run.uppers, above: { ...run.uppers?.above, [itemId]: choice } } };
 
 /** An id no item in the run has yet. */
-export function newItemId(run: RunDesign): string {
-  let n = run.items.length + 1;
-  while (run.items.some((item) => item.id === `item-${n}`)) n += 1;
+export function newItemId(items: readonly RunItem[]): string {
+  let n = items.length + 1;
+  while (items.some((item) => item.id === `item-${n}`)) n += 1;
   return `item-${n}`;
 }

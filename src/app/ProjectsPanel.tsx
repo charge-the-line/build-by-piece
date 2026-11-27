@@ -12,7 +12,7 @@ interface Props {
   readonly projects: readonly ProjectInfo[];
   readonly currentId: string;
   readonly onOpen: (id: string) => void;
-  readonly onCreate: (type: CabinetType | 'run') => void;
+  readonly onCreate: (type: CabinetType | 'run' | 'corner') => void;
   readonly onRename: (name: string) => void;
   readonly onRemove: (id: string) => void;
 }
@@ -24,6 +24,7 @@ export const CABINET_PICTURES: Readonly<Record<CabinetType, string>> = {
   drawerBase: 'M12 8h24v30H12zM14 38v6h20v-6M12 16h24M12 27h24M21 12h6M21 21h6M21 32h6',
   sinkBase: 'M6 8h36v30H6zM8 38v6h32v-6M6 16h36M24 16v22M20 26v4M28 26v4M18 4h12v4',
   upper: 'M8 6h32v30H8zM24 6v30M20 24v6M28 24v6M4 2h40',
+  cornerBase: 'M6 10h36v30H6zM26 10v30M30 22v6M6 44h36',
 };
 
 /** Other kinds of project Ashley asked for, which the app cannot build yet. */
@@ -71,7 +72,7 @@ export function ProjectsPanel({ projects, currentId, onOpen, onCreate, onRename,
       <section>
         <h2>Start something new</h2>
         <ul className="kinds">
-          {cabinetKinds.map((kind) => (
+          {cabinetKinds.filter((kind) => !kind.onlyAtACorner).map((kind) => (
             <li key={kind.type}>
               <button type="button" onClick={() => onCreate(kind.type)}>
                 <svg className="icon" viewBox="0 0 48 48" aria-hidden="true">
@@ -89,6 +90,15 @@ export function ProjectsPanel({ projects, currentId, onOpen, onCreate, onRename,
               </svg>
               <span>Kitchen run</span>
               <span className="hint">Several cabinets along one wall.</span>
+            </button>
+          </li>
+          <li>
+            <button type="button" onClick={() => onCreate('corner')}>
+              <svg className="icon" viewBox="0 0 48 48" aria-hidden="true">
+                <path d="M4 4h40v14H18v26H4zM18 18l-6-6M30 4v14M4 30h14" />
+              </svg>
+              <span>Kitchen with a corner</span>
+              <span className="hint">Two walls that meet.</span>
             </button>
           </li>
           {LATER.map((name) => (

@@ -347,6 +347,20 @@ export function assemble(r: Resolved, built: VanityBuild, methods: PlanMethods, 
     ],
   });
 
+  // N3: at a corner, a plain panel closes the part of the front nobody sees.
+  const blindPanel = named('Blind panel');
+  add({
+    id: 'blindPanel',
+    chapter: 'faceFrame',
+    scene: 'cabinet',
+    templateId: 'blindPanel',
+    pieces: from(blindPanel, 'front'),
+    joints: [
+      { method: 'pocketScrews', face: 'back face', through: blindPanel, into: frameEnds, fastener: pocketScrew(blindPanel) },
+      { method: 'glue', through: blindPanel, into: [...leftSide, ...rightSide, ...bottom, ...topPanel, ...topSupports] },
+    ],
+  });
+
   // --- A4: slide spacers ---------------------------------------------------
   add({
     id: 'spacers',
