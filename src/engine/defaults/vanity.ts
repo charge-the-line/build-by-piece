@@ -124,6 +124,8 @@ export const vanityDefaults: VanityOptions = {
     bottomMaterial: 'oak-ply-1-4',
     heightClearance: appDefault('1', 'Room above and below the drawer box so it never rubs.'),
     rearClearance: appDefault('1', 'Room behind the slide.'),
+    screwEndInset: appDefault('2', 'Close enough to the end to hold it, far enough not to split it.'),
+    screwSpacing: appDefault('8', 'Close enough that the joint cannot open between screws.'),
     spacerTolerance: appDefault('1/16', 'Slides can take up this much slack.'),
   },
 
