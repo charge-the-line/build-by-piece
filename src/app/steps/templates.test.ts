@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { proposedVanityLayout } from '../../engine/defaults/vanity';
 import { userChoice } from '../../engine/defaults/values';
 import { plan, vanityWith } from '../../engine/__tests__/helpers';
+import { base01, base02, drawerBase01, sinkBase01, upper01 } from '../../engine/fixtures/kitchen';
 import type { PlanResult } from '../../engine/types';
 import { chapterNames, stepTemplates } from './templates';
 
@@ -14,6 +15,7 @@ const plans = [
   plan(vanityWith({}, { fronts: { panelMethod: userChoice('stoppedGroove') } })),
   plan(vanityWith({}, tools({ router: false }))),
   plan(vanityWith({}, tools({ router: false, tableSaw: true, holeSaw: true, bradNailer: true, sander: true }))),
+  ...[base01, base02, drawerBase01, sinkBase01, upper01].map((design) => plan(design)),
 ];
 
 const words = (p: PlanResult, id: string) => {
@@ -82,6 +84,17 @@ describe('step templates', () => {
     expect(words(onBack, doorPanel.id).say).toContain('1 3/4" from the hinge edge and 3/4" from the others');
     const drawerPanel = onBack.steps.find((s) => s.templateId === 'frontPanelOnBack' && s.values.isDoor === 0)!;
     expect(words(onBack, drawerPanel.id).say).toContain('3/4" in from every edge');
+  });
+
+  it('words the new kitchen steps from the plan', () => {
+    const upper = plans[10]!;
+    expect(words(upper, 'shelves')).toMatchObject({ title: 'Fit the shelves' });
+    expect(words(upper, 'shelves').say).toContain('2 shelves');
+    expect(words(plans[6]!, 'shelves').title).toBe('Fit the shelf');
+    expect(words(upper, 'boxLeft').more[0]).toContain('top face');
+    expect(words(plans[0]!, 'boxLeft').more[0]).toContain('underside');
+    expect(words(plans[9]!, 'fixedPanels').say).toContain('1/2" all round');
+    expect(upper.steps.map((s) => s.templateId)).toEqual(expect.arrayContaining(['topPanel', 'ledger', 'hangCabinet']));
   });
 
   it('names doors and drawer fronts by what they are', () => {

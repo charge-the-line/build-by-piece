@@ -1,3 +1,4 @@
+import { cabinetKind } from '../engine/defaults/cabinets';
 import type { EndCondition, PlanResult, VanityDesign } from '../engine/types';
 import { fmt } from './format';
 import { FrontView } from './FrontView';
@@ -31,6 +32,7 @@ function EndPicker({ side, value, onPick }: { side: 'Left' | 'Right'; value: End
 }
 
 export function SizeTab({ design, plan, onChange }: Props) {
+  const kind = cabinetKind(design.cabinet);
   const end = (side: 'left' | 'right'): EndCondition => design.overrides.ends?.[side]?.value ?? 'exposed';
   return (
     <>
@@ -39,7 +41,7 @@ export function SizeTab({ design, plan, onChange }: Props) {
         <p>The app decides everything else, shows you each choice, and lets you change it.</p>
         <LengthField label="Width" value={design.width.entered} hint="The whole cabinet, end to end" onValid={(v) => onChange(withSize(design, 'width', v))} />
         <LengthField label="Depth" value={design.depth.entered} hint="Wall to the front of the face frame" onValid={(v) => onChange(withSize(design, 'depth', v))} />
-        <LengthField label="Height" value={design.height.entered} hint="The box only: no platform, no top" onValid={(v) => onChange(withSize(design, 'height', v))} />
+        <LengthField label="Height" value={design.height.entered} hint={kind.hasPlatform ? 'The box only: no platform, no top' : 'The whole cabinet, top to bottom'} onValid={(v) => onChange(withSize(design, 'height', v))} />
         <EndPicker side="Left" value={end('left')} onPick={(v) => onChange(withEnd(design, 'left', v))} />
         <EndPicker side="Right" value={end('right')} onPick={(v) => onChange(withEnd(design, 'right', v))} />
       </section>
@@ -51,7 +53,7 @@ export function SizeTab({ design, plan, onChange }: Props) {
           <h2>What you get</h2>
           <FrontView plan={plan} />
           <dl className="facts">
-            <dt>Finished height with a typical stone top</dt>
+            <dt>{kind.hasPlatform ? 'Finished height with a typical top' : 'Height'}</dt>
             <dd>{fmt(plan.overall.finishedHeight.result)}</dd>
             <dt>Plywood box</dt>
             <dd>
@@ -61,7 +63,7 @@ export function SizeTab({ design, plan, onChange }: Props) {
         </section>
       )}
 
-      <LayoutEditor design={design} onChange={onChange} />
+      {kind.type === 'vanity' && <LayoutEditor design={design} onChange={onChange} />}
 
       <section>
         <h2>What each number includes</h2>

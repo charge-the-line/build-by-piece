@@ -58,8 +58,10 @@ export const stepTemplates: Readonly<Record<string, StepTemplate>> = {
   boxLeft: {
     title: fixed('Attach the left side'),
     say: () => 'Glue the end of the bottom panel. Screw through its pocket holes into the left side.',
-    more: () => [
-      'First drill pocket holes along both short edges of the underside of the bottom panel.',
+    more: (v) => [
+      is(v, 'hangs')
+        ? 'First drill pocket holes along both short edges of the top face of the bottom panel. Under a wall cabinet the bottom is seen, so the holes go inside.'
+        : 'First drill pocket holes along both short edges of the underside of the bottom panel.',
       'The bottom is flush with the front and bottom edges of the side. At the back it stops short, leaving room for the back panel.',
       'If this end will be seen, put the good face out.',
     ],
@@ -68,6 +70,35 @@ export const stepTemplates: Readonly<Record<string, StepTemplate>> = {
     title: fixed('Attach the right side'),
     say: () => 'Do the same at the other end with the right side.',
     more: () => ['Flush with the front and bottom edges, as before.', 'If this end will be seen, put the good face out.'],
+  },
+  topPanel: {
+    title: fixed('Add the top panel'),
+    say: () => 'Glue both ends of the top panel. Fit it between the sides, flush with the top, and screw.',
+    more: () => ['Pocket holes go on the top face, where nobody will see them.', 'Flush with the front edges of the sides. At the back it stops short, like the bottom panel.', SQUARE],
+  },
+  shelves: {
+    title: (v) => (count(v, 'shelves') === 1 ? 'Fit the shelf' : 'Fit the shelves'),
+    say: (v) => (count(v, 'shelves') === 1 ? 'Glue and screw the shelf between the panels, at the height shown.' : `Glue and screw the ${count(v, 'shelves')} shelves between the panels, at the heights shown.`),
+    more: () => [
+      'Pocket holes go on the underside of each shelf.',
+      'Cut two scraps to the height of the gap below a shelf and stand the shelf on them while you screw it. That keeps it level without measuring twice.',
+      'Push each shelf back until it touches where the back panel will be.',
+    ],
+  },
+  fixedPanels: {
+    title: (v) => (count(v, 'panels') === 1 ? 'Fix the sink panel' : 'Fix the sink panels'),
+    say: (v) => `Hold each panel so it laps its opening by ${size(v, 'overlay')} all round. Screw it on from behind, through the frame.`,
+    more: () => ['These look like drawer fronts but do not open. The sink sits behind them.', 'Clamp or tape each one in place first.', 'Use screws short enough not to come through the front.'],
+  },
+  ledger: {
+    title: fixed('Screw a ledge to the wall'),
+    say: () => 'Mark where the bottom of the cabinet will be. Screw a straight board to the wall along that line, into studs.',
+    more: () => ['Use a level. The cabinet will sit on this board while you fix it, so the board must be level.', 'Find the studs and mark them above the line too, where the cabinet will not hide them.', 'The board comes off again afterwards.'],
+  },
+  hangCabinet: {
+    title: fixed('Lift the cabinet onto the ledge'),
+    say: () => 'With a helper, rest the cabinet on the ledge and hold it flat against the wall.',
+    more: () => ['This is a two-person job. Do not try it alone.', 'Take the doors off first if they are on; the cabinet is much lighter without them.'],
   },
   dividers: {
     title: fixed('Stand the dividers'),
@@ -104,9 +135,9 @@ export const stepTemplates: Readonly<Record<string, StepTemplate>> = {
     more: () => ['Pocket holes go in the back of each upright, at both ends.', 'The gap between uprights is the width of each opening. Cut a scrap to that width and use it as a spacer.'],
   },
   frameDrawerRails: {
-    title: fixed('Add the pieces between drawers'),
-    say: () => 'Glue and screw the short pieces between the uprights of each drawer column.',
-    more: () => ['Pocket holes go in the back of each short piece, at both ends.', 'Set the same heights in both columns so the drawers line up.'],
+    title: fixed('Add the short cross pieces'),
+    say: () => 'Glue and screw the short pieces between the uprights, where shown.',
+    more: () => ['Pocket holes go in the back of each short piece, at both ends.', 'They separate one opening from the next. Set the same heights on both sides so the fronts line up.'],
   },
   frameOn: {
     title: fixed('Fix the frame to the box'),

@@ -63,8 +63,8 @@ export function App() {
             projects={projects}
             currentId={currentId}
             onOpen={open}
-            onCreate={() => {
-              create();
+            onCreate={(type) => {
+              create(type);
               go('size');
             }}
             onRename={rename}
