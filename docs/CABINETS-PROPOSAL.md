@@ -1,6 +1,6 @@
-# Proposed rules: kitchen cabinets
+# Kitchen cabinets: approved proposal
 
-**Status: proposal for Max's approval. Nothing here is built yet.** Once approved, these become section K of [RULES.md](RULES.md) and the engine is changed to match.
+**Status: approved by Max with the defaults for every question, and stage 1 is built.** The rules now live in [RULES.md](RULES.md), section K. Max's answer to the questions was "just use test data", so the test cases are standard made-up sizes, not a real kitchen. This page is kept as the record of what was proposed; stages 2 and 3 are not started.
 
 ## The idea
 
