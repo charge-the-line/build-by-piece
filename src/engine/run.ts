@@ -5,10 +5,13 @@
  * planned by the usual rules, then adds what belongs to the run as a whole:
  * one platform and toe kick per stretch, shared cutting diagrams, one
  * shopping list, and the steps that set the cabinets in place.
+ *
+ * A row of upper cabinets follows the bottom row (section W): the same
+ * widths, hung at one height, on the same lists and diagrams.
  */
 import { cutDiagrams, shoppingList } from './cutting';
 import { cabinetKind } from './defaults/cabinets';
-import { applianceKind, runLimits } from './defaults/run';
+import { aboveFor, applianceKind, runLimits, upperRow } from './defaults/run';
 import { deriveByRule, needsCheck, statusOf, type Val } from './derive';
 import { generatePlan } from './generatePlan';
 import { contact, screwsAlong } from './geometry';
@@ -26,6 +29,7 @@ import type {
   PlanTool,
   Point3,
   ResolvedInput,
+  RunAbove,
   RunCabinet,
   RunDesign,
   RunSpace,
@@ -157,21 +161,59 @@ export function generateRun(run: RunDesign, defaults: VanityOptions, catalog: Ma
     return sharersSeen === sharers ? left - share * (sharers - 1) : share;
   });
 
+  // --- W1: what goes above each thing in the bottom row ---------------------
+  const aboveOf = run.items.map((item) => aboveFor(item, run.uppers));
+  const anyUpper = aboveOf.some((a) => a.choice === 'upper');
+
+  // --- W3: one depth, one height, and one height on the wall ----------------
+  const upperValue = (which: 'depth' | 'height' | 'aboveCounter' | 'ceiling', label: string): Val => {
+    const m = run.uppers?.[which] ?? upperRow[which];
+    const parsed = parseLength(m.entered, m.unit);
+    if (!parsed.ok) error('INPUT_NOT_USABLE', 'U2', `${label}: "${m.entered}" cannot be used. ${parsed.reason}`, 'Type a length that is on a tape measure.', [`uppers.${which}`]);
+    const value = parsed.ok ? parsed.ticks : asTicks(0);
+    if (anyUpper) inputs.push({ path: `uppers.${which}`, label, value, status: m.status, origin: m.origin, ...(m.note ? { note: m.note } : {}) });
+    return { label, value, status: m.status, origin: m.origin, source: `uppers.${which}` };
+  };
+  upperValue('depth', 'upper cabinets: depth');
+  const upperHeight = upperValue('height', 'upper cabinets: height');
+  const aboveCounter = upperValue('aboveCounter', 'upper cabinets: gap above the countertop');
+  const ceiling = upperValue('ceiling', 'ceiling height');
+  if (issues.some((i) => i.severity === 'error')) return blocked(inputs, issues);
+  const upperBottom = deriveByRule(
+    'W3',
+    'platform height + base box height + countertop thickness + gap above the countertop',
+    [r.lumber.width, r.H, r.countertopThickness, aboveCounter],
+    asTicks(r.lumber.width.value + r.H.value + r.countertopThickness.value + aboveCounter.value),
+  );
+  const upperTop = asTicks(upperBottom.result + upperHeight.value);
+
   // --- R5: where everything sits, and its number ---------------------------
-  const cabinets: (RunCabinet & { readonly ends: { left: EndCondition; right: EndCondition } })[] = [];
+  type Unit = RunCabinet & { readonly ends: { left: EndCondition; right: EndCondition } };
+  const cabinets: Unit[] = [];
   const spaces: RunSpace[] = [];
+  // The base boxes stand on the platform; the drawing runs from the floor up.
+  const baseBottom = r.lumber.width.value;
+  const baseTop = asTicks(baseBottom + r.H.value);
+  const pictureHeight = anyUpper ? asTicks(Math.max(upperTop, baseTop)) : baseTop;
+  const baseFromTop = asTicks(pictureHeight - baseTop);
+  const lefts: number[] = [];
   let x = 0;
   run.items.forEach((item, i) => {
     const width = widths[i]!;
+    lefts.push(x);
     const fixed = given[i] !== undefined;
     const label = item.kind === 'cabinet' ? cabinetKind(item.cabinet).name : applianceKind(item.appliance).name;
     if (item.kind === 'appliance') {
-      spaces.push({ itemId: item.id, appliance: item.appliance, name: label, left: asTicks(x), width: asTicks(width) });
+      spaces.push({ itemId: item.id, appliance: item.appliance, name: label, left: asTicks(x), width: asTicks(width), fromTop: baseFromTop, height: baseTop });
     } else {
       const neighbour = (other: (typeof run.items)[number] | undefined, runEnd: EndCondition): EndCondition => (other === undefined ? runEnd : other.kind === 'appliance' ? 'exposed' : 'joined');
       const id = `C${String(cabinets.length + 1).padStart(2, '0')}`;
       cabinets.push({
         id,
+        row: 'base',
+        bottom: baseBottom,
+        height: r.H.value,
+        fromTop: baseFromTop,
         itemId: item.id,
         kind: item.cabinet,
         name: label,
@@ -203,14 +245,68 @@ export function generateRun(run: RunDesign, defaults: VanityOptions, catalog: Ma
     });
     x += width;
   });
+
   if (issues.some((i) => i.severity === 'error')) return blocked(inputs, issues);
 
+  // --- W2, W4, W5: the top row follows the bottom row -----------------------
+  const uppers: Unit[] = [];
+  const above: RunAbove[] = run.items.map((item, i) => {
+    const under = item.kind === 'cabinet' ? `${cabinets.find((c) => c.itemId === item.id)!.id} ${cabinetKind(item.cabinet).name}` : applianceKind(item.appliance).name;
+    const { choice, proposed, reason } = aboveOf[i]!;
+    if (choice === 'none') return { itemId: item.id, under, choice, proposed, reason };
+    // W4: a side beside a gap can be seen; beside another upper it is joined.
+    const neighbour = (j: number, runEnd: EndCondition): EndCondition => (j < 0 || j >= run.items.length ? runEnd : aboveOf[j]!.choice === 'upper' ? 'joined' : 'exposed');
+    const id = `U${String(uppers.length + 1).padStart(2, '0')}`;
+    const width = widths[i]!;
+    uppers.push({
+      id,
+      row: 'upper',
+      bottom: upperBottom.result,
+      height: upperHeight.value,
+      fromTop: asTicks(pictureHeight - upperTop),
+      itemId: item.id,
+      kind: 'upper',
+      name: cabinetKind('upper').name,
+      left: asTicks(Math.max(lefts[i]!, 0)),
+      width: asTicks(Math.max(width, 0)),
+      ends: { left: neighbour(i - 1, runEnds.left.value), right: neighbour(i + 1, runEnds.right.value) },
+    });
+    if (width < narrowest || width > widest) {
+      error(
+        'RUN_UPPER_WIDTH',
+        'W2',
+        `${id} ${cabinetKind('upper').name}, over the ${under}, comes out ${text(Math.max(width, 0))} wide, which is too ${width < narrowest ? `narrow to build (the least is ${text(narrowest)})` : `wide to build (the most is ${text(widest)})`}.`,
+        'Leave the space above it empty, or change the width underneath.',
+        [`uppers.above.${item.id}`, `items.${item.id}.width`],
+      );
+    }
+    return { itemId: item.id, under, choice, proposed, reason, upperId: id };
+  });
+  if (issues.some((i) => i.severity === 'error')) return blocked(inputs, issues);
+  if (anyUpper && upperTop > ceiling.value) {
+    issues.push({
+      code: 'UPPERS_ABOVE_CEILING',
+      ruleId: 'W3',
+      severity: 'warning',
+      partIds: [],
+      inputPaths: ['uppers.height', 'uppers.aboveCounter', 'uppers.ceiling'],
+      explanation: `The top of the upper cabinets comes out ${text(upperTop)} above the floor, which is higher than the ceiling at ${text(ceiling.value)}.`,
+      suggestedFix: 'Make the upper cabinets shorter, hang them lower, or correct the ceiling height.',
+    });
+  }
+  const units: Unit[] = [...cabinets, ...uppers];
+  const asUpper = (id: string): VanityDesign => ({
+    ...asCabinet('upper', id),
+    depth: run.uppers?.depth ?? upperRow.depth,
+    height: run.uppers?.height ?? upperRow.height,
+  });
+
   // --- R3: each cabinet, planned by the usual rules -------------------------
-  const plans = cabinets.map((cabinet) =>
-    generatePlan(asCabinet(cabinet.kind, cabinet.itemId), defaults, catalog, {
+  const plans = units.map((cabinet) =>
+    generatePlan(cabinet.row === 'upper' ? asUpper(cabinet.itemId) : asCabinet(cabinet.kind, cabinet.itemId), defaults, catalog, {
       width: cabinet.width,
       ends: cabinet.ends,
-      idPrefix: `${cabinet.id}-` as `C${string}`,
+      idPrefix: `${cabinet.id}-` as `${'C' | 'U'}${string}`,
       sharedPlatform: true,
     }),
   );
@@ -222,22 +318,25 @@ export function generateRun(run: RunDesign, defaults: VanityOptions, catalog: Ma
       const id = whole ? `${issue.code}|${issue.inputPaths.join()}` : `${c}|${issue.code}|${issue.explanation}`;
       if (seenIssue.has(id)) continue;
       seenIssue.add(id);
-      issues.push(whole ? issue : { ...issue, explanation: `${cabinets[c]!.id} ${cabinets[c]!.name}: ${issue.explanation}` });
+      issues.push(whole ? issue : { ...issue, explanation: `${units[c]!.id} ${units[c]!.name}: ${issue.explanation}` });
     }
   });
   if (plans.some((p) => !p.canGeneratePlan)) return blocked(inputs, issues);
 
-  const shift = <T extends { readonly x: Ticks }>(thing: T, by: number): T => ({ ...thing, x: asTicks(thing.x + by) });
-  const parts: Part[] = plans.flatMap((plan, c) => plan.parts.map((p) => ({ ...p, assembly: `${cabinets[c]!.id} ${cabinets[c]!.name}: ${p.assembly}` })));
-  const placements: Placement[] = plans.flatMap((plan, c) => plan.placements.map((p) => shift(p, cabinets[c]!.left)));
+  // A base cabinet is placed from the floor already; an upper is lifted to its height on the wall (W3).
+  const shift = <T extends { readonly x: Ticks; readonly y: Ticks }>(thing: T, unit: Unit): T => ({ ...thing, x: asTicks(thing.x + unit.left), y: asTicks(thing.y + (unit.row === 'upper' ? unit.bottom : 0)) });
+  const parts: Part[] = plans.flatMap((plan, c) => plan.parts.map((p) => ({ ...p, assembly: `${units[c]!.id} ${units[c]!.name}: ${p.assembly}` })));
+  const placements: Placement[] = plans.flatMap((plan, c) => plan.placements.map((p) => shift(p, units[c]!)));
   const openings = plans.flatMap((plan, c) =>
     plan.openings.map((o) => ({
       ...o,
-      id: `${cabinets[c]!.id}-${o.id}`,
-      bayId: `${cabinets[c]!.id}-${o.bayId}`,
-      label: `${cabinets[c]!.id} ${o.label.charAt(0).toLowerCase()}${o.label.slice(1)}`,
-      left: asTicks(o.left + cabinets[c]!.left),
-      frontLeft: asTicks(o.frontLeft + cabinets[c]!.left),
+      id: `${units[c]!.id}-${o.id}`,
+      bayId: `${units[c]!.id}-${o.bayId}`,
+      label: `${units[c]!.id} ${o.label.charAt(0).toLowerCase()}${o.label.slice(1)}`,
+      left: asTicks(o.left + units[c]!.left),
+      frontLeft: asTicks(o.frontLeft + units[c]!.left),
+      top: asTicks(o.top + units[c]!.fromTop),
+      frontTop: asTicks(o.frontTop + units[c]!.fromTop),
     })),
   );
 
@@ -295,15 +394,15 @@ export function generateRun(run: RunDesign, defaults: VanityOptions, catalog: Ma
   const later: Omit<Step, 'number'>[] = [];
   const installed: PieceRef[][] = [];
   plans.forEach((plan, c) => {
-    const cabinet = cabinets[c]!;
+    const cabinet = units[c]!;
     const inPlace = new Map<string, PieceRef>();
     for (const step of plan.steps) {
       const mine: Omit<Step, 'number'> = {
         ...step,
         id: `${cabinet.id}:${step.id}`,
         cabinet: { id: cabinet.id, name: cabinet.name },
-        glue: step.glue.map((g) => shift(g, cabinet.left)),
-        screws: step.screws.map((p) => shift(p, cabinet.left)),
+        glue: step.glue.map((g) => shift(g, cabinet)),
+        screws: step.screws.map((p) => shift(p, cabinet)),
       };
       const afterInstall = step.chapter === 'drawers' || step.chapter === 'doors';
       // The run sets cabinets in place itself; a cabinet keeps only its pipe openings from that chapter.
@@ -385,8 +484,9 @@ export function generateRun(run: RunDesign, defaults: VanityOptions, catalog: Ma
       tools: joins ? ['measuring', 'clamps', 'drill'] : ['measuring'],
     });
   });
-  const everything = [...platformPieces, ...installed.flat()];
-  const strips = installed.flat().filter((ref) => parts.find((p) => p.id === ref.partId)!.name.includes('ounting strip'));
+  const isStrip = (ref: PieceRef) => parts.find((p) => p.id === ref.partId)!.name.includes('ounting strip');
+  const everything = [...platformPieces, ...installed.slice(0, cabinets.length).flat()];
+  const strips = installed.slice(0, cabinets.length).flat().filter(isStrip);
   runStep({ id: 'run:wall', templateId: 'wallScrews', pieces: still(strips), earlierPieces: everything.filter((ref) => !strips.some((s) => key(s) === key(ref))), tools: ['measuring', 'drill'] });
   const kick = copiesOf(platform.toeKick);
   const kickPlaces = kick.map((ref) => ({ ref, place: placeOf.get(key(ref))! }));
@@ -400,6 +500,44 @@ export function generateRun(run: RunDesign, defaults: VanityOptions, catalog: Ma
     glue: kick.flatMap((one) => platformPieces.flatMap((other) => contact(placeOf.get(key(one))!, placeOf.get(key(other))!) ?? [])),
     tools: ['glue', nailer],
   });
+
+  // --- W6: one ledge for the row, then each upper hung and screwed to the last
+  if (uppers.length > 0) {
+    const piecesOf = (u: number) => installed[cabinets.length + u]!;
+    const upperStrips = uppers.flatMap((_, u) => piecesOf(u).filter(isStrip));
+    const below = [...everything, ...kick];
+    runStep({
+      id: 'run:ledger',
+      templateId: 'runLedger',
+      values: { height: upperBottom.result, gap: aboveCounter.value, uppers: uppers.length },
+      pieces: still(upperStrips),
+      earlierPieces: below,
+      tools: ['measuring', 'drill'],
+    });
+    uppers.forEach((upper, u) => {
+      const joins = upper.ends.left === 'joined';
+      const screws = joins ? screwsBetween(endStiles(cabinets.length + u - 1), endStiles(cabinets.length + u)) : [];
+      runStep({
+        id: `run:hang-${upper.id}`,
+        templateId: 'runHangUpper',
+        values: { cabinet: u + 1, joins: joins ? 1 : 0 },
+        pieces: piecesOf(u).map((ref): StepPiece => ({ ...ref, from: 'front' })),
+        earlierPieces: [...below, ...uppers.slice(0, u).flatMap((_, earlier) => piecesOf(earlier))],
+        screws,
+        fasteners: count('joining-screws', screws),
+        tools: joins ? ['measuring', 'clamps', 'drill'] : ['measuring', 'drill'],
+      });
+    });
+    const hung = uppers.flatMap((_, u) => piecesOf(u));
+    runStep({
+      id: 'run:upper-wall',
+      templateId: 'runUpperWall',
+      values: { uppers: uppers.length },
+      pieces: still(upperStrips),
+      earlierPieces: [...below, ...hung.filter((ref) => !isStrip(ref))],
+      tools: ['measuring', 'drill'],
+    });
+  }
   steps.push(...later);
 
   const supplies: SupplyLine[] = catalog.supplies.map((supply) => {
@@ -412,7 +550,7 @@ export function generateRun(run: RunDesign, defaults: VanityOptions, catalog: Ma
     inputs,
     issues,
     canGeneratePlan: true,
-    run: { length, cabinets: cabinets.map(({ ends: _ends, ...cabinet }) => cabinet), spaces },
+    run: { length, cabinets: cabinets.map(({ ends: _ends, ...cabinet }) => cabinet), uppers: uppers.map(({ ends: _ends, ...cabinet }) => cabinet), spaces, above, pictureHeight, ...(uppers.length > 0 ? { upperBottom } : {}) },
     overall: { ...first, frameWidth: length },
     openings,
     parts: allParts,

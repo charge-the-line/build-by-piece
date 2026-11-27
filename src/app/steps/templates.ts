@@ -71,6 +71,33 @@ export const stepTemplates: Readonly<Record<string, StepTemplate>> = {
       ...(is(v, 'joins') ? ['Line up the front faces and the tops of the two frames before you clamp.', 'Drill through one vertical frame piece into the next, then drive the screws.'] : ['The box overhangs the platform at the front.']),
     ],
   },
+  runLedger: {
+    title: fixed('Screw a ledge to the wall'),
+    say: (v) => `Draw a level line ${size(v, 'height')} above the floor. Screw a straight board to the wall with its top edge on the line, into studs.`,
+    more: (v) => [
+      `That line is the bottom of the upper cabinets: ${size(v, 'gap')} above where the countertop will be.`,
+      'Use a level, not the floor. The cabinets sit on this board while you fix them.',
+      'Mark the studs above the line too, where the cabinets will not hide them.',
+      'The board comes off again afterwards. Any straight scrap will do.',
+    ],
+  },
+  runHangUpper: {
+    title: (v) => `Hang cabinet U${String(count(v, 'cabinet')).padStart(2, '0')}`,
+    say: (v) =>
+      is(v, 'joins')
+        ? 'With a helper, lift it onto the ledge, tight against the last cabinet. Clamp the two frames flush and screw them together.'
+        : 'With a helper, lift it onto the ledge, over the cabinet below it. Hold it flat against the wall.',
+    more: (v) => [
+      'This is a two-person lift. Do not try it alone.',
+      'One person holds the cabinet until it is screwed to the wall in the next step.',
+      ...(is(v, 'joins') ? ['Line up the front faces and the bottoms of the two frames before you clamp.'] : ['Its sides line up with the cabinet or space underneath.']),
+    ],
+  },
+  runUpperWall: {
+    title: fixed('Screw the upper cabinets to the wall'),
+    say: () => 'Screw through both mounting strips of every upper cabinet into each stud. Then take the ledge off.',
+    more: () => ['Two screws at every stud: one through the top strip and one through the lower strip.', 'Do not let go of a cabinet until it has screws in two studs.', 'Fill the holes the ledge left in the wall.'],
+  },
   runToeKick: {
     title: fixed('Cover the platforms'),
     say: (_v, m) => `Glue the toe kick pieces to the platforms and nail them ${nailIt(m)}. Where an end can be seen, fix the short piece first.`,

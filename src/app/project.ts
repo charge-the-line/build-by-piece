@@ -193,7 +193,16 @@ function setAt(tree: Tree, keys: readonly string[], value: unknown): Tree {
 }
 
 /** Changes one default to a length she typed, or (with no text) puts the app's choice back. */
-export const withChange = <T extends Design>(design: T, path: string, entered: string | undefined): T => ({
+export const withChange = <T extends Design>(design: T, path: string, entered: string | undefined): T => {
+  // The upper row's sizes belong to the run, not to the choices every cabinet shares.
+  if (design.projectType === 'run' && path.startsWith('uppers.')) {
+    const { [path.slice('uppers.'.length) as 'depth']: _dropped, ...rest } = design.uppers ?? {};
+    return { ...design, uppers: entered === undefined ? rest : { ...rest, [path.slice('uppers.'.length)]: userEntered(entered) } };
+  }
+  return withOverride(design, path, entered);
+};
+
+const withOverride = <T extends Design>(design: T, path: string, entered: string | undefined): T => ({
   ...design,
   overrides: setAt(design.overrides as Tree, path.split('.'), entered === undefined ? undefined : userEntered(entered)) as T['overrides'],
 });
@@ -215,6 +224,12 @@ export const withItemWidth = (run: RunDesign, id: string, entered: string | unde
     const { width: _dropped, ...rest } = item;
     return entered === undefined ? rest : { ...rest, width: userEntered(entered) };
   }),
+});
+
+/** Puts an upper cabinet above one position, or leaves it empty (rule W1). */
+export const withAbove = (run: RunDesign, itemId: string, choice: 'upper' | 'none'): RunDesign => ({
+  ...run,
+  uppers: { ...run.uppers, above: { ...run.uppers?.above, [itemId]: choice } },
 });
 
 /** An id no item in the run has yet. */
