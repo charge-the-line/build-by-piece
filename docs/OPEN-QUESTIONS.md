@@ -4,7 +4,7 @@ Rule numbers refer to [RULES.md](RULES.md).
 
 ## Waiting on Max
 
-Nothing blocks the next piece of work.
+**The kitchen run proposal has eight questions: see [RUN-PROPOSAL.md](RUN-PROPOSAL.md).** Each has a default, so "keep the defaults" is a fine answer.
 
 **Kitchen cabinets:** Max approved [CABINETS-PROPOSAL.md](CABINETS-PROPOSAL.md) with the default for every question and said to use test data, so stage 1 is built against standard made-up sizes. When there are real sizes from Ashley's kitchen, add them as fixtures.
 

@@ -27,7 +27,7 @@ From Ashley, the first user.
 
 ## Current status
 
-**Phase 8 (kitchen cabinets, one at a time) is built and waiting for Max's review. Next would be stage 2, a run of cabinets along a wall; write its rules for Max's approval before any code.**
+**Phase 8 is live. Next is stage 2 of the kitchen, a run of cabinets along one wall: its rules are proposed in `docs/RUN-PROPOSAL.md` and waiting for Max's approval. Do not write run code until Max approves that document and answers its questions.**
 
 The app now plans five cabinets: the bathroom vanity, and a kitchen base cabinet, drawer base, sink base and upper cabinet (section K of the rules). All are tested against made-up standard sizes; there are no real kitchen measurements yet.
 
@@ -51,8 +51,9 @@ Known limits: front styles (flat or framed) cannot be changed in the app; screws
 | 5 | Tool inventory driving the method | Done |
 | 6 | Picture-first Build screen: small steps, arrows, glue, screws, tool pictures | Done |
 | 7 | Cutting tick-off and sizes; picture shopping lists; three approaches; multiple projects | Done |
-| 8 | Kitchen cabinets: base, drawer base, sink base, upper (one at a time) | Done, in review |
-| Later | A run of cabinets along a wall, then a room (rules first); prices, 3D and AI undecided | Not started |
+| 8 | Kitchen cabinets: base, drawer base, sink base, upper (one at a time) | Done |
+| 9 | A run of cabinets along one wall: shared widths, platform, shopping and cutting | Rules proposed, in review |
+| Later | Corners, uppers over a run, then a room (rules first); prices, 3D and AI undecided | Not started |
 
 Update this section at the end of every phase.
 
@@ -86,7 +87,8 @@ src/app/         React UI: Size, Choices, Parts, Cutting, Shop and Build screens
 docs/RULES.md    Construction rules with formulas. The engine implements exactly these.
 docs/OPEN-QUESTIONS.md   Decisions waiting on Max, and the record of what he decided.
 docs/TOOLS-PROPOSAL.md   The approved tool-inventory proposal: what changed on approval, and Max's answers.
-docs/CABINETS-PROPOSAL.md   The approved kitchen cabinets proposal (stage 1 built; stages 2 and 3 not started).
+docs/CABINETS-PROPOSAL.md   The approved kitchen cabinets proposal (stage 1 built).
+docs/RUN-PROPOSAL.md   Proposed rules for a run of cabinets along a wall (not yet approved or built).
 public/          Web app manifest and icons.
 ```
 
