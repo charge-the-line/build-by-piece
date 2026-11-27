@@ -45,6 +45,8 @@ interface StepSpec {
   readonly scene: 'cabinet' | 'bench';
   /** Bench steps that build the same thing share a key, so earlier pieces of it are shown. */
   readonly bench?: string;
+  /** Shown from the back when the work is on the back face. */
+  readonly view?: 'back';
   readonly templateId: string;
   readonly values?: Step['values'];
   readonly pieces: readonly StepPiece[];
@@ -171,6 +173,7 @@ export function assemble(r: Resolved, built: VanityBuild, methods: PlanMethods, 
       number: steps.length + 1,
       chapter: spec.chapter,
       scene: spec.scene,
+      view: spec.view ?? 'front',
       templateId: spec.templateId,
       values: { make: repeat, ...spec.values },
       pieces: spec.pieces,
@@ -273,6 +276,7 @@ export function assemble(r: Resolved, built: VanityBuild, methods: PlanMethods, 
     chapter: 'faceFrame',
     scene: 'bench',
     bench: 'frame',
+    view: 'back',
     templateId: 'frameOuter',
     pieces: [...still(frameEnds), ...from(frameRails, 'front')],
     joints: [{ method: 'pocketScrews', face: 'back face', through: frameRails, into: frameEnds, fastener: pocketScrew(frameRails) }],
@@ -282,6 +286,7 @@ export function assemble(r: Resolved, built: VanityBuild, methods: PlanMethods, 
     chapter: 'faceFrame',
     scene: 'bench',
     bench: 'frame',
+    view: 'back',
     templateId: 'frameInner',
     pieces: from(frameInner, 'front'),
     joints: [{ method: 'pocketScrews', face: 'back face', through: frameInner, into: frameRails, fastener: pocketScrew(frameInner) }],
@@ -291,6 +296,7 @@ export function assemble(r: Resolved, built: VanityBuild, methods: PlanMethods, 
     chapter: 'faceFrame',
     scene: 'bench',
     bench: 'frame',
+    view: 'back',
     templateId: 'frameDrawerRails',
     pieces: from(drawerRails, 'front'),
     joints: [{ method: 'pocketScrews', face: 'back face', through: drawerRails, into: [...frameEnds, ...frameInner], fastener: pocketScrew(drawerRails) }],
@@ -384,7 +390,8 @@ export function assemble(r: Resolved, built: VanityBuild, methods: PlanMethods, 
     const also = others.flatMap(refsOf);
     const repeat = others.length + 1;
     const isDoor = partOf.get(first[0]!)!.colorRole === 'door' ? 1 : 0;
-    const base = { chapter: 'fronts' as const, scene: 'bench' as const, bench: `front${g + 1}`, also, repeat };
+    // Pocket holes, the recess and the panel are all on the back, so these are shown from behind.
+    const base = { chapter: 'fronts' as const, scene: 'bench' as const, bench: `front${g + 1}`, view: 'back' as const, also, repeat };
     const values = { isDoor, groove: facts.grooveDepth, recess: facts.recessWidth, panelThickness: facts.panelThickness, panelGap: facts.panelGap, hingeSpace: facts.hingeMountingWidth };
     const pocket: JointSpec = { method: 'pocketScrews', face: 'back face', through: cross, into: uprights, fastener: pocketScrew(cross) };
 
@@ -478,7 +485,7 @@ export function assemble(r: Resolved, built: VanityBuild, methods: PlanMethods, 
   const doorCount = built.openings.filter((o) => o.kind === 'door').length;
   if (doors.length > 0) {
     const doorValues = { overlay: facts.overlay, doors: doorCount, hingeInset: facts.hingeInset };
-    add({ id: 'hinges', chapter: 'doors', scene: 'bench', bench: 'doors', templateId: 'hinges', values: doorValues, pieces: still(doors), hardware: hinges, tools: ['measuring', 'drill', 'hingeBit'] });
+    add({ id: 'hinges', chapter: 'doors', scene: 'bench', bench: 'doors', view: 'back', templateId: 'hinges', values: doorValues, pieces: still(doors), hardware: hinges, tools: ['measuring', 'drill', 'hingeBit'] });
     add({ id: 'hangDoors', chapter: 'doors', scene: 'cabinet', templateId: 'hangDoors', values: doorValues, pieces: from(doors, 'front'), tools: ['drill'] });
   }
   add({ id: 'handles', chapter: 'doors', scene: 'cabinet', templateId: 'handles', pieces: still([...doors, ...drawerFronts]), tools: ['measuring', 'drill'] });

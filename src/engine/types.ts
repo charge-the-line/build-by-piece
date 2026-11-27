@@ -734,6 +734,8 @@ export interface Step {
    * bench:   a sub-assembly built on its own (the face frame, a drawer box, a door).
    */
   readonly scene: 'cabinet' | 'bench';
+  /** Which side the picture looks from. Work on the back of a frame or door is shown from the back. */
+  readonly view: 'front' | 'back';
   /** Which written template describes this step. */
   readonly templateId: string;
   /** Numbers the template quotes: lengths in ticks, or counts. */
