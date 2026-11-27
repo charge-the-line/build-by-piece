@@ -449,33 +449,52 @@ summary {
   white-space: nowrap;
 }
 
-/* Shopping list */
-.shop li {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  padding: 0.6rem 0;
+/* Shopping lists: a tick, a picture, a count, a name */
+.shopList li {
   border-top: 1px solid var(--rule);
 }
 
-.shopQty {
-  flex: none;
-  min-width: 2.6rem;
-  padding: 0.2rem 0.4rem;
-  border: 2px solid var(--ink);
-  border-radius: 8px;
-  text-align: center;
-  font-size: 1.25rem;
+.shopList label,
+.shopList .noTick {
+  display: grid;
+  grid-template-columns: auto auto minmax(2.5rem, auto) 1fr;
+  align-items: center;
+  gap: 0.6rem;
+  min-height: 64px;
+  padding: 0.4rem 0;
+}
+
+.shopList .noTick {
+  grid-template-columns: auto minmax(0, auto) 1fr;
+}
+
+.shopList input,
+.cutList input {
+  width: 32px;
+  height: 32px;
+  accent-color: var(--brand);
+}
+
+.shopCount {
+  font-size: 1.2rem;
   font-weight: 700;
+  white-space: nowrap;
 }
 
-.frontSizes {
-  margin-top: 0.75rem;
-  font-size: 0.9rem;
+.shopName {
+  font-weight: 700;
+  line-height: 1.25;
 }
 
-.frontSizes li {
-  padding: 0.15rem 0;
+.shopName .hint {
+  display: block;
+  font-weight: 400;
+}
+
+.shopList input:checked ~ .shopName,
+.shopList input:checked ~ .shopCount {
+  opacity: 0.5;
+  text-decoration: line-through;
 }
 
 /* Cutting diagrams */
@@ -487,13 +506,9 @@ summary {
   margin-top: 0;
 }
 
-.diagram svg {
-  margin-top: 0.5rem;
-}
-
 .stock {
-  fill: var(--paper);
-  stroke: var(--ink);
+  fill: #ffffff;
+  stroke: #111111;
   stroke-width: 4;
 }
 
@@ -503,25 +518,25 @@ summary {
 }
 
 .offcut {
-  stroke: var(--ink);
+  stroke: #111111;
   stroke-width: 1;
 }
 
 .scrapFill {
-  fill: var(--panel);
+  fill: #f1f3f6;
 }
 
 .scrapLine {
-  stroke: var(--ink);
+  stroke: #111111;
   stroke-width: 3;
   opacity: 0.45;
 }
 
 .offcutLabel {
-  fill: var(--ink);
+  fill: #111111;
   font-weight: 700;
   paint-order: stroke;
-  stroke: var(--paper);
+  stroke: #ffffff;
   stroke-width: 10px;
 }
 
@@ -536,16 +551,6 @@ summary {
   fill: var(--ink);
 }
 
-.cuts {
-  margin: 0;
-  padding-left: 1.75rem;
-  font-size: 0.95rem;
-}
-
-.cuts li {
-  padding: 0.35rem 0;
-}
-
 .beforeCut {
   padding: 1rem;
   border: 3px solid var(--ink);
@@ -556,6 +561,145 @@ summary {
 header + .beforeCut {
   padding: 1rem;
   border: 3px solid var(--ink);
+}
+
+/* Cutting: tick each cut */
+.cutWith {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin: 0.25rem 0;
+  font-weight: 700;
+}
+
+.cutWith .hint {
+  display: block;
+  font-weight: 400;
+}
+
+.zoomBox {
+  overflow: auto;
+}
+
+.zoomBox.zoomed svg {
+  width: 230%;
+  max-width: none;
+}
+
+.cutList {
+  margin: 0.5rem 0 0;
+  padding: 0;
+  list-style: none;
+  counter-reset: cut;
+}
+
+.cutList li {
+  border-top: 1px solid var(--rule);
+}
+
+.cutList label {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  gap: 0.75rem;
+  min-height: 56px;
+  padding: 0.35rem 0;
+}
+
+.cutList input:checked + span {
+  opacity: 0.5;
+  text-decoration: line-through;
+}
+
+.isCut .piece {
+  opacity: 0.35;
+}
+
+.cutTick {
+  fill: none;
+  stroke: #111111;
+  stroke-width: 9;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* Approaches and projects */
+.approaches,
+.projectList {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.approaches button,
+.projectList > li > button:first-child {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  text-align: left;
+}
+
+.approaches .hint,
+.projectList span {
+  display: block;
+  font-weight: 400;
+}
+
+.approaches button[aria-pressed='true'] .icon,
+.projectList button[aria-current='true'] {
+  stroke: var(--on-brand);
+}
+
+.projectList > li {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.projectList > li > button:first-child {
+  display: block;
+}
+
+.projectList button[aria-current='true'] {
+  background: var(--brand);
+  color: var(--on-brand);
+  border-color: var(--brand);
+}
+
+.projectButton {
+  min-height: 32px;
+  padding: 0;
+}
+
+.field input[type='text'] {
+  font-size: 1.2rem;
+}
+
+.kinds {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.5rem;
+}
+
+.kinds button {
+  width: 100%;
+  min-height: 120px;
+  display: grid;
+  justify-items: center;
+  gap: 0.25rem;
+}
+
+.toolTicks .icon {
+  flex: none;
+}
+
+.tallies {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 1rem;
+  margin-top: 0.4rem;
+  font-size: 0.85rem;
 }
 
 /* Build steps: pictures first */
@@ -1080,8 +1224,16 @@ button.quiet {
     padding-top: 0.5rem;
   }
 
-  .printPlan .shop li {
-    padding: 0.15rem 0;
+  .printPlan .shopList label,
+  .printPlan .shopList .noTick,
+  .printPlan .cutList label {
+    min-height: 0;
+    padding: 0.1rem 0;
+  }
+
+  .printPlan input[type='checkbox'] {
+    width: 12pt;
+    height: 12pt;
   }
 
   .printPlan .diagram svg {

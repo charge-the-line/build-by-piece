@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import type { PlanResult, Step, StepChapter } from '../engine/types';
+import { doneKey, progressOf } from './progress';
 import { StepView } from './steps/StepView';
 import { chapterNames } from './steps/templates';
 
@@ -9,8 +10,6 @@ interface Props {
   readonly onCheck: (key: string, value: boolean) => void;
   readonly onPrint: () => void;
 }
-
-export const doneKey = (step: Step) => `${step.id}:done`;
 
 export function BuildTab({ plan, checked, onCheck, onPrint }: Props) {
   const isDone = (s: Step) => checked[doneKey(s)] === true;
@@ -28,6 +27,7 @@ export function BuildTab({ plan, checked, onCheck, onPrint }: Props) {
   const at = Math.min(index, last);
   const step = plan.steps[at]!;
   const done = plan.steps.filter(isDone).length;
+  const tally = progressOf(plan, checked);
   const chapters = [...new Set(plan.steps.map((s) => s.chapter))];
   const go = (to: number) => {
     setIndex(Math.max(0, Math.min(last, to)));
@@ -49,6 +49,26 @@ export function BuildTab({ plan, checked, onCheck, onPrint }: Props) {
         <p>
           {done} of {plan.steps.length} steps done
         </p>
+        <ul className="tallies">
+          <li>
+            <strong>
+              {tally.bought.done}/{tally.bought.total}
+            </strong>{' '}
+            bought
+          </li>
+          <li>
+            <strong>
+              {tally.cut.done}/{tally.cut.total}
+            </strong>{' '}
+            pieces cut
+          </li>
+          <li>
+            <strong>
+              {tally.built.done}/{tally.built.total}
+            </strong>{' '}
+            steps built
+          </li>
+        </ul>
       </section>
 
       <StepView plan={plan} step={step} />

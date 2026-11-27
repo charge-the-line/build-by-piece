@@ -7,6 +7,7 @@ import { ChoicesTab } from './ChoicesTab';
 import { CutListTab } from './CutListTab';
 import { CuttingTab } from './CuttingTab';
 import { PrintPlan } from './PrintPlan';
+import { ProjectsPanel } from './ProjectsPanel';
 import { useProject } from './project';
 import { ShoppingTab } from './ShoppingTab';
 import { SizeTab } from './SizeTab';
@@ -23,7 +24,8 @@ const TABS = [
 type Tab = (typeof TABS)[number][0];
 
 export function App() {
-  const { design, checked, setDesign, setChecked, replace } = useProject();
+  const { design, checked, setDesign, setChecked, replace, projects, currentId, open, create, rename, remove } = useProject();
+  const [showProjects, setShowProjects] = useState(false);
   const [printing, setPrinting] = useState(false);
   const [tab, setTab] = useState<Tab>('size');
   const plan = useMemo(() => generatePlan(design, vanityDefaults, defaultCatalog), [design]);
@@ -38,6 +40,7 @@ export function App() {
   }, [printing]);
 
   const go = (next: Tab) => {
+    setShowProjects(false);
     setTab(next);
     window.scrollTo({ top: 0 });
   };
@@ -47,18 +50,40 @@ export function App() {
       <main>
         <header>
           <img src="./icons/icon.svg" alt="" width="48" height="48" />
-          <h1>Build by Piece</h1>
+          <div>
+            <h1>Build by Piece</h1>
+            <button type="button" className="quiet projectButton" aria-expanded={showProjects} onClick={() => setShowProjects(!showProjects)}>
+              {design.name} · {showProjects ? 'close' : 'change'}
+            </button>
+          </div>
         </header>
-        {tab === 'size' && <SizeTab design={design} plan={plan} onChange={setDesign} />}
-        {tab === 'choices' && <ChoicesTab design={design} plan={plan} onChange={setDesign} checked={checked} onReplace={replace} />}
-        {tab === 'cut' && <CutListTab plan={plan} />}
-        {tab === 'cutting' && <CuttingTab design={design} plan={plan} onChange={setDesign} />}
-        {tab === 'shop' && <ShoppingTab plan={plan} />}
-        {tab === 'build' && <BuildTab plan={plan} checked={checked} onCheck={setChecked} onPrint={() => setPrinting(true)} />}
+        {showProjects ? (
+          <ProjectsPanel
+            key={currentId}
+            projects={projects}
+            currentId={currentId}
+            onOpen={open}
+            onCreate={() => {
+              create();
+              go('size');
+            }}
+            onRename={rename}
+            onRemove={remove}
+          />
+        ) : (
+          <>
+            {tab === 'size' && <SizeTab design={design} plan={plan} onChange={setDesign} />}
+            {tab === 'choices' && <ChoicesTab design={design} plan={plan} onChange={setDesign} checked={checked} onReplace={replace} />}
+            {tab === 'cut' && <CutListTab plan={plan} />}
+            {tab === 'cutting' && <CuttingTab design={design} plan={plan} onChange={setDesign} checked={checked} onCheck={setChecked} />}
+            {tab === 'shop' && <ShoppingTab plan={plan} checked={checked} onCheck={setChecked} />}
+            {tab === 'build' && <BuildTab key={currentId} plan={plan} checked={checked} onCheck={setChecked} onPrint={() => setPrinting(true)} />}
+          </>
+        )}
       </main>
       <nav aria-label="Screens">
         {TABS.map(([id, label]) => (
-          <button key={id} type="button" aria-current={tab === id ? 'page' : undefined} onClick={() => go(id)}>
+          <button key={id} type="button" aria-current={tab === id && !showProjects ? 'page' : undefined} onClick={() => go(id)}>
             {label}
           </button>
         ))}
