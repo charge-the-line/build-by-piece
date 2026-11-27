@@ -4,7 +4,7 @@ Rule numbers refer to [RULES.md](RULES.md).
 
 ## Waiting on Max
 
-Nothing blocks the next step, but **corners need a rules proposal** before any code, as before.
+**The corner proposal has seven questions: see [CORNERS-PROPOSAL.md](CORNERS-PROPOSAL.md).** Each has a default, so "keep the defaults" is a fine answer.
 
 **Upper cabinets over a run:** Max approved [UPPERS-PROPOSAL.md](UPPERS-PROPOSAL.md): there is a window over the sink (nothing above it), base cabinets first, 18" above the countertop. Questions he did not answer were built at their defaults. Built as section W.
 

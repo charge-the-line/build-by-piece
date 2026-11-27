@@ -27,7 +27,7 @@ From Ashley, the first user.
 
 ## Current status
 
-**Phase 10 is built and waiting for Max's review. Next is corners: a second run meeting the first. Write a rules proposal first and do not write that code until Max approves it. A room follows, with its own proposal.**
+**Phase 10 is live. Next is a corner (two walls): its rules are proposed in `docs/CORNERS-PROPOSAL.md` and waiting for Max's approval. Do not write that code until Max approves the document and answers its questions. A room follows, with its own proposal.**
 
 A project is now either one cabinet or a run: several base cabinets and appliance spaces along one wall, sized by the app from the run's length, with one platform per stretch, shared cutting diagrams and one shopping list (section R of the rules). The app adds a row of upper cabinets above it (section W): the same widths as what is underneath, nothing over a sink, range or fridge unless she changes it, hung 18" above the countertop from one ledge after the base cabinets are in. The run is tested against a made-up 120" wall.
 
@@ -55,8 +55,9 @@ Known limits: front styles (flat or framed) cannot be changed in the app; screws
 | 7 | Cutting tick-off and sizes; picture shopping lists; three approaches; multiple projects | Done |
 | 8 | Kitchen cabinets: base, drawer base, sink base, upper (one at a time) | Done |
 | 9 | A run of cabinets along one wall: shared widths, platform, shopping and cutting | Done |
-| 10 | Upper cabinets over a run | Done, in review |
-| Later | Corners, then a room (rules first); prices, 3D and AI undecided | Not started |
+| 10 | Upper cabinets over a run | Done |
+| 11 | A corner: two walls meeting | Rules proposed, in review |
+| Later | A room (rules first); prices, 3D and AI undecided | Not started |
 
 Update this section at the end of every phase.
 
@@ -94,6 +95,7 @@ docs/TOOLS-PROPOSAL.md   The approved tool-inventory proposal: what changed on a
 docs/CABINETS-PROPOSAL.md   The approved kitchen cabinets proposal (stage 1 built).
 docs/RUN-PROPOSAL.md   The approved proposal for a run of cabinets along a wall (built).
 docs/UPPERS-PROPOSAL.md   The approved proposal for upper cabinets over a run (built).
+docs/CORNERS-PROPOSAL.md   Proposed rules for a corner (not yet approved or built).
 public/          Web app manifest and icons.
 ```
 

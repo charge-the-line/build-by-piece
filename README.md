@@ -2,7 +2,7 @@
 
 Turn a few measurements into a complete, checked woodworking plan: shopping list, cut list, cutting diagrams and step-by-step pictures.
 
-**Status: live. A run of cabinets can have a row of upper cabinets above it. Corners are next and need their rules agreed first.**
+**Status: live. A run of cabinets can have a row of upper cabinets above it. Corners are next; their rules are proposed and waiting for review.**
 
 - [Phase 0 brief](PHASE-0-BRIEF.md)
 - [Construction rules](docs/RULES.md)
@@ -11,6 +11,7 @@ Turn a few measurements into a complete, checked woodworking plan: shopping list
 - [Kitchen cabinets: what was approved](docs/CABINETS-PROPOSAL.md)
 - [Kitchen run: what was approved](docs/RUN-PROPOSAL.md)
 - [Upper cabinets over a run: what was approved](docs/UPPERS-PROPOSAL.md)
+- [A corner: proposal](docs/CORNERS-PROPOSAL.md) (please review)
 - [Project notes for contributors](CLAUDE.md)
 
 The app lives at https://charge-the-line.github.io/build-by-piece/
