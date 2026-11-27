@@ -96,7 +96,7 @@ export function buildVanity(r: Resolved, bays: readonly LaidBay[], methods: Plan
   const text = (ticks: Ticks) => formatLength(ticks, r.options.tapeIncrement).text;
 
   const add = (spec: PartSpec): PartId => {
-    const id: PartId = `P${String(parts.length + 1).padStart(2, '0')}`;
+    const id = `${r.idPrefix}${String(parts.length + 1).padStart(2, '0')}` as PartId;
     const thickness = derive('M1', `actual thickness of the ${spec.material.stock.name}`, spec.material.thickness);
     const derivations = [thickness, spec.length, spec.width];
     parts.push({
@@ -680,8 +680,8 @@ export function buildVanity(r: Resolved, bays: readonly LaidBay[], methods: Plan
   const PW = named('platform width', derive('P1', 'box width minus toe space and toe kick thickness on each exposed end', sum(WB, [-exposedEnds, TS], [-exposedEnds, tk])));
   const crossLength = sum(PD, [-2, Lt]);
 
-  // K2, K7: only a cabinet that stands on the floor has a platform and toe kick.
-  if (r.kind.hasPlatform) {
+  // K2, K7, R4: a wall cabinet has no platform, and in a run the platform belongs to the run.
+  if (r.buildsPlatform) {
   if (crossLength.value <= 0 || PW.value <= 2 * Lt.value) {
     error('PLATFORM_TOO_SMALL', 'P1', `The platform would be ${text(PW.value)} wide and ${text(PD.value)} deep, which is too small to build from 2x4s.`, 'Make the cabinet larger or the toe space smaller.', ['width', 'depth', 'platform.toeSpace']);
   }

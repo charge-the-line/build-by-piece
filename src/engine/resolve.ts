@@ -20,6 +20,7 @@ import type {
   MaterialId,
   Measurement,
   PanelMethod,
+  PlanContext,
   ResolvedInput,
   SheetStock,
   SlideHardware,
@@ -97,6 +98,10 @@ export interface Resolved {
   readonly options: VanityOptions;
   /** Which cabinet this is, and what that kind has (section K). */
   readonly kind: CabinetKind;
+  /** What part numbers start with: "P", or "C01-" in a run. */
+  readonly idPrefix: string;
+  /** False for a wall cabinet, and for a cabinet in a run, whose platform belongs to the run (R4). */
+  readonly buildsPlatform: boolean;
   readonly W: Val;
   readonly D: Val;
   readonly H: Val;
@@ -175,7 +180,7 @@ const BAY_LABELS: Readonly<Record<string, string>> = {
   'right-drawers': 'Right drawers',
 };
 
-export function resolveVanity(design: VanityDesign, defaults: VanityOptions, catalog: MaterialCatalog): ResolveResult {
+export function resolveVanity(design: VanityDesign, defaults: VanityOptions, catalog: MaterialCatalog, context: PlanContext = {}): ResolveResult {
   const options = effectiveOptions(design, defaults);
   const inputs = new Map<string, ResolvedInput>();
   const issues: ValidationIssue[] = [];
@@ -272,11 +277,16 @@ export function resolveVanity(design: VanityDesign, defaults: VanityOptions, cat
     return { ...val, status: 'assumed', origin: 'appDefault', source: path };
   };
 
-  const W = length(design.width, 'width', 'cabinet width');
+  // R2: in a run, the run decides the cabinet's width.
+  const W: Val =
+    context.width === undefined
+      ? length(design.width, 'width', 'cabinet width')
+      : { label: 'cabinet width', value: context.width, status: 'assumed', origin: 'appDefault', source: 'rule R2' };
   const D = length(design.depth, 'depth', 'cabinet depth');
   const H = length(design.height, 'height', 'box height');
 
-  const ends = {
+  // R3: in a run, the run says what each end of the cabinet meets.
+  const ends = context.ends ?? {
     left: choice(options.ends.left, 'ends.left', 'left end'),
     right: choice(options.ends.right, 'ends.right', 'right end'),
   };
@@ -423,6 +433,8 @@ export function resolveVanity(design: VanityDesign, defaults: VanityOptions, cat
   const resolved: Resolved = {
     options,
     kind,
+    idPrefix: context.idPrefix ?? 'P',
+    buildsPlatform: kind.hasPlatform && !context.sharedPlatform,
     W,
     D,
     H,

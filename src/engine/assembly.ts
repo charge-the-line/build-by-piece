@@ -9,6 +9,7 @@ import { contact, screwsAlong } from './geometry';
 import type { Resolved } from './resolve';
 import type {
   Direction,
+  EndCondition,
   Joint,
   JointFace,
   Opening,
@@ -330,7 +331,7 @@ export function assemble(r: Resolved, built: VanityBuild, methods: PlanMethods, 
     joints: [{ method: 'pocketScrews', face: 'back face', through: drawerRails, into: [...frameEnds, ...frameInner], fastener: pocketScrew(drawerRails) }],
   });
   // J2: through the side panels from the inside face on an end that will be seen.
-  const sideFace = (end: 'wall' | 'exposed'): JointFace => (end === 'exposed' ? 'inside face' : 'outside face');
+  const sideFace = (end: EndCondition): JointFace => (end === 'exposed' ? 'inside face' : 'outside face');
   const wallEnds = [r.ends.left, r.ends.right].filter((e) => e === 'wall').length;
   add({
     id: 'frameOn',

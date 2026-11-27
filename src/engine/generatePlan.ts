@@ -25,8 +25,8 @@ const blocked = (base: Pick<PlanResult, 'inputs' | 'issues'>): PlanResult => ({
   steps: [],
 });
 
-export const generatePlan: GeneratePlan = (design, defaults, catalog) => {
-  const { resolved, inputs, issues: inputIssues } = resolveVanity(design, defaults, catalog);
+export const generatePlan: GeneratePlan = (design, defaults, catalog, context = {}) => {
+  const { resolved, inputs, issues: inputIssues } = resolveVanity(design, defaults, catalog, context);
   if (!resolved) return blocked({ inputs, issues: inputIssues });
 
   const layout = layOut(resolved);
