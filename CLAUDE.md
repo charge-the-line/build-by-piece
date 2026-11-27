@@ -27,9 +27,9 @@ From Ashley, the first user.
 
 ## Current status
 
-**Phase 9 is live. Next is a row of upper cabinets over a run: its rules are proposed in `docs/UPPERS-PROPOSAL.md` and waiting for Max's approval. Do not write that code until Max approves the document and answers its questions. Corners and a room follow, each with its own proposal.**
+**Phase 10 is built and waiting for Max's review. Next is corners: a second run meeting the first. Write a rules proposal first and do not write that code until Max approves it. A room follows, with its own proposal.**
 
-A project is now either one cabinet or a run: several base cabinets and appliance spaces along one wall, sized by the app from the run's length, with one platform per stretch, shared cutting diagrams and one shopping list (section R of the rules). The run is tested against a made-up 120" wall.
+A project is now either one cabinet or a run: several base cabinets and appliance spaces along one wall, sized by the app from the run's length, with one platform per stretch, shared cutting diagrams and one shopping list (section R of the rules). The app adds a row of upper cabinets above it (section W): the same widths as what is underneath, nothing over a sink, range or fridge unless she changes it, hung 18" above the countertop from one ledge after the base cabinets are in. The run is tested against a made-up 120" wall.
 
 As single cabinets the app plans five: the bathroom vanity, and a kitchen base cabinet, drawer base, sink base and upper cabinet (section K of the rules). All are tested against made-up standard sizes; there are no real kitchen measurements yet.
 
@@ -41,7 +41,7 @@ The engine builds a full plan from three numbers: openings, cut list, cutting di
 
 Test cases: vanity 01, 60" wide × 21" deep × 30" high, left end on a wall, right end exposed; and the five kitchen fixtures in `fixtures/kitchen.ts`. The earlier AI mock-up survives only as a fixture of known errors.
 
-Known limits: front styles (flat or framed) cannot be changed in the app; screws are counted but glue, nails and finish are not; the door and drawer layout can only be changed for the vanity; a run is one straight wall of base cabinets (no corners, no uppers in the same project); a whole room and other project types show as "Not yet". Everything under "Later" needs its rules agreed with Max first, as in Phase 0.
+Known limits: front styles (flat or framed) cannot be changed in the app; screws are counted but glue, nails and finish are not; the door and drawer layout can only be changed for the vanity; a run is one straight wall (no corners; nothing over a fridge or range but an empty space or a full upper); the ledge step pictures the mounting strips, not the ledge; a whole room and other project types show as "Not yet". Everything under "Later" needs its rules agreed with Max first, as in Phase 0.
 
 | Phase | What | Status |
 |---|---|---|
@@ -55,7 +55,7 @@ Known limits: front styles (flat or framed) cannot be changed in the app; screws
 | 7 | Cutting tick-off and sizes; picture shopping lists; three approaches; multiple projects | Done |
 | 8 | Kitchen cabinets: base, drawer base, sink base, upper (one at a time) | Done |
 | 9 | A run of cabinets along one wall: shared widths, platform, shopping and cutting | Done |
-| 10 | Upper cabinets over a run | Rules proposed, in review |
+| 10 | Upper cabinets over a run | Done, in review |
 | Later | Corners, then a room (rules first); prices, 3D and AI undecided | Not started |
 
 Update this section at the end of every phase.
@@ -75,9 +75,9 @@ src/engine/      Pure TypeScript. Design + defaults + catalog in; parts, diagram
   assembly.ts      The small assembly steps: pieces and the way each arrives, glue, screws, tools, hardware (section A).
   cutting.ts       Cutting diagrams (rules C1-C6); the shopping list is the diagrams, counted.
   generatePlan.ts  The engine's entry point for one cabinet.
-  run.ts           The entry point for a run: shares the length out, plans each cabinet, adds the run's platform, cutting and steps (section R).
+  run.ts           The entry point for a run: shares the length out, plans each cabinet, adds the run's platform, cutting and steps (section R), and the row of uppers above it (section W).
   colorRoles.ts    The fixed instructional colours (data).
-  defaults/        Every value the app decides: vanity.ts (options, layouts), cabinets.ts (cabinet kinds, starting sizes, proposed layouts), run.ts (appliance spaces, width limits, the test wall), catalog.ts (materials, hardware, supplies), tools.ts (tool list, default ticks, safety gear).
+  defaults/        Every value the app decides: vanity.ts (options, layouts), cabinets.ts (cabinet kinds, starting sizes, proposed layouts), run.ts (appliance spaces, width limits, the upper row, the test wall), catalog.ts (materials, hardware, supplies), tools.ts (tool list, default ticks, safety gear).
   fixtures/        vanity-01.ts and kitchen.ts are the test cases (a kind and three numbers each). mockup-errors.ts holds the old mock-up's mistakes.
   __tests__/       Vitest tests. The expected sizes are the worked example in docs/RULES.md.
 src/app/         React UI: Size (or Run, for a run), Choices, Parts, Cutting, Shop and Build screens. Imports from the engine; never the reverse.
@@ -93,7 +93,7 @@ docs/OPEN-QUESTIONS.md   Decisions waiting on Max, and the record of what he dec
 docs/TOOLS-PROPOSAL.md   The approved tool-inventory proposal: what changed on approval, and Max's answers.
 docs/CABINETS-PROPOSAL.md   The approved kitchen cabinets proposal (stage 1 built).
 docs/RUN-PROPOSAL.md   The approved proposal for a run of cabinets along a wall (built).
-docs/UPPERS-PROPOSAL.md   Proposed rules for upper cabinets over a run (not yet approved or built).
+docs/UPPERS-PROPOSAL.md   The approved proposal for upper cabinets over a run (built).
 public/          Web app manifest and icons.
 ```
 
@@ -103,7 +103,7 @@ Engine rules:
 - **No floating-point lengths.** Lengths are whole `Ticks`: 4,064 per inch, 127 per 1/32", 160 per mm (rule U1). Rounding happens once, when printing, to a tape mark (1/16", optionally 1/32", or 1 mm).
 - Inputs are kept as typed (`Measurement.entered`) and parsed by the engine. Fractional inches, decimal inches and millimetres are accepted.
 - Every value has a status (`confirmed` or `assumed`) and an origin (`user` or `appDefault`). Plans show three labels: You entered, App's choice, Check before you cut (rule G3).
-- Every part has a stable ID (P01, P02, ... for one cabinet; C01-01 in a run; R-01 for a run's platform and toe kick), plain-English name, colour role, material, thickness, length, width, grain, quantity, and a derivation (rule number, formula, inputs).
+- Every part has a stable ID (P01, P02, ... for one cabinet; C01-01 for a base cabinet in a run, U01-01 for an upper; R-01 for a run's platform and toe kick), plain-English name, colour role, material, thickness, length, width, grain, quantity, and a derivation (rule number, formula, inputs).
 - Material and hardware sizes are data: nominal versus actual lumber, sheet sizes, slide clearances and lengths. Plywood thickness defaults to the standard sheet and is checked at the cutting step.
 - Tools are data (`src/engine/defaults/tools.ts`) and ticks are choices with defaults. A method that changes a size is a rule with its own formulas (D5, D9, D10). Solid-wood parts default to boards as sold whatever the tools (rules M5, T3).
 - A missing tool never blocks a plan; it becomes a "buy or borrow" line (rule T2).

@@ -4,7 +4,9 @@ Rule numbers refer to [RULES.md](RULES.md).
 
 ## Waiting on Max
 
-**The upper cabinets proposal has seven questions: see [UPPERS-PROPOSAL.md](UPPERS-PROPOSAL.md).** Each has a default, so "keep the defaults" is a fine answer.
+Nothing blocks the next step, but **corners need a rules proposal** before any code, as before.
+
+**Upper cabinets over a run:** Max approved [UPPERS-PROPOSAL.md](UPPERS-PROPOSAL.md): there is a window over the sink (nothing above it), base cabinets first, 18" above the countertop. Questions he did not answer were built at their defaults. Built as section W.
 
 **Kitchen run:** Max approved [RUN-PROPOSAL.md](RUN-PROPOSAL.md) with the default for every question and said to use test data, so it is built against a made-up 120" wall.
 
@@ -30,7 +32,7 @@ Done since then (Phase 7): Cutting screen with sizes on pieces, the saw for each
 
 Still to do from her feedback:
 
-1. Kitchen stage 3: corners, uppers over a run, and a room. Other project types after that. Each needs its rules agreed first.
+1. Kitchen stage 3: corners, then a room (uppers over a run are done). Other project types after that. Each needs its rules agreed first.
 2. Wood species and finishes per component, with previews.
 3. Cabinet numbers with part letters (C01-A), once there is more than one cabinet in a project.
 4. Prices, an interactive 3D view and AI features: undecided, and not started.

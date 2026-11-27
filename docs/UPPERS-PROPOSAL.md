@@ -1,6 +1,6 @@
-# Proposed rules: upper cabinets over a run
+# Upper cabinets over a run: what was approved
 
-**Status: proposal for Max's approval. Nothing here is built yet.** Once approved, these become section W of [RULES.md](RULES.md) and the engine is changed to match.
+**Status: approved by Max and built.** The rules are now section W of [RULES.md](RULES.md). His answers are at the end.
 
 ## Splitting stage 3
 
@@ -76,7 +76,7 @@ All base cabinets are built first, then all uppers, each up to its finish. Then 
 
 - The Run screen shows both rows in its drawing, to scale, with the gap between them.
 - Under the bottom row's list there is a short "Above" list: for each position, "Upper cabinet" or "Nothing", with a button to switch.
-- Depth and height of the uppers, and their height above the counter, appear on the Choices screen with the other defaults.
+- Depth and height of the uppers, their height above the counter, and the ceiling height appear on the Choices screen with the other defaults.
 - Parts, Cutting, Shop and Build cover both rows.
 
 ## Test case
@@ -92,3 +92,17 @@ The same made-up 120" wall: a drawer base, a sink base, a dishwasher space and a
 5. **Uppers 30" high and 12" deep** to start (W3). The single upper cabinet already starts at these.
 6. **Base cabinets first, then uppers** (W8). OK?
 7. **Numbers** U01 for uppers and C01 for base cabinets (W5). OK?
+
+## Max's answers
+
+| # | Answer |
+|---|---|
+| 1 | Not answered; taken one piece at a time as proposed. |
+| 2 | Not answered; built as proposed. |
+| 3 | **Yes, there is a window over the sink**, so nothing goes above the sink base. |
+| 4 | **Yes**: 18" above the countertop, "whatever is standard". |
+| 5 | Not answered; built at 30" high and 12" deep. |
+| 6 | **Yes**: base cabinets first, then uppers. |
+| 7 | Not answered; built as U01 and C01. |
+
+Added while building: the ceiling height (96") is a visible default, used only for the warning in W3.
