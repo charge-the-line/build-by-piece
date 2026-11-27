@@ -1,6 +1,6 @@
 # Proposed rules: a run of cabinets along one wall
 
-**Status: proposal for Max's approval. Nothing here is built yet.** Once approved, these become section R of [RULES.md](RULES.md) and the engine is changed to match. This is stage 2 of the kitchen work; stage 1 (one cabinet at a time) is built.
+**Status: approved by Max with the default for every question, and built.** The rules now live in [RULES.md](RULES.md), section R. Max's answer was "just use default and test data", so the test case is the made-up 120" wall below, not a real kitchen. This page is kept as the record of what was proposed.
 
 ## The idea
 

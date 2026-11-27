@@ -408,6 +408,56 @@ Four more cabinets, built the same way as the vanity. Every rule above applies u
 
 ---
 
+## R. A run of cabinets along one wall
+
+Several base cabinets side by side, with spaces for appliances, planned as one project. Each cabinet is built by the rules above; this section covers what is new when they sit together.
+
+**R1. What she enters.** The length of the run, end to end. What goes along it, left to right: base cabinet, drawer base, sink base, or a space for an appliance. Depth and height once, shared by every cabinet (they start at 24" and 31", rule K1). Which ends of the run touch a wall. She does not type a width for each cabinet.
+
+**R2. The app shares the run out.**
+- An appliance space starts at a standard width: 30" for a range, 24" for a dishwasher, 36" for a fridge. These are marked *check before you cut*, because the real appliance decides.
+- A sink base starts at 36".
+- Every other cabinet shares what is left equally. Each share is rounded down to the tape mark and the leftover goes to the last one, so the widths add up to the run exactly (U4).
+- She can fix any width; the others share the rest.
+- If every width is fixed and they do not add up, it is an error, with a picture of the pieces against the run and the gap or overlap marked.
+
+**R3. Each cabinet is its own box.** Every cabinet is built complete with its own face frame, then clamped and screwed to its neighbour through the vertical frame pieces where they meet (screws by rule J4).
+- The frame overhang (F1) applies only at a wall end of the run. Where two cabinets meet, frame and box are flush.
+- A side that meets another cabinet is not seen, so its pocket holes go on the outside face. A side next to an appliance space, or at an open end of the run, is treated as seen (J2).
+- Why separate boxes: each is light enough to lift, is finished before the next is started, and a mistake costs one cabinet. Alternative: one long face frame across several boxes.
+
+**R4. One platform for each stretch.** A stretch is an unbroken row of cabinets; it ends at an appliance space or at the end of the run.
+- One platform runs under each stretch, by the single-cabinet rules (P1 to P5) applied to the stretch: flush with the box at a wall end, set back by the toe space and toe kick where the end can be seen.
+- A stretch longer than a board is built in sections, each no longer than the longest 2x4 sold, breaking only where two cabinets meet.
+- The toe kick runs along the front of each section, with a return on every end that can be seen.
+
+**R5. Numbers.** Cabinets are C01, C02, C03 from the left; appliance spaces are not numbered. A cabinet's parts are C01-01, C01-02. Platform and toe kick parts belong to the run: R-01, R-02.
+
+**R6. One shopping list, shared sheets.** Cutting diagrams place parts from different cabinets on the same sheet or board (C1 to C7), and the shopping list is those diagrams counted. Hardware, screws and tools are added up across the run.
+
+**R7. Building it.** Each cabinet is built in turn up to and including its finish (and its pipe openings, for a sink base). Then the run is set in place: build each platform section, place the platforms, set each cabinet from the left and screw it to the one before, screw to the wall, fix the toe kicks. Then each cabinet's drawers, doors and handles are fitted.
+
+**R8. Checks.** The widths must add up (R2). A cabinet that comes out narrower than 9" or wider than 48" is an error, with the fix (remove or add a cabinet). Every single-cabinet check applies to each cabinet.
+
+**Not yet:** corners, upper cabinets in the same project, filler strips, and changing the doors and drawers of a cabinet inside a run.
+
+### Worked example (a made-up wall, not a real kitchen)
+
+A 120" run, wall at the left, open at the right: drawer base, sink base, dishwasher space, base cabinet.
+
+| | Width | Notes |
+|---|---|---|
+| C01 Drawer base | 30" | Shares: (120" − 36" − 24") ÷ 2 |
+| C02 Sink base | 36" | Standard start |
+| Dishwasher space | 24" | Standard start; check the appliance |
+| C03 Base cabinet | 30" | Shares |
+
+- Stretch 1 (C01 and C02, 66"): platform rails 62" (66" less the 1/4" wall overhang, less 3 3/4" beside the dishwasher), five cross supports, front toe kick 62 3/4", one return.
+- Stretch 2 (C03, 30"): platform rails 22 1/2", three cross supports, front toe kick 24", two returns.
+- C02 is screwed to C01 with five screws along 31" of frame. C03 stands alone across the dishwasher space.
+
+---
+
 ## T. Tools and methods
 
 **T1. The tool list.** Each tool is ticked or not, on the Choices screen. The default ticks are Ashley's own list (mitre saw, circular saw, jigsaw, pocket-hole jig, drills, with a router being bought), so nothing is asked up front.
