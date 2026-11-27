@@ -1,12 +1,12 @@
 import { useState } from 'react';
 import { cabinetKind } from '../engine/defaults/cabinets';
-import { applianceKind, applianceKinds } from '../engine/defaults/run';
+import { aboveFor, applianceKind, applianceKinds } from '../engine/defaults/run';
 import type { EndCondition, PlanResult, RunDesign, RunItem } from '../engine/types';
 import { fmt } from './format';
 import { FrontView } from './FrontView';
 import { IssueList } from './IssueList';
 import { LengthField } from './LengthField';
-import { newItemId, withEnd, withItemWidth, withRunItems, withRunSize } from './project';
+import { newItemId, withAbove, withEnd, withItemWidth, withRunItems, withRunSize } from './project';
 import { CABINET_PICTURES } from './ProjectsPanel';
 import { EndPicker } from './SizeTab';
 
@@ -121,6 +121,40 @@ export function RunTab({ design, plan, onChange }: Props) {
             );
           })}
         </ol>
+      </section>
+
+      <section>
+        <h2>Above</h2>
+        <p>The app lines an upper cabinet up with what is underneath. Change any of them.</p>
+        <ol className="runItems aboveList">
+          {design.items.map((item) => {
+            const above = aboveFor(item, design.uppers);
+            const upperId = plan.run?.above.find((a) => a.itemId === item.id)?.upperId;
+            return (
+              <li key={item.id}>
+                <div className="runItemHead">
+                  <svg className={above.choice === 'upper' ? 'icon' : 'icon dashed'} viewBox="0 0 48 48" aria-hidden="true">
+                    <path d={above.choice === 'upper' ? CABINET_PICTURES.upper : 'M8 8h32v24H8z'} />
+                  </svg>
+                  <span>
+                    <strong>{above.choice === 'upper' ? `${upperId ? `${upperId} ` : ''}Upper cabinet` : 'Nothing'}</strong>
+                    <span className="hint">
+                      Over the {numberOf(item) ? `${numberOf(item)} ` : ''}
+                      {nameOf(item).toLowerCase()}
+                      {above.proposed ? `. ${above.reason}` : ', set by you'}
+                    </span>
+                  </span>
+                </div>
+                <div className="runItemActions">
+                  <button type="button" onClick={() => onChange(withAbove(design, item.id, above.choice === 'upper' ? 'none' : 'upper'))}>
+                    {above.choice === 'upper' ? 'Leave this empty' : 'Put an upper cabinet here'}
+                  </button>
+                </div>
+              </li>
+            );
+          })}
+        </ol>
+        <p className="note">The size of the upper cabinets and their height on the wall are on the Choices screen.</p>
       </section>
 
       <section>

@@ -439,7 +439,7 @@ Several base cabinets side by side, with spaces for appliances, planned as one p
 
 **R8. Checks.** The widths must add up (R2). A cabinet that comes out narrower than 9" or wider than 48" is an error, with the fix (remove or add a cabinet). Every single-cabinet check applies to each cabinet.
 
-**Not yet:** corners, upper cabinets in the same project, filler strips, and changing the doors and drawers of a cabinet inside a run.
+**Not yet:** corners, filler strips, and changing the doors and drawers of a cabinet inside a run.
 
 ### Worked example (a made-up wall, not a real kitchen)
 
@@ -455,6 +455,47 @@ A 120" run, wall at the left, open at the right: drawer base, sink base, dishwas
 - Stretch 1 (C01 and C02, 66"): platform rails 62" (66" less the 1/4" wall overhang, less 3 3/4" beside the dishwasher), five cross supports, front toe kick 62 3/4", one return.
 - Stretch 2 (C03, 30"): platform rails 22 1/2", three cross supports, front toe kick 24", two returns.
 - C02 is screwed to C01 with five screws along 31" of frame. C03 stands alone across the dishwasher space.
+
+---
+
+## W. Upper cabinets over a run
+
+A run can have a second row: upper cabinets on the wall above the base cabinets. Each upper is built by rule K7 and the rest; this section covers how the row is laid out and hung. Approved by Max; see [UPPERS-PROPOSAL.md](UPPERS-PROPOSAL.md).
+
+**W1. The app proposes the top row.** She is asked nothing new. Above a base cabinet, a drawer base or a dishwasher space: an upper cabinet. Above a sink base (most sinks sit under a window), a range space (room for a hood) or a fridge space: nothing. Each is a choice she can change.
+
+**W2. Widths follow the bottom row.** An upper is exactly as wide as what is under it, and starts where it starts. An upper that would be narrower than 9" or wider than 48" is an error, with the fix (leave the space empty, or change the width underneath).
+
+**W3. Size and height on the wall.** Every upper in the row shares one depth (12") and one height (30"); both are defaults she can change.
+
+- Bottom of the uppers above the floor = platform height + base box height + countertop thickness + gap above the countertop. The gap defaults to 18".
+- With the defaults: 3 1/2" + 31" + 1 1/2" + 18" = 54".
+- If the top of the uppers is higher than the ceiling (default 96"), the plan warns but is not blocked.
+
+**W4. Each upper is its own box.** As in R3. A side that meets another upper is joined; a side beside an empty space can be seen and is a finished end; the frame overhang applies only at a wall end of the run.
+
+**W5. Numbers.** Uppers are U01, U02, ... left to right; their parts are U01-01, U01-02. Base cabinets keep C01.
+
+**W6. Hanging the row.** One ledge board, screwed level to the wall with its top edge at the height from W3. Each upper is lifted onto it from the left and screwed to the upper before it where they meet (J4 spacing). Then every upper is screwed to the wall through both mounting strips, and the ledge comes off. Every lift is a two-person job. The ledge is a scrap board and is not on the shopping list.
+
+**W7. One shopping list, shared sheets.** Uppers go on the same cutting diagrams, shopping list and tool list as the base cabinets (R6).
+
+**W8. Building order.** All base cabinets are built up to their finish, then all uppers. Then the base run is set in place (R7), then the uppers are hung (W6), then drawers, doors and handles are fitted everywhere.
+
+**Not yet:** a short cabinet over the fridge or range, open shelves, glass doors, and trim along the top.
+
+### Worked example
+
+The same made-up 120" wall. Three uppers, each 30" high and 12" deep, with their bottoms 54" and their tops 84" above the floor:
+
+| | Over | Width | Ends |
+|---|---|---|---|
+| U01 | C01 Drawer base | 30" | Wall on the left; seen on the right |
+| (nothing) | C02 Sink base | 36" | |
+| U02 | Dishwasher space | 24" | Seen on the left; joined to U03 |
+| U03 | C03 Base cabinet | 30" | Joined to U02; seen on the right |
+
+U03 is screwed to U02 with five screws along 30" of frame. U01 stands alone.
 
 ---
 

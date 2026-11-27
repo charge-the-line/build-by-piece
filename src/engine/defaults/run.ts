@@ -2,7 +2,7 @@
  * Defaults for a run of cabinets along one wall (docs/RULES.md, section R).
  * Data only.
  */
-import type { ApplianceType, Measurement, RunDesign } from '../types';
+import type { ApplianceType, Measurement, RunDesign, RunItem } from '../types';
 import { appDefault, checkAtCutting, userChoice, userEntered } from './values';
 
 export interface ApplianceKind {
@@ -19,6 +19,31 @@ export const applianceKinds: readonly ApplianceKind[] = [
 ];
 
 export const applianceKind = (type: ApplianceType): ApplianceKind => applianceKinds.find((k) => k.type === type)!;
+
+/** W3: the row of upper cabinets starts at these, and she can change each. */
+export const upperRow = {
+  depth: appDefault('12', 'A standard upper cabinet depth.'),
+  height: appDefault('30', 'The most common upper cabinet height.'),
+  aboveCounter: appDefault('18', 'The standard gap between a countertop and the upper cabinets.'),
+  ceiling: appDefault('96', 'A standard 8 ft ceiling. Only used to check the upper cabinets fit.'),
+} as const;
+
+/** W1: what the app puts above each thing in the bottom row, unless she changes it. */
+export const proposedAbove = {
+  base: { choice: 'upper', reason: 'Doors line up top and bottom.' },
+  drawerBase: { choice: 'upper', reason: 'Doors line up top and bottom.' },
+  sinkBase: { choice: 'none', reason: 'Most sinks sit under a window, so nothing goes above.' },
+  dishwasher: { choice: 'upper', reason: 'The dishwasher is under the counter.' },
+  range: { choice: 'none', reason: 'Room for a hood.' },
+  fridge: { choice: 'none', reason: 'The fridge fills the height.' },
+} as const;
+
+/** W1: what is above one thing in the bottom row: her change if she made one, otherwise the app's proposal. */
+export function aboveFor(item: RunItem, uppers: RunDesign['uppers']): { choice: 'upper' | 'none'; proposed: boolean; reason: string } {
+  const proposal = proposedAbove[item.kind === 'cabinet' ? item.cabinet : item.appliance];
+  const changed = uppers?.above?.[item.id];
+  return { choice: changed ?? proposal.choice, proposed: changed === undefined || changed === proposal.choice, reason: proposal.reason };
+}
 
 /** R8: a cabinet outside these widths is refused. */
 export const runLimits = {

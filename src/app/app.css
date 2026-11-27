@@ -1174,6 +1174,15 @@ button.quiet {
   fill: var(--ink);
 }
 
+.floorLine {
+  stroke: var(--ink);
+  stroke-width: 4;
+}
+
+.aboveList .runItemActions {
+  grid-template-columns: 1fr;
+}
+
 /* Paper */
 .printPlan {
   display: none;

@@ -93,7 +93,7 @@ describe('each cabinet in the run (rules R3, R5)', () => {
     const ids = result.parts.map((p) => p.id);
     expect(ids.filter((id) => id.startsWith('C01-')).slice(0, 2)).toEqual(['C01-01', 'C01-02']);
     expect(new Set(ids).size).toBe(ids.length);
-    expect([...new Set(ids.map((id) => id.split('-')[0]))]).toEqual(['C01', 'C02', 'C03', 'R']);
+    expect([...new Set(ids.map((id) => id.split('-')[0]))]).toEqual(['C01', 'C02', 'C03', 'U01', 'U02', 'U03', 'R']);
     expect(result.parts.find((p) => p.id === 'C02-01')).toMatchObject({ name: 'Left side', assembly: 'C02 Sink base: Box' });
   });
 
@@ -194,7 +194,8 @@ describe('one shopping list and shared sheets (rule R6)', () => {
   it('adds up hardware and screws across the run', () => {
     expect(result.hardware.map((h) => [h.hardwareId, h.quantity])).toEqual([
       ['slide-side-mount', 5],
-      ['hinge-face-frame-half-inch', 8],
+      // 8 on the base cabinets, and two on each of the six upper doors.
+      ['hinge-face-frame-half-inch', 20],
     ]);
     const fromSteps = (id: string) => result.steps.flatMap((s) => s.fasteners).filter((f) => f.supplyId === id).reduce((n, f) => n + f.quantity, 0);
     for (const id of ['pocket-screws-coarse', 'pocket-screws-fine', 'construction-screws', 'short-screws', 'joining-screws']) {
@@ -213,8 +214,23 @@ describe('building the run (rule R7)', () => {
 
   it('builds each cabinet in turn, then sets them in place, then fits drawers and doors', () => {
     const groups = ids.map((id) => id.split(':')[0]).filter((g, i, all) => g !== all[i - 1]);
-    expect(groups).toEqual(['C01', 'C02', 'C03', 'run', 'C01', 'C02', 'C03']);
-    expect(ids.filter((id) => id.startsWith('run:'))).toEqual(['run:platform-1', 'run:platform-2', 'run:place-platforms', 'run:set-C01', 'run:set-C02', 'run:set-C03', 'run:wall', 'run:toe-kick']);
+    // W8: base cabinets, then uppers, then the run goes in, then drawers and doors everywhere.
+    expect(groups).toEqual(['C01', 'C02', 'C03', 'U01', 'U02', 'U03', 'run', 'C01', 'C02', 'C03', 'U01', 'U02', 'U03']);
+    expect(ids.filter((id) => id.startsWith('run:'))).toEqual([
+      'run:platform-1',
+      'run:platform-2',
+      'run:place-platforms',
+      'run:set-C01',
+      'run:set-C02',
+      'run:set-C03',
+      'run:wall',
+      'run:toe-kick',
+      'run:ledger',
+      'run:hang-U01',
+      'run:hang-U02',
+      'run:hang-U03',
+      'run:upper-wall',
+    ]);
     expect(new Set(ids).size).toBe(ids.length);
     expect(result.steps.map((s) => s.number)).toEqual(ids.map((_, i) => i + 1));
   });
@@ -253,5 +269,131 @@ describe('building the run (rule R7)', () => {
     const step = result.steps.find((s) => s.id === 'C03:boxLeft')!;
     expect(step.screws.every((p) => p.x >= inches('90'))).toBe(true);
     expect(step.glue.every((g) => g.x >= inches('90'))).toBe(true);
+  });
+});
+
+describe('a row of upper cabinets over the run (section W)', () => {
+  const uppers = result.run!.uppers;
+  const withUppers = (change: NonNullable<RunDesign['uppers']>, items = startingRun.items, length = '120') => planRun(runOf(items, length, { uppers: change }));
+
+  it('proposes the top row from the bottom row: nothing over the sink (rule W1)', () => {
+    expect(result.run!.above.map((a) => [a.under, a.choice, a.upperId, a.proposed])).toEqual([
+      ['C01 Drawer base', 'upper', 'U01', true],
+      ['C02 Sink base', 'none', undefined, true],
+      ['Space for a dishwasher', 'upper', 'U02', true],
+      ['C03 Base cabinet', 'upper', 'U03', true],
+    ]);
+    const kitchen = planRun(runOf([space('a', 'fridge'), cabinet('b', 'drawerBase'), space('c', 'range'), cabinet('d', 'base')], '150'));
+    expect(kitchen.run!.above.map((a) => a.choice)).toEqual(['none', 'upper', 'none', 'upper']);
+  });
+
+  it('makes each upper exactly as wide as what is under it (rule W2)', () => {
+    expect(uppers.map((u) => [u.id, u.name, u.left, u.width])).toEqual([
+      ['U01', 'Upper cabinet', 0, inches('30')],
+      ['U02', 'Upper cabinet', inches('66'), inches('24')],
+      ['U03', 'Upper cabinet', inches('90'), inches('30')],
+    ]);
+    // The bottom row is unchanged by the row above it.
+    expect(result.run!.cabinets.map((c) => c.id)).toEqual(['C01', 'C02', 'C03']);
+  });
+
+  it('hangs the row 18" above the countertop: 54" from the floor with the defaults (rule W3)', () => {
+    // 3 1/2" platform + 31" box + 1 1/2" countertop + 18".
+    expect(result.run!.upperBottom).toMatchObject({ ruleId: 'W3', result: inches('54') });
+    expect(uppers.every((u) => u.bottom === inches('54') && u.height === inches('30'))).toBe(true);
+    expect(result.run!.pictureHeight).toBe(inches('84'));
+    const sides = result.parts.filter((p) => p.id.startsWith('U') && p.name === 'Left side');
+    expect(sides.map((p) => [p.length, p.width])).toEqual(Array(3).fill([inches('30'), inches('11 1/4')]));
+    // Every piece of every upper sits between 54" and 84" above the floor.
+    const placed = result.placements.filter((p) => p.partId.startsWith('U'));
+    expect(Math.min(...placed.map((p) => p.y))).toBe(inches('54'));
+    expect(Math.max(...placed.map((p) => p.y + p.sizeY))).toBe(inches('84'));
+  });
+
+  it('shows the three sizes as defaults she can change, and follows them', () => {
+    for (const path of ['uppers.depth', 'uppers.height', 'uppers.aboveCounter', 'uppers.ceiling']) expect(result.inputs.find((i) => i.path === path), path).toMatchObject({ origin: 'appDefault' });
+    const changed = withUppers({ height: userEntered('36'), depth: userEntered('13'), aboveCounter: userEntered('20') });
+    expect(problems(changed)).toEqual([]);
+    expect(changed.run!.upperBottom!.result).toBe(inches('56'));
+    expect(changed.run!.uppers[0]).toMatchObject({ bottom: inches('56'), height: inches('36') });
+    expect(changed.parts.find((p) => p.id === 'U01-01')).toMatchObject({ length: inches('36'), width: inches('12 1/4') });
+    expect(changed.inputs.find((i) => i.path === 'uppers.height')).toMatchObject({ origin: 'user', value: inches('36') });
+    checkPlacements(changed, 'taller uppers:');
+  });
+
+  it('warns when the uppers would be higher than the ceiling, without blocking the plan (rule W3)', () => {
+    const tall = withUppers({ height: userEntered('42'), aboveCounter: userEntered('20') });
+    expect(tall.canGeneratePlan).toBe(true);
+    const issue = tall.issues.find((i) => i.code === 'UPPERS_ABOVE_CEILING')!;
+    expect(issue).toMatchObject({ severity: 'warning', ruleId: 'W3' });
+    expect(issue.explanation).toContain('98"');
+    expect(issue.explanation).toContain('96"');
+    expect(withUppers({ height: userEntered('42'), aboveCounter: userEntered('20'), ceiling: userEntered('108') }).issues.find((i) => i.code === 'UPPERS_ABOVE_CEILING')).toBeUndefined();
+  });
+
+  it('treats a side beside a gap as a finished end, and joins uppers that meet (rule W4)', () => {
+    const box = (id: string) => result.parts.find((p) => p.id.startsWith(`${id}-`) && p.name === 'Bottom')!.length;
+    // U01 is at the wall end: 30" less the 1/4" overhang, less two sides.
+    expect(box('U01')).toBe(inches('30') - inches('1/4') - 2 * inches('3/4'));
+    expect(box('U02')).toBe(inches('24') - 2 * inches('3/4'));
+    const hang = (id: string) => result.steps.find((s) => s.id === `run:hang-${id}`)!;
+    // U02 is across the gap over the sink; U03 meets U02 along 30" of frame.
+    expect(hang('U01').screws).toEqual([]);
+    expect(hang('U02')).toMatchObject({ screws: [], values: { joins: 0 } });
+    expect(hang('U03')).toMatchObject({ fasteners: [{ supplyId: 'joining-screws', quantity: 5 }], values: { cabinet: 3, joins: 1 } });
+    expect(hang('U03').screws.every((p) => p.x === inches('90') && p.y > inches('54') && p.y < inches('84'))).toBe(true);
+  });
+
+  it('numbers uppers U01, U02 and their parts by cabinet (rule W5)', () => {
+    expect(result.parts.find((p) => p.id === 'U02-01')).toMatchObject({ name: 'Left side', assembly: 'U02 Upper cabinet: Box' });
+    expect(result.steps.find((s) => s.id === 'U02:boxLeft')?.cabinet).toEqual({ id: 'U02', name: 'Upper cabinet' });
+    expect(result.openings.filter((o) => o.id.startsWith('U')).every((o) => o.kind === 'door')).toBe(true);
+  });
+
+  it('hangs the row from one ledge after the base cabinets are in (rules W6, W8)', () => {
+    const ids = result.steps.map((s) => s.id);
+    expect(ids.indexOf('run:ledger')).toBeGreaterThan(ids.indexOf('run:toe-kick'));
+    expect(ids.indexOf('U03:topcoat')).toBeLessThan(ids.indexOf('run:platform-1'));
+    expect(ids.indexOf('U01:hangDoors')).toBeGreaterThan(ids.indexOf('run:upper-wall'));
+    expect(ids.filter((id) => /^U\d+:(ledger|setBox|wallScrews)$/.test(id))).toEqual([]);
+    expect(result.steps.find((s) => s.id === 'run:ledger')!.values).toMatchObject({ height: inches('54'), gap: inches('18'), uppers: 3 });
+    const earlier = new Set(result.steps.find((s) => s.id === 'run:hang-U02')!.earlierPieces.map((p) => p.partId.split('-')[0]));
+    expect([...earlier].sort()).toEqual(['C01', 'C02', 'C03', 'R', 'U01']);
+    const wall = result.steps.find((s) => s.id === 'run:upper-wall')!;
+    expect(wall.pieces).toHaveLength(6); // two mounting strips on each of three uppers
+  });
+
+  it('cuts uppers from the same sheets as the base cabinets (rule W7)', () => {
+    const sheets = result.cutDiagrams.filter((d) => d.materialId === 'oak-ply-3-4');
+    expect(sheets.some((d) => d.pieces.some((p) => p.partId.startsWith('U')) && d.pieces.some((p) => p.partId.startsWith('C')))).toBe(true);
+  });
+
+  it('lets her empty a space or fill one, and renumbers', () => {
+    const noUppers = withUppers({ above: { 'item-1': 'none', 'item-3': 'none', 'item-4': 'none' } });
+    expect(noUppers.run!.uppers).toEqual([]);
+    expect(noUppers.run!.upperBottom).toBeUndefined();
+    expect(noUppers.run!.pictureHeight).toBe(inches('34 1/2'));
+    expect(noUppers.parts.some((p) => p.id.startsWith('U'))).toBe(false);
+    expect(noUppers.steps.some((s) => s.id === 'run:ledger')).toBe(false);
+    expect(noUppers.inputs.some((i) => i.path.startsWith('uppers.'))).toBe(false);
+
+    const overSink = withUppers({ above: { 'item-2': 'upper' } });
+    expect(overSink.run!.uppers.map((u) => [u.id, u.width])).toEqual([
+      ['U01', inches('30')],
+      ['U02', inches('36')],
+      ['U03', inches('24')],
+      ['U04', inches('30')],
+    ]);
+    expect(overSink.run!.above[1]).toMatchObject({ choice: 'upper', proposed: false, upperId: 'U02' });
+    expect(problems(overSink)).toEqual([]);
+    checkPlacements(overSink, 'upper over the sink:');
+    // Now all four meet, so three joints are screwed.
+    expect(overSink.steps.filter((s) => s.id.startsWith('run:hang-') && s.values.joins === 1)).toHaveLength(3);
+  });
+
+  it('refuses an upper that would be too wide to build, and says what to do', () => {
+    const r = withUppers({ above: { a: 'upper' } }, [space('a', 'fridge', '50'), cabinet('b', 'base')], '80');
+    expect(errors(r).map((i) => [i.code, i.ruleId])).toEqual([['RUN_UPPER_WIDTH', 'W2']]);
+    expect(errors(r)[0]!.explanation).toContain('U01 Upper cabinet, over the Space for a fridge, comes out 50" wide');
   });
 });

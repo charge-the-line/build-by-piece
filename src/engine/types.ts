@@ -495,6 +495,17 @@ export interface RunDesign {
   readonly items: readonly RunItem[];
   /** Only what she changed from the defaults. Shared by every cabinet in the run. */
   readonly overrides: Overrides<VanityOptions>;
+  /** The row of upper cabinets (section W). Only what she changed; the app proposes the rest. */
+  readonly uppers?: {
+    readonly depth?: Measurement;
+    readonly height?: Measurement;
+    /** From the countertop to the bottom of the uppers. */
+    readonly aboveCounter?: Measurement;
+    /** Floor to ceiling: only used to warn when the uppers would not fit. */
+    readonly ceiling?: Measurement;
+    /** By item id: whether an upper cabinet goes above it, where she changed what the app proposed (W1). */
+    readonly above?: Readonly<Record<string, 'upper' | 'none'>>;
+  };
 }
 
 export type Design = VanityDesign | RunDesign;
@@ -505,15 +516,21 @@ export interface PlanContext {
   readonly width?: Ticks;
   readonly ends?: { readonly left: EndCondition; readonly right: EndCondition };
   /** Part numbers start with this instead of "P": "C01-" (rule R5). */
-  readonly idPrefix?: `C${string}`;
+  readonly idPrefix?: `${'C' | 'U'}${string}`;
   /** The run builds one platform for the stretch, so the cabinet builds none (rule R4). */
   readonly sharedPlatform?: boolean;
 }
 
 /** One cabinet's place in a run. */
 export interface RunCabinet {
-  /** C01, C02, ... left to right. */
+  /** C01, C02, ... left to right for base cabinets; U01, U02, ... for uppers. */
   readonly id: string;
+  readonly row: 'base' | 'upper';
+  /** How high its box starts above the floor, and how tall the box is. */
+  readonly bottom: Ticks;
+  readonly height: Ticks;
+  /** For the drawing: how far its top is below the top of the picture. */
+  readonly fromTop: Ticks;
   readonly itemId: string;
   readonly kind: CabinetType;
   readonly name: string;
@@ -528,6 +545,23 @@ export interface RunSpace {
   readonly name: string;
   readonly left: Ticks;
   readonly width: Ticks;
+  /** For the drawing: the space from the floor to the top of the base cabinets. */
+  readonly fromTop: Ticks;
+  readonly height: Ticks;
+}
+
+/** What is above one position in the bottom row (rule W1). */
+export interface RunAbove {
+  readonly itemId: string;
+  /** What is underneath, e.g. "C01 Drawer base" or "Dishwasher space". */
+  readonly under: string;
+  readonly choice: 'upper' | 'none';
+  /** True when this is the app's proposal, not her change. */
+  readonly proposed: boolean;
+  /** The upper cabinet's number, when there is one. */
+  readonly upperId?: string;
+  /** Why the app proposes this. */
+  readonly reason: string;
 }
 
 // ---------------------------------------------------------------------------
@@ -539,7 +573,7 @@ export interface RunSpace {
  * single cabinet; C01-01 for a cabinet in a run; R-01 for a run's platform
  * and toe kick (rule R5).
  */
-export type PartId = `${'P' | 'C' | 'R'}${string}`;
+export type PartId = `${'P' | 'C' | 'U' | 'R'}${string}`;
 
 export type GrainDirection = 'alongLength' | 'alongWidth' | 'none';
 
@@ -901,7 +935,20 @@ export interface PlanResult {
   /** False when any issue has severity "error"; everything below is then empty. */
   readonly canGeneratePlan: boolean;
   /** For a run: where each cabinet and appliance space sits along the wall. */
-  readonly run?: { readonly length: Ticks; readonly cabinets: readonly RunCabinet[]; readonly spaces: readonly RunSpace[] };
+  readonly run?: {
+    readonly length: Ticks;
+    /** Base cabinets, left to right. */
+    readonly cabinets: readonly RunCabinet[];
+    /** Upper cabinets, left to right (section W). */
+    readonly uppers: readonly RunCabinet[];
+    readonly spaces: readonly RunSpace[];
+    /** Left to right, one for each thing in the bottom row (rule W1). */
+    readonly above: readonly RunAbove[];
+    /** Floor to the top of the tallest row: the height of the front drawing. */
+    readonly pictureHeight: Ticks;
+    /** Floor to the bottom of the upper cabinets (rule W3), when there are any. */
+    readonly upperBottom?: Derivation;
+  };
   /** Overall sizes worked out from the three numbers. Absent when the plan is blocked. */
   readonly overall?: OverallSizes;
   readonly openings: readonly Opening[];
