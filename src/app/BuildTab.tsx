@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import type { PlanResult, Step, StepChapter } from '../engine/types';
+import type { PlanResult, Step } from '../engine/types';
 import { doneKey, progressOf } from './progress';
 import { StepView } from './steps/StepView';
 import { chapterNames } from './steps/templates';
@@ -28,7 +28,9 @@ export function BuildTab({ plan, checked, onCheck, onPrint }: Props) {
   const step = plan.steps[at]!;
   const done = plan.steps.filter(isDone).length;
   const tally = progressOf(plan, checked);
-  const chapters = [...new Set(plan.steps.map((s) => s.chapter))];
+  // In a run she jumps between cabinets; in a single cabinet, between chapters.
+  const groupOf = (s: Step) => (plan.run ? (s.cabinet ? `${s.cabinet.id} ${s.cabinet.name}` : 'Putting the run in place') : chapterNames[s.chapter]);
+  const groups = [...new Set(plan.steps.map(groupOf))];
   const go = (to: number) => {
     setIndex(Math.max(0, Math.min(last, to)));
     window.scrollTo({ top: 0 });
@@ -37,9 +39,11 @@ export function BuildTab({ plan, checked, onCheck, onPrint }: Props) {
     onCheck(doneKey(step), true);
     go(at + 1);
   };
-  const chapterState = (chapter: StepChapter) => {
-    const mine = plan.steps.filter((s) => s.chapter === chapter);
-    return { first: plan.steps.indexOf(mine[0]!), done: mine.filter(isDone).length, total: mine.length };
+  const groupState = (group: string) => {
+    const mine = plan.steps.filter((s) => groupOf(s) === group);
+    // Open a group at its first step still to do.
+    const next = mine.find((s) => !isDone(s)) ?? mine[0]!;
+    return { first: plan.steps.indexOf(next), done: mine.filter(isDone).length, total: mine.length };
   };
 
   return (
@@ -90,12 +94,12 @@ export function BuildTab({ plan, checked, onCheck, onPrint }: Props) {
       <section>
         <h2>Jump to</h2>
         <ul className="chapters">
-          {chapters.map((chapter) => {
-            const state = chapterState(chapter);
+          {groups.map((group) => {
+            const state = groupState(group);
             return (
-              <li key={chapter}>
-                <button type="button" aria-current={step.chapter === chapter ? 'step' : undefined} onClick={() => go(state.first)}>
-                  <span>{chapterNames[chapter]}</span>
+              <li key={group}>
+                <button type="button" aria-current={groupOf(step) === group ? 'step' : undefined} onClick={() => go(state.first)}>
+                  <span>{group}</span>
                   <span className="chapterCount">
                     {state.done} of {state.total}
                   </span>

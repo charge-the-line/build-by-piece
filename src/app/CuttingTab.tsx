@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import type { CutDiagram, CutStep, Part, PlanResult, VanityDesign } from '../engine/types';
+import type { CutDiagram, CutStep, Part, PlanResult, Design } from '../engine/types';
 import { formatLength, incrementTicks } from '../engine/units';
 import { colorOf, fmt } from './format';
 import { LengthField } from './LengthField';
@@ -8,9 +8,9 @@ import { withChange } from './project';
 import { Icon, toolLabel } from './steps/icons';
 
 interface Props {
-  readonly design: VanityDesign;
+  readonly design: Design;
   readonly plan: PlanResult;
-  readonly onChange: (design: VanityDesign) => void;
+  readonly onChange: (design: Design) => void;
   readonly checked: Readonly<Record<string, boolean>>;
   readonly onCheck: (key: string, value: boolean) => void;
   /** On paper: no text boxes, every list opened out, empty tick boxes. */

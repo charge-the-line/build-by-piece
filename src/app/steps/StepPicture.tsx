@@ -149,7 +149,8 @@ export function StepPicture({ plan, step, title, mode }: Props) {
 
   // The frame of the picture: the whole cabinet for a step done in place, or
   // just the sub-assembly for one built on the bench.
-  const framed = step.scene === 'cabinet' ? plan.placements : [...earlierPlaces, ...newPlaces.map((n) => n.place)];
+  const whole = step.cabinet ? plan.placements.filter((p) => p.partId.startsWith(`${step.cabinet!.id}-`)) : plan.placements;
+  const framed = step.scene === 'cabinet' ? whole : [...earlierPlaces, ...newPlaces.map((n) => n.place)];
   const extent = (lowKey: 'x' | 'y' | 'z', sizeKey: 'sizeX' | 'sizeY' | 'sizeZ') =>
     Math.max(...framed.map((p) => p[lowKey] + p[sizeKey])) / mark - Math.min(...framed.map((p) => p[lowKey])) / mark;
   const span = Math.max(extent('x', 'sizeX'), extent('y', 'sizeY'), extent('z', 'sizeZ'));

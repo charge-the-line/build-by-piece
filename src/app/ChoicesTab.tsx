@@ -1,20 +1,21 @@
 import { useState } from 'react';
-import type { PlanResult, ResolvedInput, VanityDesign } from '../engine/types';
+import type { PlanResult, ResolvedInput, Design } from '../engine/types';
 import { formatLength } from '../engine/units';
 import { choiceWords, fmt } from './format';
 import { toolList } from '../engine/defaults/tools';
 import type { Approach, PanelMethod, ToolId } from '../engine/types';
 import { glossary } from './glossary';
 import { LengthField } from './LengthField';
+import { startingRun } from '../engine/defaults/run';
 import { type Checked, fromProjectText, isChangeable, startingDesign, toProjectFile, withApproach, withChange, withPanelMethod, withTool } from './project';
 import { Icon } from './steps/icons';
 
 interface Props {
-  readonly design: VanityDesign;
+  readonly design: Design;
   readonly plan: PlanResult;
-  readonly onChange: (design: VanityDesign) => void;
+  readonly onChange: (design: Design) => void;
   readonly checked: Checked;
-  readonly onReplace: (project: { design: VanityDesign; checked: Checked }) => void;
+  readonly onReplace: (project: { design: Design; checked: Checked }) => void;
 }
 
 const shown = (input: ResolvedInput) => (typeof input.value === 'number' ? fmt(input.value as never) : choiceWords(input.value));
@@ -208,7 +209,7 @@ export function ChoicesTab({ design, plan, onChange, checked, onReplace }: Props
             Open a backup file
             <input type="file" accept="application/json,.json" onChange={(e) => void importFile(e.target.files?.[0])} />
           </label>
-          <button type="button" onClick={() => onReplace({ design: startingDesign, checked: {} })}>
+          <button type="button" onClick={() => onReplace({ design: design.projectType === 'run' ? startingRun : startingDesign, checked: {} })}>
             Start over
           </button>
         </div>

@@ -1,5 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import { proposedVanityLayout } from '../../engine/defaults/vanity';
+import { defaultCatalog } from '../../engine/defaults/catalog';
+import { startingRun } from '../../engine/defaults/run';
+import { proposedVanityLayout, vanityDefaults } from '../../engine/defaults/vanity';
+import { generateRun } from '../../engine/run';
 import { userChoice } from '../../engine/defaults/values';
 import { plan, vanityWith } from '../../engine/__tests__/helpers';
 import { base01, base02, drawerBase01, sinkBase01, upper01 } from '../../engine/fixtures/kitchen';
@@ -16,6 +19,7 @@ const plans = [
   plan(vanityWith({}, tools({ router: false }))),
   plan(vanityWith({}, tools({ router: false, tableSaw: true, holeSaw: true, bradNailer: true, sander: true }))),
   ...[base01, base02, drawerBase01, sinkBase01, upper01].map((design) => plan(design)),
+  generateRun(startingRun, vanityDefaults, defaultCatalog),
 ];
 
 const words = (p: PlanResult, id: string) => {
@@ -95,6 +99,15 @@ describe('step templates', () => {
     expect(words(plans[0]!, 'boxLeft').more[0]).toContain('underside');
     expect(words(plans[9]!, 'fixedPanels').say).toContain('1/2" all round');
     expect(upper.steps.map((s) => s.templateId)).toEqual(expect.arrayContaining(['topPanel', 'ledger', 'hangCabinet']));
+  });
+
+  it('words the steps that set a run in place', () => {
+    const run = plans[11]!;
+    expect(words(run, 'run:set-C02')).toMatchObject({ title: 'Set cabinet C02 in place' });
+    expect(words(run, 'run:set-C02').say).toContain('screw them together');
+    expect(words(run, 'run:set-C03').say).toContain('back against the wall');
+    expect(words(run, 'run:platform-1').title).toBe('Build platform 1 of 2');
+    expect(words(run, 'run:platform-1').say).toContain('5 short supports');
   });
 
   it('names doors and drawer fronts by what they are', () => {

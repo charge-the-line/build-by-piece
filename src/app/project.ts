@@ -7,28 +7,37 @@ import { defaultCatalog } from '../engine/defaults/catalog';
 import { userChoice, userEntered } from '../engine/defaults/values';
 import { vanity01 } from '../engine/fixtures/vanity-01';
 import { cabinetKind } from '../engine/defaults/cabinets';
-import type { Approach, CabinetType, EndCondition, PanelMethod, ProjectFile, ToolId, VanityDesign } from '../engine/types';
+import { startingRun } from '../engine/defaults/run';
+import type { Approach, CabinetType, Design, EndCondition, PanelMethod, ProjectFile, RunDesign, RunItem, ToolId, VanityDesign } from '../engine/types';
 
 const STORAGE_KEY = 'build-by-piece:project';
 
 /** A new project starts as the first test cabinet. */
 export const startingDesign: VanityDesign = vanity01;
 
-function isDesign(value: unknown): value is VanityDesign {
+function isDesign(value: unknown): value is Design {
   if (typeof value !== 'object' || value === null) return false;
-  const d = value as Partial<VanityDesign>;
+  const d = value as Partial<VanityDesign> & Partial<RunDesign>;
   const isLength = (m: unknown) => typeof m === 'object' && m !== null && typeof (m as { entered?: unknown }).entered === 'string';
-  return d.projectType === 'vanity' && isLength(d.width) && isLength(d.depth) && isLength(d.height) && typeof d.overrides === 'object' && d.overrides !== null;
+  const shared = isLength(d.depth) && isLength(d.height) && typeof d.overrides === 'object' && d.overrides !== null;
+  if (d.projectType === 'run') return shared && isLength(d.length) && Array.isArray(d.items);
+  return d.projectType === 'vanity' && shared && isLength(d.width);
 }
+
+/** The three sizes of a project, as she typed them, for the project list. */
+export const sizeText = (design: Design): string =>
+  design.projectType === 'run'
+    ? `${design.length.entered}" long, ${design.items.filter((i) => i.kind === 'cabinet').length} cabinets`
+    : `${design.width.entered}" × ${design.depth.entered}" × ${design.height.entered}"`;
 
 export type Checked = Readonly<Record<string, boolean>>;
 
-export function toProjectFile(design: VanityDesign, checked: Checked = {}): ProjectFile {
+export function toProjectFile(design: Design, checked: Checked = {}): ProjectFile {
   return { format: 'build-by-piece-project', schemaVersion: 1, savedAt: new Date().toISOString(), design, catalog: defaultCatalog, checked };
 }
 
 interface Project {
-  readonly design: VanityDesign;
+  readonly design: Design;
   readonly checked: Checked;
 }
 
@@ -95,24 +104,30 @@ export function useProject() {
   return {
     design: project.design,
     checked: project.checked,
-    setDesign: (design: VanityDesign) => update((p) => ({ ...p, design })),
+    setDesign: (design: Design) => update((p) => ({ ...p, design })),
     setChecked: (key: string, value: boolean) => update((p) => ({ ...p, checked: { ...p.checked, [key]: value } })),
     /** Replaces the open project, as when a backup file is opened or it is started over. Keeps its place on the shelf. */
     replace: (next: Project) => update((p) => ({ design: { ...next.design, id: p.design.id }, checked: next.checked })),
 
-    projects: shelf.projects.map((p) => ({ id: p.design.id, name: p.design.name, size: `${p.design.width.entered}" × ${p.design.depth.entered}" × ${p.design.height.entered}"` })),
+    projects: shelf.projects.map((p) => ({ id: p.design.id, name: p.design.name, size: sizeText(p.design) })),
     currentId: project.design.id,
     open: (id: string) => setShelf((s) => ({ ...s, currentId: id })),
     rename: (name: string) => update((p) => ({ ...p, design: { ...p.design, name } })),
     /** A new cabinet of a kind, at its starting sizes. It keeps the open project's tools and approach, so the tool list is only set up once. */
-    create: (type: CabinetType) =>
+    create: (type: CabinetType | 'run') =>
       setShelf((s) => {
         const taken = new Set(s.projects.map((p) => p.design.id));
         let n = s.projects.length + 1;
         while (taken.has(`project-${n}`)) n += 1;
-        const kind = cabinetKind(type);
-        const sameKind = s.projects.filter((p) => (p.design.cabinet ?? 'vanity') === type).length;
         const { tools, approach } = project.design.overrides;
+        const kept = { ...(tools ? { tools } : {}), ...(approach ? { approach } : {}) };
+        if (type === 'run') {
+          const runs = s.projects.filter((p) => p.design.projectType === 'run').length;
+          const design: RunDesign = { ...startingRun, id: `project-${n}`, name: runs === 0 ? startingRun.name : `${startingRun.name} ${runs + 1}`, overrides: { ...startingRun.overrides, ...kept } };
+          return { currentId: design.id, projects: [...s.projects, { design, checked: {} }] };
+        }
+        const kind = cabinetKind(type);
+        const sameKind = s.projects.filter((p) => p.design.projectType === 'vanity' && (p.design.cabinet ?? 'vanity') === type).length;
         const design: VanityDesign = {
           projectType: 'vanity',
           cabinet: type,
@@ -121,7 +136,7 @@ export function useProject() {
           width: userEntered(kind.start.width),
           depth: userEntered(kind.start.depth),
           height: userEntered(kind.start.height),
-          overrides: { ...(tools ? { tools } : {}), ...(approach ? { approach } : {}) },
+          overrides: kept,
         };
         return { currentId: design.id, projects: [...s.projects, { design, checked: {} }] };
       }),
@@ -139,25 +154,25 @@ export const withSize = (design: VanityDesign, which: 'width' | 'depth' | 'heigh
   [which]: userEntered(entered),
 });
 
-export const withEnd = (design: VanityDesign, side: 'left' | 'right', value: EndCondition): VanityDesign => ({
+export const withEnd = <T extends Design>(design: T, side: 'left' | 'right', value: EndCondition): T => ({
   ...design,
   overrides: { ...design.overrides, ends: { ...design.overrides.ends, [side]: userChoice(value) } },
 });
 
 /** Ticks or unticks one tool. */
-export const withTool = (design: VanityDesign, tool: ToolId, has: boolean): VanityDesign => ({
+export const withTool = <T extends Design>(design: T, tool: ToolId, has: boolean): T => ({
   ...design,
   overrides: { ...design.overrides, tools: { ...design.overrides.tools, [tool]: userChoice(has) } },
 });
 
 /** Picks how the plan chooses its methods (rule T9). */
-export const withApproach = (design: VanityDesign, approach: Approach): VanityDesign => ({
+export const withApproach = <T extends Design>(design: T, approach: Approach): T => ({
   ...design,
   overrides: { ...design.overrides, approach: userChoice(approach) },
 });
 
 /** Picks how framed fronts hold their panel, or hands the choice back to the app. */
-export function withPanelMethod(design: VanityDesign, method: 'auto' | PanelMethod): VanityDesign {
+export function withPanelMethod<T extends Design>(design: T, method: 'auto' | PanelMethod): T {
   const { panelMethod: _dropped, ...fronts } = design.overrides.fronts ?? {};
   return { ...design, overrides: { ...design.overrides, fronts: method === 'auto' ? fronts : { ...fronts, panelMethod: userChoice(method) } } };
 }
@@ -178,10 +193,33 @@ function setAt(tree: Tree, keys: readonly string[], value: unknown): Tree {
 }
 
 /** Changes one default to a length she typed, or (with no text) puts the app's choice back. */
-export const withChange = (design: VanityDesign, path: string, entered: string | undefined): VanityDesign => ({
+export const withChange = <T extends Design>(design: T, path: string, entered: string | undefined): T => ({
   ...design,
-  overrides: setAt(design.overrides as Tree, path.split('.'), entered === undefined ? undefined : userEntered(entered)) as VanityDesign['overrides'],
+  overrides: setAt(design.overrides as Tree, path.split('.'), entered === undefined ? undefined : userEntered(entered)) as T['overrides'],
 });
 
 /** True when this path is a default the user can change on the choices screen. */
-export const isChangeable = (path: string): boolean => !['width', 'depth', 'height'].includes(path) && !path.startsWith('layout.');
+export const isChangeable = (path: string): boolean => !['width', 'depth', 'height', 'length'].includes(path) && !path.startsWith('layout.') && !path.startsWith('items.');
+
+// --- A run of cabinets ---------------------------------------------------------
+
+export const withRunSize = (run: RunDesign, which: 'length' | 'depth' | 'height', entered: string): RunDesign => ({ ...run, [which]: userEntered(entered) });
+
+export const withRunItems = (run: RunDesign, items: readonly RunItem[]): RunDesign => ({ ...run, items });
+
+/** Fixes one cabinet or space at a width she typed, or (with no text) lets it share again. */
+export const withItemWidth = (run: RunDesign, id: string, entered: string | undefined): RunDesign => ({
+  ...run,
+  items: run.items.map((item) => {
+    if (item.id !== id) return item;
+    const { width: _dropped, ...rest } = item;
+    return entered === undefined ? rest : { ...rest, width: userEntered(entered) };
+  }),
+});
+
+/** An id no item in the run has yet. */
+export function newItemId(run: RunDesign): string {
+  let n = run.items.length + 1;
+  while (run.items.some((item) => item.id === `item-${n}`)) n += 1;
+  return `item-${n}`;
+}

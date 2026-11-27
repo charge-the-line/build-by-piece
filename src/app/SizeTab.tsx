@@ -14,7 +14,7 @@ interface Props {
   readonly onChange: (design: VanityDesign) => void;
 }
 
-function EndPicker({ side, value, onPick }: { side: 'Left' | 'Right'; value: EndCondition; onPick: (v: EndCondition) => void }) {
+export function EndPicker({ side, value, onPick }: { side: 'Left' | 'Right'; value: EndCondition; onPick: (v: EndCondition) => void }) {
   const options: readonly [EndCondition, string][] = [
     ['wall', 'Against a wall'],
     ['exposed', 'Open to view'],

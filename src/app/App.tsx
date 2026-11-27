@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { defaultCatalog } from '../engine/defaults/catalog';
 import { vanityDefaults } from '../engine/defaults/vanity';
 import { generatePlan } from '../engine/generatePlan';
+import { generateRun } from '../engine/run';
 import { BuildTab } from './BuildTab';
 import { ChoicesTab } from './ChoicesTab';
 import { CutListTab } from './CutListTab';
@@ -10,6 +11,7 @@ import { PrintPlan } from './PrintPlan';
 import { ProjectsPanel } from './ProjectsPanel';
 import { useProject } from './project';
 import { ShoppingTab } from './ShoppingTab';
+import { RunTab } from './RunTab';
 import { SizeTab } from './SizeTab';
 
 const TABS = [
@@ -28,7 +30,7 @@ export function App() {
   const [showProjects, setShowProjects] = useState(false);
   const [printing, setPrinting] = useState(false);
   const [tab, setTab] = useState<Tab>('size');
-  const plan = useMemo(() => generatePlan(design, vanityDefaults, defaultCatalog), [design]);
+  const plan = useMemo(() => (design.projectType === 'run' ? generateRun(design, vanityDefaults, defaultCatalog) : generatePlan(design, vanityDefaults, defaultCatalog)), [design]);
 
   // The printable plan is only built when asked for, then handed to the browser's print dialog.
   useEffect(() => {
@@ -72,7 +74,7 @@ export function App() {
           />
         ) : (
           <>
-            {tab === 'size' && <SizeTab design={design} plan={plan} onChange={setDesign} />}
+            {tab === 'size' && (design.projectType === 'run' ? <RunTab design={design} plan={plan} onChange={setDesign} /> : <SizeTab design={design} plan={plan} onChange={setDesign} />)}
             {tab === 'choices' && <ChoicesTab design={design} plan={plan} onChange={setDesign} checked={checked} onReplace={replace} />}
             {tab === 'cut' && <CutListTab plan={plan} />}
             {tab === 'cutting' && <CuttingTab design={design} plan={plan} onChange={setDesign} checked={checked} onCheck={setChecked} />}
