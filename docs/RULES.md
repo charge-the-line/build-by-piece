@@ -397,6 +397,16 @@ She can also choose "Groove before assembly" (D5, with the router) as an advance
 
 **T7. Wording-only tools.** A mitre saw, brad nailer and sander change no part and no size, only the words in a step. Without them the plan names the circular saw and a square, a hammer and small nails, or a sanding block.
 
+**T9. Three approaches.** She picks how the plan chooses its methods. Her own pick of a panel method (T5) always wins.
+
+| Approach | Panel in framed fronts | Pipe openings | Nailing and sanding |
+|---|---|---|---|
+| Use what I own (default) | The first method her ticked tools allow | Hole saw if ticked, otherwise jigsaw | Powered tools if ticked, otherwise hammer and sanding block |
+| Easiest method | Panel on the back (D10): no routing | Jigsaw: one opening | As above |
+| Professional finish | Recess routed after assembly (D9) | Hole saw: a neat hole for each pipe | Brad nailer and sander |
+
+Whatever an approach needs that is not ticked goes on the "Buy or borrow" list. The Shop screen also lists *optional* tools: ones the plan does not need, but which would make a job quicker or neater.
+
 **T8. Left for later.** A router-cut recess for the back panel and grooved drawer bottoms are not offered; the simple methods (B4, X5) work with any tools.
 
 ---
@@ -417,6 +427,8 @@ She can also choose "Groove before assembly" (D5, with the router) as an advance
 A strip only holds parts of exactly its own width, so no part needs a fourth trimming cut. Why sections first: a 4-foot cut with a circular saw and a straight edge is far easier to keep straight than an 8-foot one. Alternative: long cuts first, which can waste less but needs a track saw or table saw.
 
 **C5. Offcuts.** A leftover at least 6" both ways (6" long, for a board) is labelled "Offcut 1", "Offcut 2", and listed with its size so it can be kept. Smaller leftovers are shown striped, without a label.
+
+**C7. On the Cutting screen.** Each diagram names the saw to use, prints the part number and size on every piece big enough to hold them, and lists its cuts in order with a tick box each. A ticked piece is shown faded with a tick on the picture, and the screen counts pieces cut. Sheets can be enlarged.
 
 **C6. Shopping follows the diagrams.** The number of sheets and boards to buy is the number of diagrams. Each board is bought at the shortest length sold that holds its pieces. The layout tries more than one order of placing pieces and keeps the one that needs the fewest sheets.
 

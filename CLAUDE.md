@@ -27,17 +27,17 @@ From Ashley, the first user.
 
 ## Current status
 
-**Phase 6 (picture-first Build screen, from Ashley's feedback of 27 Nov) is built and waiting for Max's review.**
+**Phase 7 (Cutting tick-off, picture shopping lists, three approaches, multiple projects) is built and waiting for Max's review. The next item is the cabinet library, which needs its construction rules agreed with Max before any code.**
 
 Ashley asked for a much larger, picture-first product; her feedback and Max's decisions are recorded in `docs/OPEN-QUESTIONS.md`, with what is still to do. Her rule for every screen: **more pictures, fewer words.** On construction screens aim for one or two short sentences per step, with anything longer behind "More detail".
 
 She ticks her tools on the Choices screen (defaults are her own list). The plan picks the method for each job from those ticks, lists "Tools for this plan" with the exact bits and safety gear, and never blocks on a missing tool: it says what to buy or borrow.
 
-The engine builds a full plan from three numbers: openings, cut list, cutting diagrams, shopping list, hardware, validation, a 3D position for every piece, and assembly steps. The app has six screens: Size, Choices, Parts, Cutting, Shop, Build. She can change the door and drawer layout on the Size screen, tap a part to see its trade term, and print the whole plan.
+The engine builds a full plan from three numbers: openings, cut list, cutting diagrams, shopping list, hardware, validation, a 3D position for every piece, and assembly steps. The app has six screens: Size, Choices, Parts, Cutting, Shop, Build, plus a projects panel opened from the header. She can change the door and drawer layout on the Size screen, tap a part to see its trade term, and print the whole plan.
 
 Test case: vanity 01, 60" wide × 21" deep × 30" high, left end on a wall, right end exposed. The earlier AI mock-up survives only as a fixture of known errors.
 
-Known limits: front styles (flat or framed) cannot be changed in the app; amounts of screws, glue and other supplies are not worked out; only the vanity exists. Everything under "Later" needs its rules agreed with Max first, as in Phase 0.
+Known limits: front styles (flat or framed) cannot be changed in the app; screws are counted but glue, nails and finish are not; only the vanity exists (other project types show as "Not yet"). Everything under "Later" needs its rules agreed with Max first, as in Phase 0.
 
 | Phase | What | Status |
 |---|---|---|
@@ -47,8 +47,8 @@ Known limits: front styles (flat or framed) cannot be changed in the app; amount
 | 3 | Assembly steps, checklists, print to PDF | Done |
 | 4 | Finish v1: layout editor, glossary, supplies list | Done |
 | 5 | Tool inventory driving the method | Done |
-| 6 | Picture-first Build screen: small steps, arrows, glue, screws, tool pictures | Done, in review |
-| Next | Cutting screen pictures and tick-off; picture tool list with three approaches; multiple projects | Not started |
+| 6 | Picture-first Build screen: small steps, arrows, glue, screws, tool pictures | Done |
+| 7 | Cutting tick-off and sizes; picture shopping lists; three approaches; multiple projects | Done, in review |
 | Later | Cabinet library, kitchen, room planner (rules first); prices, 3D and AI undecided | Not started |
 
 Update this section at the end of every phase.
@@ -76,6 +76,8 @@ src/app/         React UI: Size, Choices, Parts, Cutting, Shop and Build screens
   steps/           Step pictures (drawn from the engine's positions), tool icons, and the written step templates.
   PrintPlan.tsx    The whole plan on paper; built only when Print is pressed.
   LayoutEditor.tsx Doors and drawers by space; sizes stay with the rules (rule L0a).
+  project.ts       Every project on this device and which is open; ticks for bought, cut and built are saved with each.
+  progress.ts      The keys for those ticks, and the counts.
   glossary.ts      Plain words and their trade terms.
                  The UI does no arithmetic on dimensions and prints lengths only through `fmt` (src/app/format.ts).
 docs/RULES.md    Construction rules with formulas. The engine implements exactly these.

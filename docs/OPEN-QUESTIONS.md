@@ -20,13 +20,15 @@ Ashley described a much larger, picture-first product. Max's decisions:
 | Tools | Use Ashley's list. No brad nailer, sander or clamps by default, so the plan uses a hammer and a sanding block and lists clamps under "Buy or borrow". The router stays ticked because one is being bought. |
 | AI, photos, backend | Left to Claude: **not for now.** The app stays on the device with no AI and no server, so it works in a garage with no signal, costs nothing to run, and no photos leave the phone. To be revisited when the room planner is designed, since photo-based suggestions would need a server. |
 
-Still to do from her feedback, in the order proposed:
+Done since then (Phase 7): Cutting screen with sizes on pieces, the saw for each sheet and board, a tick for every cut and a bigger-picture button; three picture shopping lists with "bought" ticks; tools with pictures, grouped as to buy, owned, safety and optional; her three approaches; more than one saved project; bought, cut and built counts.
 
-1. Cutting screen: sizes on the pieces, which tool for each cut, tick off each piece as it is cut, zoom.
-2. Tool list with pictures, grouped as owned / to buy / optional, and her three approaches (Use What I Own, Easiest Method, Professional Finish).
-3. More than one saved project; shopping in three picture lists; "pieces cut" and "materials bought" in progress.
-4. A cabinet library and other project types (kitchen first), then a room planner. Each needs its rules agreed first.
-5. Prices, an interactive 3D view and AI features: undecided, and not started.
+Still to do from her feedback:
+
+1. A cabinet library and other project types (kitchen first), then a room planner. Each needs its rules agreed first.
+2. Wood species and finishes per component, with previews.
+3. Cabinet numbers with part letters (C01-A), once there is more than one cabinet in a project.
+4. Prices, an interactive 3D view and AI features: undecided, and not started.
+5. Smaller items: zoom on step pictures, progress photos and notes, time estimates.
 
 ## Tool inventory
 
