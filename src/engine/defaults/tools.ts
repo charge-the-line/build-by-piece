@@ -1,8 +1,9 @@
 /**
  * The tool list (docs/RULES.md, rule T1). Data only.
  *
- * The default ticks are the first user's own tools, so her plan needs no
- * answers from her. Anyone else unticks what they lack on the Choices screen.
+ * The default ticks are the first user's own tools (her list of 27 Nov:
+ * mitre saw, circular saw, jigsaw, pocket-hole jig, drills; a router is
+ * being bought), so her plan needs no answers from her. Anyone else unticks what they lack on the Choices screen.
  */
 import type { Choice, ToolId } from '../types';
 import { defaultChoice } from './values';
@@ -25,9 +26,9 @@ export const toolList: readonly ToolInfo[] = [
   { id: 'router', name: 'Router', changes: 'Cuts the recess that holds the panel in framed doors and drawer fronts.', tickedByDefault: true },
   { id: 'pocketHoleJig', name: 'Pocket-hole jig', changes: 'Every joint in the plan uses it.', tickedByDefault: true },
   { id: 'drill', name: 'Drill and driver', changes: 'Needed for every plan.', tickedByDefault: true },
-  { id: 'bradNailer', name: 'Brad nailer', changes: 'Fixes thin panels. Without one, a hammer and small nails do it.', tickedByDefault: true },
-  { id: 'sander', name: 'Sander', changes: 'Smooths faces and edges. Without one, a sanding block does it.', tickedByDefault: true },
-  { id: 'clamps', name: 'Clamps', changes: 'Needed for every plan.', tickedByDefault: true },
+  { id: 'bradNailer', name: 'Brad nailer', changes: 'Fixes thin panels. Without one, a hammer and small nails do it.', tickedByDefault: false },
+  { id: 'sander', name: 'Sander', changes: 'Smooths faces and edges. Without one, a sanding block does it.', tickedByDefault: false },
+  { id: 'clamps', name: 'Clamps', changes: 'Needed for every plan.', tickedByDefault: false },
   { id: 'measuring', name: 'Tape measure, square and level', changes: 'Needed for every plan.', tickedByDefault: true },
 ];
 
