@@ -27,7 +27,7 @@ From Ashley, the first user.
 
 ## Current status
 
-**Phase 7 (Cutting tick-off, picture shopping lists, three approaches, multiple projects) is built and waiting for Max's review. The next item is the cabinet library, which needs its construction rules agreed with Max before any code.**
+**Phase 7 is live. Next is the cabinet library: its rules are proposed in `docs/CABINETS-PROPOSAL.md` and waiting for Max's approval. Do not write cabinet-library code until Max approves that document and answers its questions.**
 
 Ashley asked for a much larger, picture-first product; her feedback and Max's decisions are recorded in `docs/OPEN-QUESTIONS.md`, with what is still to do. Her rule for every screen: **more pictures, fewer words.** On construction screens aim for one or two short sentences per step, with anything longer behind "More detail".
 
@@ -48,7 +48,8 @@ Known limits: front styles (flat or framed) cannot be changed in the app; screws
 | 4 | Finish v1: layout editor, glossary, supplies list | Done |
 | 5 | Tool inventory driving the method | Done |
 | 6 | Picture-first Build screen: small steps, arrows, glue, screws, tool pictures | Done |
-| 7 | Cutting tick-off and sizes; picture shopping lists; three approaches; multiple projects | Done, in review |
+| 7 | Cutting tick-off and sizes; picture shopping lists; three approaches; multiple projects | Done |
+| 8 | Kitchen cabinets: base, drawer base, sink base, upper (one at a time) | Rules proposed, in review |
 | Later | Cabinet library, kitchen, room planner (rules first); prices, 3D and AI undecided | Not started |
 
 Update this section at the end of every phase.
@@ -83,6 +84,7 @@ src/app/         React UI: Size, Choices, Parts, Cutting, Shop and Build screens
 docs/RULES.md    Construction rules with formulas. The engine implements exactly these.
 docs/OPEN-QUESTIONS.md   Decisions waiting on Max, and the record of what he decided.
 docs/TOOLS-PROPOSAL.md   The approved tool-inventory proposal: what changed on approval, and Max's answers.
+docs/CABINETS-PROPOSAL.md   Proposed rules for kitchen cabinets (not yet approved or built).
 public/          Web app manifest and icons.
 ```
 

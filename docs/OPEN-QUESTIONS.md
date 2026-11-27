@@ -4,7 +4,9 @@ Rule numbers refer to [RULES.md](RULES.md).
 
 ## Waiting on Max
 
-Nothing blocks the next piece of work. Two earlier readings are still unconfirmed and are built as described:
+**The kitchen cabinets proposal has nine questions: see [CABINETS-PROPOSAL.md](CABINETS-PROPOSAL.md).** Each has a default, so "keep the defaults" is a fine answer, except question 9 (real sizes to test against).
+
+Two earlier readings are still unconfirmed and are built as described:
 
 1. **Recess depth, not width, follows the panel thickness** (rule D9).
 2. **Panel on the back sets the drawer boxes back** by the panel thickness (rule X6).
