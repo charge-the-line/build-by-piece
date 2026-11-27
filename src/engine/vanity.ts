@@ -141,7 +141,15 @@ export function buildVanity(r: Resolved, bays: readonly LaidBay[], methods: Plan
 
   // --- A0: where things sit ------------------------------------------------
   // x runs from the cabinet's left end, y up from the floor, z out from the wall.
-  const floorY = r.lumber.width.value; // the box sits on the platform
+  const floorY = r.kind.hasPlatform ? r.lumber.width.value : 0; // the box sits on the platform, if it has one
+  /** K7: a wall cabinet has a top panel, like its bottom. */
+  const hasTopPanel = !r.kind.hasPlatform;
+  const hasDrawers = (laid: LaidBay) => laid.openings.some((o) => o.kind === 'drawer');
+  /** Names a piece by the space it belongs to, when the cabinet has more than one. */
+  const inBay = (name: string, bayLabel: string, where?: string) => {
+    const detail = [bayLabel.toLowerCase(), where].filter(Boolean).join(', ');
+    return detail ? `${name} (${detail})` : name;
+  };
   const topY = floorY + H.value;
   const xLeft = leftOverhang?.value ?? 0; // outside face of the left side
   const xRight = W.value - (rightOverhang?.value ?? 0); // outside face of the right side
@@ -187,6 +195,19 @@ export function buildVanity(r: Resolved, bays: readonly LaidBay[], methods: Plan
     width: derive('B4', 'box height', H),
   });
   place(back, [[xLeft + t.value, floorY, 0, betweenSides.value, H.value, tb.value]]);
+  if (hasTopPanel) {
+    const top = add({
+      name: 'Top',
+      role: 'top',
+      assembly: 'Box',
+      material: r.caseSheet,
+      length: derive('K7', 'box width minus 2 x side panel thickness', betweenSides),
+      width: derive('K7', 'box depth minus back panel thickness', innerDepth),
+    });
+    place(top, [[xLeft + t.value, topY - t.value, tb.value, betweenSides.value, t.value, innerDepth.value]]);
+  }
+  // What stands between the bottom panel and the top of the box (or the top panel).
+  const uprightHeight = sum(H, [-1, t], ...(hasTopPanel ? ([[-1, t]] as Addend[]) : []));
 
   // --- B5: dividers --------------------------------------------------------
   // One at each bay boundary that touches a drawer column, flush with the
@@ -199,9 +220,9 @@ export function buildVanity(r: Resolved, bays: readonly LaidBay[], methods: Plan
   bays.forEach((laid, i) => {
     const next = bays[i + 1];
     if (!next) return;
-    if (laid.bay.kind !== 'drawerColumn' && next.bay.kind !== 'drawerColumn') return;
+    if (!hasDrawers(laid) && !hasDrawers(next)) return;
     const frameLeft = sum(laid.left, laid.width);
-    const flushToLeftBay = laid.bay.kind === 'drawerColumn';
+    const flushToLeftBay = hasDrawers(laid);
     dividers.set(i, { left: flushToLeftBay ? frameLeft : sum(frameLeft, S, [-1, t]), flushToLeftBay });
   });
   if (dividers.size > 0) {
@@ -210,11 +231,11 @@ export function buildVanity(r: Resolved, bays: readonly LaidBay[], methods: Plan
       role: 'divider',
       assembly: 'Box',
       material: r.caseSheet,
-      length: derive('B5', 'box height minus bottom panel thickness', sum(H, [-1, t])),
+      length: derive('B5', hasTopPanel ? 'box height minus bottom and top panel thickness' : 'box height minus bottom panel thickness', uprightHeight),
       width: derive('B5', 'box depth minus back panel thickness', innerDepth),
       quantity: dividers.size,
     });
-    place(divider, [...dividers.values()].map((d): Box => [d.left.value, floorY + t.value, tb.value, t.value, H.value - t.value, innerDepth.value]));
+    place(divider, [...dividers.values()].map((d): Box => [d.left.value, floorY + t.value, tb.value, t.value, uprightHeight.value, innerDepth.value]));
   }
 
   // --- B6, B7: one top front support and one mounting strip per section ---
@@ -227,7 +248,8 @@ export function buildVanity(r: Resolved, bays: readonly LaidBay[], methods: Plan
   panelEdges.push({ right: previousRight, nextLeft: sum(W, ...less(rightOverhang), [-1, t]) });
 
   const asSold = derive('M5', 'width of the board as sold', r.supportBoard.width);
-  panelEdges.forEach((edge, i) => {
+  // B6: a wall cabinet's top panel does this job, so it has no top front supports.
+  (hasTopPanel ? [] : panelEdges).forEach((edge, i) => {
     const which = panelEdges.length === 1 ? '' : ` (section ${i + 1} of ${panelEdges.length})`;
     const clear = sum(edge.nextLeft, [-1, edge.right]);
     const id = add({ name: `Top front support${which}`, role: 'support', assembly: 'Box', material: r.supportBoard, length: derive('B6', 'clear width of this section of the box', clear), width: asSold });
@@ -239,8 +261,55 @@ export function buildVanity(r: Resolved, bays: readonly LaidBay[], methods: Plan
     const clear = sum(edge.nextLeft, [-1, edge.right]);
     const id = add({ name: `Mounting strip${which}`, role: 'support', assembly: 'Box', material: r.supportBoard, length: derive('B7', 'clear width of this section of the box', clear), width: asSold });
     // Standing on edge against the back, at the top.
-    place(id, [[edge.right.value, topY - supportWidth, tb.value, clear.value, supportWidth, ts.value]]);
+    place(id, [[edge.right.value, topY - (hasTopPanel ? t.value : 0) - supportWidth, tb.value, clear.value, supportWidth, ts.value]]);
   });
+  // K7: a wall cabinet is also held at the bottom.
+  (hasTopPanel ? panelEdges : []).forEach((edge, i) => {
+    const which = panelEdges.length === 1 ? '' : ` (section ${i + 1} of ${panelEdges.length})`;
+    const clear = sum(edge.nextLeft, [-1, edge.right]);
+    const id = add({ name: `Lower mounting strip${which}`, role: 'support', assembly: 'Box', material: r.supportBoard, length: derive('K7', 'clear width of this section of the box', clear), width: asSold });
+    place(id, [[edge.right.value, floorY + t.value, tb.value, clear.value, supportWidth, ts.value]]);
+  });
+
+  // --- K5: shelves ---------------------------------------------------------
+  panelEdges.forEach((edge, i) => {
+    const which = panelEdges.length === 1 ? '' : ` (section ${i + 1} of ${panelEdges.length})`;
+    const clear = sum(edge.nextLeft, [-1, edge.right]);
+    // The openings in front of this section of the box.
+    const inSection = bays.filter((b) => b.left.value >= edge.right.value - S.value && b.left.value < edge.nextLeft.value).flatMap((b) => b.openings);
+    const tv = t.value;
+    let heights: number[] = [];
+    let setback: Val | undefined;
+    if (r.kind.type === 'upper') {
+      // Enough shelves that no gap is taller than the spacing, spread evenly.
+      const inside = uprightHeight.value;
+      const shelves = Math.max(0, Math.ceil(inside / r.shelfSpacing.value) - 1);
+      const gap = Math.floor((inside - shelves * tv) / (shelves + 1));
+      heights = Array.from({ length: shelves }, (_, k) => floorY + tv + (k + 1) * gap + k * tv);
+    } else if (r.kind.type === 'base') {
+      // One shelf, halfway up the door opening, set back so the door closes.
+      const door = inSection.find((o) => o.kind === 'door');
+      if (door) heights = [topY - door.top.value - door.height.value + Math.floor((door.height.value - tv) / 2)];
+      setback = r.shelfSetback;
+    }
+    if (heights.length === 0) return;
+    const depth = sum(innerDepth, ...less(setback));
+    const id = add({
+      name: `Shelf${which}`,
+      role: 'divider',
+      assembly: 'Box',
+      material: r.caseSheet,
+      length: derive('K5', 'clear width of this section of the box', clear),
+      width: derive('K5', setback ? 'box depth minus back panel thickness, minus the shelf setback' : 'box depth minus back panel thickness', depth),
+      quantity: heights.length,
+    });
+    place(id, heights.map((y): Box => [edge.right.value, y, tb.value, clear.value, tv, depth.value]));
+  });
+
+  // K6: a sink needs room.
+  if (r.kind.type === 'sinkBase' && W.value < r.sinkMinimumWidth.value) {
+    warning('SINK_BASE_NARROW', 'K6', `This sink base is ${text(W.value)} wide. Most kitchen sinks need at least ${text(r.sinkMinimumWidth.value)}.`, 'Check the size of your sink before you cut.', ['width']);
+  }
 
   // --- F: face frame -------------------------------------------------------
   const endStiles = add({
@@ -276,9 +345,10 @@ export function buildVanity(r: Resolved, bays: readonly LaidBay[], methods: Plan
     place(innerStiles, bays.slice(1).map((b): Box => [b.left.value - S.value, floorY + RB.value, DB.value, S.value, H.value - RT.value - RB.value, tf.value]));
   }
   for (const laid of bays) {
-    if (laid.bay.kind !== 'drawerColumn' || laid.openings.length < 2) continue;
+    if (laid.openings.length < 2) continue;
+    const allDrawers = laid.openings.every((o) => o.kind === 'drawer');
     const drawerRails = add({
-      name: `Piece between drawers (${laid.bay.label.toLowerCase()})`,
+      name: inBay(allDrawers ? 'Piece between drawers' : 'Piece between openings', laid.bay.label),
       tradeTerm: 'drawer rail',
       role: 'faceFrame',
       assembly: 'Face frame',
@@ -365,7 +435,7 @@ export function buildVanity(r: Resolved, bays: readonly LaidBay[], methods: Plan
       error(
         'SPACER_TOO_THIN',
         'B8',
-        `${bayLabel}, ${where}: the slide needs a spacer ${text(needed.value)} thick, but the plywood on hand can only build it ${text(asTicks(remaining))} short. The most allowed is ${text(r.spacerTolerance.value)}.`,
+        `${[bayLabel, where].filter(Boolean).join(', ')}: the slide needs a spacer ${text(needed.value)} thick, but the plywood on hand can only build it ${text(asTicks(remaining))} short. The most allowed is ${text(r.spacerTolerance.value)}.`,
         'Change the frame overhang or the vertical frame piece width so the spacer matches the plywood.',
         ['ends.wallOverhang', 'faceFrame.stileWidth'],
       );
@@ -384,13 +454,13 @@ export function buildVanity(r: Resolved, bays: readonly LaidBay[], methods: Plan
     for (const { sheet, count } of layers) {
       if (count === 0) continue;
       const id = add({
-        name: `Slide spacer (${bayLabel.toLowerCase()}, ${where})`,
+        name: inBay('Slide spacer', bayLabel, where),
         role: 'support',
         assembly: bayLabel,
         material: sheet,
         length: derive('B8', 'slide length', slideLength),
         width: derive('B8', 'slide spacer width', r.spacerWidth),
-        quantity: count * laid.openings.length,
+        quantity: count * laid.openings.filter((o) => o.kind === 'drawer').length,
       });
       // Layers stack out from the panel; each strip's bottom edge is level with the bottom of its opening.
       const thick = sheet.thickness.value;
@@ -398,7 +468,7 @@ export function buildVanity(r: Resolved, bays: readonly LaidBay[], methods: Plan
       const start = built;
       place(
         id,
-        laid.openings.flatMap((o) =>
+        laid.openings.filter((o) => o.kind === 'drawer').flatMap((o) =>
           Array.from({ length: count }, (_, layer): Box => [
             side === 'left' ? faceX + start + layer * thick : faceX - start - (layer + 1) * thick,
             topY - o.top.value - o.height.value,
@@ -413,7 +483,7 @@ export function buildVanity(r: Resolved, bays: readonly LaidBay[], methods: Plan
     }
   };
   bays.forEach((laid, i) => {
-    if (laid.bay.kind !== 'drawerColumn') return;
+    if (!hasDrawers(laid)) return;
     // Left side of this column.
     if (i === 0) {
       spacerFor(laid, 'left', r.ends.left === 'wall' ? 'wall side' : 'left side', sum(S, [-1, t], ...less(leftOverhang)), xLeft + t.value);
@@ -433,7 +503,7 @@ export function buildVanity(r: Resolved, bays: readonly LaidBay[], methods: Plan
   const front = (o: LaidOpening): PartId[] => {
     const isDoor = o.kind === 'door';
     const role: ColorRole = isDoor ? 'door' : 'drawerFront';
-    const what = isDoor ? 'door' : 'drawer front';
+    const what = isDoor ? 'door' : o.kind === 'falseFront' ? 'panel' : 'drawer front';
     const frontWidth = sum(o.width, [2, V]);
     const frontHeight = sum(o.height, [2, V]);
     const widthD = derive('D1', 'opening width plus 2 x overlay', frontWidth);
@@ -610,6 +680,8 @@ export function buildVanity(r: Resolved, bays: readonly LaidBay[], methods: Plan
   const PW = named('platform width', derive('P1', 'box width minus toe space and toe kick thickness on each exposed end', sum(WB, [-exposedEnds, TS], [-exposedEnds, tk])));
   const crossLength = sum(PD, [-2, Lt]);
 
+  // K2, K7: only a cabinet that stands on the floor has a platform and toe kick.
+  if (r.kind.hasPlatform) {
   if (crossLength.value <= 0 || PW.value <= 2 * Lt.value) {
     error('PLATFORM_TOO_SMALL', 'P1', `The platform would be ${text(PW.value)} wide and ${text(PD.value)} deep, which is too small to build from 2x4s.`, 'Make the cabinet larger or the toe space smaller.', ['width', 'depth', 'platform.toeSpace']);
   }
@@ -668,6 +740,7 @@ export function buildVanity(r: Resolved, bays: readonly LaidBay[], methods: Plan
 
   const toeKick = toeKickIssue(r, [...toeKickParts, ...platformParts]);
   if (toeKick) issues.push(toeKick);
+  }
 
   // --- M3, M5: every part must come out of its material --------------------
   const stockById = new Map<MaterialId, SheetValues | BoardValues>();
@@ -707,8 +780,8 @@ export function buildVanity(r: Resolved, bays: readonly LaidBay[], methods: Plan
     frameHeight: H.value,
     boxWidth,
     boxDepth,
-    platformHeight,
-    finishedHeight: derive('H1', 'platform height plus box height plus countertop thickness', sum(Lw, H, r.countertopThickness)),
+    ...(r.kind.hasPlatform ? { platformHeight } : {}),
+    finishedHeight: r.kind.hasPlatform ? derive('H1', 'platform height plus box height plus countertop thickness', sum(Lw, H, r.countertopThickness)) : derive('H1', 'box height', H),
   };
 
   const facts: AssemblyFacts = {

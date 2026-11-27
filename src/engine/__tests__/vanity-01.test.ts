@@ -141,7 +141,7 @@ describe('three numbers in, a whole plan out (rules G1-G3)', () => {
 
   it('treats 30" as the box only, with platform and top added on for the finished height (rule H1)', () => {
     expect(part(result, 'Left side').length).toBe(inches('30'));
-    expect(result.overall?.platformHeight.result).toBe(inches('3 1/2'));
+    expect(result.overall?.platformHeight?.result).toBe(inches('3 1/2'));
     expect(result.overall?.finishedHeight.result).toBe(inches('34 3/4'));
   });
 

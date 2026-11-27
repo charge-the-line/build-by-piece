@@ -57,7 +57,13 @@ export function layoutFrom(choices: readonly BayChoice[]): readonly Bay[] {
 }
 
 /** The reverse of layoutFrom, for showing a layout as simple choices. */
-export const choicesOf = (layout: readonly Bay[]): BayChoice[] => layout.map((bay) => (bay.kind === 'door' ? 'door' : bay.drawers.length));
+export const choicesOf = (layout: readonly Bay[]): BayChoice[] =>
+  layout.map((bay) => {
+    if (bay.kind === 'door') return 'door';
+    if (bay.kind === 'drawerColumn') return bay.drawers.length;
+    // A mixed stack is shown by its drawers, or as a door if it has none.
+    return bay.items.filter((item) => item.kind === 'drawer').length || 'door';
+  });
 
 /**
  * Rule L0: drawers, two doors, drawers, all four the same width. Kept as
@@ -90,6 +96,8 @@ export const vanityDefaults: VanityOptions = {
     supportMaterial: 'pine-1x4',
     spacerMaterials: ['oak-ply-3-4', 'oak-ply-1-4'],
     spacerWidth: appDefault('2', 'Wide enough to take the slide and its screws.'),
+    shelfSpacing: appDefault('14', 'Tall enough for most things, short enough not to waste space.'),
+    shelfSetback: appDefault('1', 'Lets the door close in front of the shelf.'),
   },
 
   faceFrame: {
@@ -105,6 +113,8 @@ export const vanityDefaults: VanityOptions = {
   fronts: {
     overlay: appDefault('1/2', 'Hides small errors in the frame and matches common hinges.'),
     minimumGap: appDefault('1/8', 'Smallest gap that keeps two fronts from rubbing.'),
+    maxDoorWidth: appDefault('18', 'A wider door sags and swings out a long way, so it becomes two.'),
+    sinkMinimumWidth: appDefault('30', 'Most kitchen sinks need at least this much.'),
     slabMaterial: 'oak-1x6',
     shakerFrameMaterial: 'oak-1x3',
     shakerFrameWidth: 'boardWidth',

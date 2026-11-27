@@ -87,6 +87,7 @@ export type ColorRole =
   | 'leftSide' // blue
   | 'rightSide' // green
   | 'bottom' // yellow
+  | 'top' // brown: the top panel of a wall cabinet
   | 'back' // purple
   | 'platform' // orange: platform and toe kick
   | 'divider' // red
@@ -208,7 +209,32 @@ export interface DrawerSpec {
 }
 
 /** One vertical section of the face frame, between two vertical frame pieces. */
-export type Bay = DrawerColumnBay | DoorBay;
+export type Bay = DrawerColumnBay | DoorBay | StackBay;
+
+/** What a single opening holds. A fixed panel looks like a drawer front but does not open (rule K6). */
+export type OpeningKind = 'drawer' | 'door' | 'falseFront';
+
+/** One opening in a stack, top to bottom (rule K3). */
+export interface StackItem {
+  readonly id: string;
+  readonly kind: OpeningKind;
+  readonly style: Choice<FrontStyle>;
+  readonly height: SizeSpec;
+  /** For a door: which edge the hinges are on. */
+  readonly hingeSide?: Choice<'left' | 'right'>;
+}
+
+/** A space holding any mix of drawers, doors and fixed panels, such as a drawer over a door. */
+export interface StackBay {
+  readonly kind: 'stack';
+  readonly id: string;
+  readonly width: SizeSpec;
+  /** Top to bottom. */
+  readonly items: readonly StackItem[];
+}
+
+/** Which cabinet this is. Each kind has its own starting sizes and proposed layout (section K). */
+export type CabinetType = 'vanity' | 'base' | 'drawerBase' | 'sinkBase' | 'upper';
 
 export interface DrawerColumnBay {
   readonly kind: 'drawerColumn';
@@ -323,6 +349,10 @@ export interface VanityOptions {
     readonly supportMaterial: MaterialId;
     /** Sheet material stacked to make slide spacers, thickest first (rule B8). */
     readonly spacerMaterials: readonly MaterialId[];
+    /** K5: no gap between shelves, or a shelf and the top or bottom, taller than this. */
+    readonly shelfSpacing: Measurement;
+    /** K5: how far a base cabinet shelf stops short of the front, so the door closes. */
+    readonly shelfSetback: Measurement;
     /** Width of each slide spacer strip (rule B8). */
     readonly spacerWidth: Measurement;
   };
@@ -341,6 +371,10 @@ export interface VanityOptions {
   readonly fronts: {
     /** How far each door and drawer front laps over the frame on every edge. */
     readonly overlay: Measurement;
+    /** K4: an opening wider than this is split into two doors. */
+    readonly maxDoorWidth: Measurement;
+    /** K6: a sink base narrower than this gets a warning. */
+    readonly sinkMinimumWidth: Measurement;
     /** Smallest gap allowed between two fronts on one frame piece (rule D3). */
     readonly minimumGap: Measurement;
     readonly slabMaterial: MaterialId;
@@ -421,6 +455,8 @@ export type Overrides<T> = T extends OverrideLeaf ? T : { readonly [K in keyof T
 
 export interface VanityDesign {
   readonly projectType: 'vanity';
+  /** Which cabinet. Absent means the bathroom vanity, as in projects saved before there were others. */
+  readonly cabinet?: CabinetType;
   readonly id: string;
   readonly name: string;
   /** The full cabinet width, end to end, including any face-frame overhang (rule G2). */
@@ -604,7 +640,7 @@ export interface CutDiagram {
 export interface Opening {
   readonly id: string;
   readonly bayId: string;
-  readonly kind: 'door' | 'drawer';
+  readonly kind: OpeningKind;
   /** Plain-English name, e.g. "Left drawers, drawer 1". */
   readonly label: string;
   readonly style: FrontStyle;
@@ -824,7 +860,8 @@ export interface OverallSizes {
   readonly frameHeight: Ticks;
   readonly boxWidth: Derivation;
   readonly boxDepth: Derivation;
-  readonly platformHeight: Derivation;
+  /** Absent for a cabinet that hangs on the wall. */
+  readonly platformHeight?: Derivation;
   /** Platform + box + countertop (rule H1). */
   readonly finishedHeight: Derivation;
 }

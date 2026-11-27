@@ -5,7 +5,7 @@
  * changeable (docs/RULES.md, rules G1-G4, M1, M2).
  */
 import { toolList } from './defaults/tools';
-import { proposedVanityLayout } from './defaults/vanity';
+import { cabinetKind, proposeLayout, type CabinetKind } from './defaults/cabinets';
 import type { Val } from './derive';
 import type {
   Approach,
@@ -15,6 +15,7 @@ import type {
   Choice,
   EndCondition,
   HingeHardware,
+  OpeningKind,
   MaterialCatalog,
   MaterialId,
   Measurement,
@@ -49,7 +50,8 @@ function merge(base: unknown, changes: unknown): unknown {
 
 /** The defaults with the user's changes laid over them. */
 export function effectiveOptions(design: VanityDesign, defaults: VanityOptions): VanityOptions {
-  return merge(defaults, design.overrides) as VanityOptions;
+  // The cabinet kind's own defaults sit between the general ones and what she changed.
+  return merge(merge(defaults, cabinetKind(design.cabinet).options), design.overrides) as VanityOptions;
 }
 
 export interface SizeValue {
@@ -57,23 +59,27 @@ export interface SizeValue {
   readonly value?: Val;
 }
 
-export interface ResolvedDrawer {
+/** One opening in a space, top to bottom. */
+export interface ResolvedItem {
   readonly id: string;
+  readonly kind: OpeningKind;
+  /** e.g. "Left door", "Left drawers, drawer 1", "Drawer 2". */
+  readonly label: string;
   readonly style: 'slab' | 'shaker';
   readonly height: SizeValue;
+  /** Where its height comes from in the design, for pointing at it when sizes do not add up. */
+  readonly heightPath: string;
+  readonly hingeSide?: 'left' | 'right';
 }
 
-export type ResolvedBay =
-  | { readonly kind: 'drawerColumn'; readonly id: string; readonly label: string; readonly width: SizeValue; readonly drawers: readonly ResolvedDrawer[] }
-  | {
-      readonly kind: 'door';
-      readonly id: string;
-      readonly label: string;
-      readonly width: SizeValue;
-      readonly height: SizeValue;
-      readonly style: 'slab' | 'shaker';
-      readonly hingeSide: 'left' | 'right';
-    };
+/** One space in the face frame: a stack of one or more openings. */
+export interface ResolvedBay {
+  readonly id: string;
+  /** e.g. "Left drawers", "Left", or "" for a cabinet with a single space. */
+  readonly label: string;
+  readonly width: SizeValue;
+  readonly items: readonly ResolvedItem[];
+}
 
 export interface BoardValues {
   readonly stock: BoardStock;
@@ -89,6 +95,8 @@ export interface SheetValues {
 /** Every exact value the rules need. Symbols match docs/RULES.md. */
 export interface Resolved {
   readonly options: VanityOptions;
+  /** Which cabinet this is, and what that kind has (section K). */
+  readonly kind: CabinetKind;
   readonly W: Val;
   readonly D: Val;
   readonly H: Val;
@@ -103,6 +111,9 @@ export interface Resolved {
   readonly supportBoard: BoardValues;
   readonly spacerSheets: readonly SheetValues[];
   readonly spacerWidth: Val;
+  readonly shelfSpacing: Val;
+  readonly shelfSetback: Val;
+  readonly sinkMinimumWidth: Val;
 
   readonly frameBoard: BoardValues;
   readonly S: Val;
@@ -278,6 +289,10 @@ export function resolveVanity(design: VanityDesign, defaults: VanityOptions, cat
   const supportBoard = board(options.box.supportMaterial);
   const spacerSheets = options.box.spacerMaterials.map(sheet);
   const spacerWidth = length(options.box.spacerWidth, 'box.spacerWidth', 'slide spacer width');
+  const shelfSpacing = length(options.box.shelfSpacing, 'box.shelfSpacing', 'most space between shelves');
+  const shelfSetback = length(options.box.shelfSetback, 'box.shelfSetback', 'shelf setback from the front');
+  const sinkMinimumWidth = length(options.fronts.sinkMinimumWidth, 'fronts.sinkMinimumWidth', 'narrowest sink base');
+  const kind = cabinetKind(design.cabinet);
 
   const frameBoard = board(options.faceFrame.material);
   const S = boardDimension(options.faceFrame.stileWidth, frameBoard, 'faceFrame.stileWidth', 'vertical frame piece width');
@@ -315,38 +330,73 @@ export function resolveVanity(design: VanityDesign, defaults: VanityOptions, cat
       ? { by: spec.by, value: length(spec.value, path, label) }
       : { by: spec.by };
 
-  const layout = options.layout === 'auto' ? proposedVanityLayout : options.layout;
+  const maxDoorWidth = length(options.fronts.maxDoorWidth, 'fronts.maxDoorWidth', 'widest single door');
+  const layout = options.layout === 'auto' ? proposeLayout(kind.type, W.value, S.value, maxDoorWidth.value) : options.layout;
+  const heightWord = (spec: Bay['width']) => (spec.by === 'front' ? 'front' : 'opening');
+  const capital = (text: string) => text.charAt(0).toUpperCase() + text.slice(1);
   const bays: ResolvedBay[] = layout.map((bay, index) => {
+    const base = `layout.${bay.id}`;
+    if (bay.kind === 'stack') {
+      // K3: a space named by where it is; its openings by what they are.
+      const position = layout.length === 1 ? '' : layout.length === 2 ? ['Left', 'Right'][index]! : `Space ${index + 1}`;
+      const words = { drawer: 'drawer', door: 'door', falseFront: 'fixed panel' } as const;
+      const items = bay.items.map((item): ResolvedItem => {
+        const same = bay.items.filter((i) => i.kind === item.kind);
+        const number = same.length > 1 ? ` ${same.indexOf(item) + 1}` : '';
+        const label = capital(`${position} ${words[item.kind]}${number}`.trim());
+        const heightPath = `${base}.${item.id}.height`;
+        return {
+          id: item.id,
+          kind: item.kind,
+          label,
+          style: choice(item.style, `${base}.${item.id}.style`, `${label}: style`),
+          height: sizeValue(item.height, heightPath, `${label}: ${heightWord(item.height)} height`),
+          heightPath,
+          ...(item.hingeSide ? { hingeSide: item.hingeSide.value } : {}),
+        };
+      });
+      const where = position === '' ? 'Opening' : `${position} space`;
+      return { id: bay.id, label: position, width: sizeValue(bay.width, `${base}.width`, `${where}: ${heightWord(bay.width)} width`), items };
+    }
     // A custom layout names each bay by what it is and its place among its kind: "Door 2", "Drawers 1".
     const ordinal = layout.slice(0, index + 1).filter((b) => b.kind === bay.kind).length;
     const label = BAY_LABELS[bay.id] ?? `${bay.kind === 'door' ? 'Door' : 'Drawers'} ${ordinal}`;
-    const base = `layout.${bay.id}`;
-    const width = sizeValue(bay.width, `${base}.width`, `${label}: ${bay.width.by === 'front' ? 'front' : 'opening'} width`);
+    const width = sizeValue(bay.width, `${base}.width`, `${label}: ${heightWord(bay.width)} width`);
     if (bay.kind === 'door') {
+      const heightPath = `${base}.height`;
       return {
-        kind: 'door',
         id: bay.id,
         label,
         width,
-        height: sizeValue(bay.height, `${base}.height`, `${label}: ${bay.height.by === 'front' ? 'front' : 'opening'} height`),
-        style: choice(bay.style, `${base}.style`, `${label}: style`),
-        hingeSide: bay.hingeSide.value,
+        items: [
+          {
+            id: bay.id,
+            kind: 'door',
+            label,
+            style: choice(bay.style, `${base}.style`, `${label}: style`),
+            height: sizeValue(bay.height, heightPath, `${label}: ${heightWord(bay.height)} height`),
+            heightPath,
+            hingeSide: bay.hingeSide.value,
+          },
+        ],
       };
     }
     return {
-      kind: 'drawerColumn',
       id: bay.id,
       label,
       width,
-      drawers: bay.drawers.map((drawer, n) => ({
-        id: drawer.id,
-        style: choice(drawer.frontStyle, `${base}.${drawer.id}.style`, `${label}, drawer ${n + 1}: style`),
-        height: sizeValue(
-          drawer.height,
-          `${base}.${drawer.id}.height`,
-          `${label}, drawer ${n + 1}: ${drawer.height.by === 'front' ? 'front' : 'opening'} height`,
-        ),
-      })),
+      items: bay.drawers.map((drawer, n): ResolvedItem => {
+        const itemLabel = `${label}, drawer ${n + 1}`;
+        const heightPath = `${base}.${drawer.id}.height`;
+        return {
+          id: drawer.id,
+          kind: 'drawer',
+          label: itemLabel,
+          style: choice(drawer.frontStyle, `${base}.${drawer.id}.style`, `${itemLabel}: style`),
+          height: sizeValue(drawer.height, heightPath, `${itemLabel}: ${heightWord(drawer.height)} height`),
+          heightPath,
+        };
+      }),
     };
   });
 
@@ -372,6 +422,7 @@ export function resolveVanity(design: VanityDesign, defaults: VanityOptions, cat
 
   const resolved: Resolved = {
     options,
+    kind,
     W,
     D,
     H,
@@ -384,6 +435,9 @@ export function resolveVanity(design: VanityDesign, defaults: VanityOptions, cat
     supportBoard,
     spacerSheets,
     spacerWidth,
+    shelfSpacing,
+    shelfSetback,
+    sinkMinimumWidth,
     frameBoard,
     S,
     RT,

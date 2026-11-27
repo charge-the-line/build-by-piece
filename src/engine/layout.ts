@@ -4,13 +4,13 @@
  */
 import { derive, deriveByRule, Expr, named, sum, type Val } from './derive';
 import type { Resolved, ResolvedBay, SizeValue } from './resolve';
-import type { ColorRole, Derivation, FrontStyle, SumDiagram, Ticks, ValidationIssue } from './types';
+import type { ColorRole, Derivation, FrontStyle, OpeningKind, SumDiagram, Ticks, ValidationIssue } from './types';
 import { asTicks, formatLength, incrementTicks } from './units';
 
 export interface LaidOpening {
   readonly id: string;
   readonly bayId: string;
-  readonly kind: 'door' | 'drawer';
+  readonly kind: OpeningKind;
   readonly label: string;
   readonly style: FrontStyle;
   readonly width: Val;
@@ -146,7 +146,7 @@ export function layOut(r: Resolved): LayoutResult {
 
   // --- Across (rule L1) ----------------------------------------------------
   const widthSpace = sum(W, [-(bayCount + 1), S]);
-  const widthSlots = r.bays.map((bay) => ({ size: bay.width, label: `${bay.label} opening width` }));
+  const widthSlots = r.bays.map((bay) => ({ size: bay.width, label: `${bay.label || 'the'} opening width`.replace(/^the /, '') }));
   const widths = sizeOpenings(r, widthSlots, widthSpace);
 
   if (!widths.ok) {
@@ -171,11 +171,7 @@ export function layOut(r: Resolved): LayoutResult {
 
   // --- Up and down (rule L2) ----------------------------------------------
   const heights = r.bays.map((bay) => {
-    const drawers = bay.kind === 'drawerColumn' ? bay.drawers : [];
-    const slots: Slot[] =
-      bay.kind === 'door'
-        ? [{ size: bay.height, label: `${bay.label} opening height` }]
-        : drawers.map((d, n) => ({ size: d.height, label: `${bay.label}, drawer ${n + 1} opening height` }));
+    const slots: Slot[] = bay.items.map((item) => ({ size: item.height, label: `${item.label} opening height` }));
     const space = sum(H, [-1, RT], [-1, RB], [-(Math.max(slots.length, 1) - 1), RD]);
     const outcome = sizeOpenings(r, slots, space);
     if (!outcome.ok) {
@@ -186,16 +182,14 @@ export function layOut(r: Resolved): LayoutResult {
         if (fixed) segments.push({ label: slot.label.replace(' height', ''), length: fixed.val.value, colorRole: roleOf(bay) });
       });
       segments.push({ label: 'bottom frame piece', length: RB.value, colorRole: 'faceFrame' });
-      const paths =
-        bay.kind === 'door' ? [`layout.${bay.id}.height`] : drawers.map((d) => `layout.${bay.id}.${d.id}.height`);
       issues.push(
         mismatchIssue(
           r,
           'L2',
-          bay.label,
+          bay.label || 'Top to bottom',
           outcome,
           { direction: 'vertical', totalLabel: 'box height', total: H.value, segments, difference: outcome.difference },
-          ['height', ...paths],
+          ['height', ...bay.items.map((item) => item.heightPath)],
         ),
       );
     }
@@ -212,22 +206,21 @@ export function layOut(r: Resolved): LayoutResult {
     const sized = (heights[i] as Extract<SizeOutcome, { ok: true }>).sized;
     const openings: LaidOpening[] = [];
     sized.forEach((height, n) => {
+      const item = bay.items[n]!;
       const top = sum(RT, [n, RD], ...openings.map((o) => o.height));
-      const isDoor = bay.kind === 'door';
-      const drawer = bay.kind === 'drawerColumn' ? bay.drawers[n]! : undefined;
       openings.push({
-        id: drawer ? drawer.id : bay.id,
+        id: item.id,
         bayId: bay.id,
-        kind: isDoor ? 'door' : 'drawer',
-        label: isDoor ? bay.label : `${bay.label}, drawer ${n + 1}`,
-        style: bay.kind === 'door' ? bay.style : drawer!.style,
+        kind: item.kind,
+        label: item.label,
+        style: item.style,
         width: width.val,
         widthDerivation: width.derivation,
         height: height.val,
         heightDerivation: height.derivation,
         left,
         top,
-        ...(bay.kind === 'door' ? { hingeSide: bay.hingeSide } : {}),
+        ...(item.hingeSide ? { hingeSide: item.hingeSide } : {}),
       });
     });
     bays.push({ bay, width: width.val, left, openings });
@@ -237,5 +230,5 @@ export function layOut(r: Resolved): LayoutResult {
 }
 
 function roleOf(bay: ResolvedBay): ColorRole {
-  return bay.kind === 'door' ? 'door' : 'drawerFront';
+  return bay.items[0]?.kind === 'door' ? 'door' : 'drawerFront';
 }
