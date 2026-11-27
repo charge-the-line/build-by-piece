@@ -20,6 +20,7 @@ export const colorRoles: readonly ColorRoleInfo[] = [
   { role: 'leftSide', colorName: 'blue', hex: '#1f5fbf', textHex: '#ffffff', label: 'Left side' },
   { role: 'rightSide', colorName: 'green', hex: '#1e7d32', textHex: '#ffffff', label: 'Right side' },
   { role: 'bottom', colorName: 'yellow', hex: '#f2c200', textHex: '#000000', label: 'Bottom' },
+  { role: 'top', colorName: 'brown', hex: '#7a4a21', textHex: '#ffffff', label: 'Top panel (wall cabinets)' },
   { role: 'back', colorName: 'purple', hex: '#6a3fb5', textHex: '#ffffff', label: 'Back' },
   { role: 'platform', colorName: 'orange', hex: '#e8730c', textHex: '#000000', label: 'Platform and toe kick' },
   { role: 'divider', colorName: 'red', hex: '#c62828', textHex: '#ffffff', label: 'Interior dividers' },

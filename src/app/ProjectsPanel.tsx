@@ -1,4 +1,6 @@
 import { useState } from 'react';
+import { cabinetKinds } from '../engine/defaults/cabinets';
+import type { CabinetType } from '../engine/types';
 
 interface ProjectInfo {
   readonly id: string;
@@ -10,21 +12,22 @@ interface Props {
   readonly projects: readonly ProjectInfo[];
   readonly currentId: string;
   readonly onOpen: (id: string) => void;
-  readonly onCreate: () => void;
+  readonly onCreate: (type: CabinetType) => void;
   readonly onRename: (name: string) => void;
   readonly onRemove: (id: string) => void;
 }
 
-/** What she can start. Only the vanity is built so far; the rest show what is coming. */
-const KINDS: readonly { readonly name: string; readonly ready: boolean; readonly picture: string }[] = [
-  { name: 'Bathroom vanity', ready: true, picture: 'M6 14h36v22H6zM6 36v6h30v-6M24 14v22M10 20h10M28 20h10' },
-  { name: 'Kitchen', ready: false, picture: 'M4 22h40v20H4zM4 6h40v10H4zM16 22v20M30 22v20' },
-  { name: 'Laundry room', ready: false, picture: 'M6 8h36v34H6zM14 26a10 10 0 1 0 20 0a10 10 0 1 0-20 0M10 14h8' },
-  { name: 'Mudroom', ready: false, picture: 'M8 6h32v36H8zM8 28h32M16 12v8M24 12v8M32 12v8' },
-  { name: 'Built-ins', ready: false, picture: 'M6 6h36v36H6zM6 18h36M6 30h36M24 6v36' },
-  { name: 'Closet', ready: false, picture: 'M8 6h32v36H8zM24 6v36M19 24h2M27 24h2' },
-  { name: 'Custom cabinet', ready: false, picture: 'M10 10h28v28H10zM10 24h28M24 24v14' },
-];
+/** A simple front view of each cabinet, drawn on a 48 x 48 grid. */
+const PICTURES: Readonly<Record<CabinetType, string>> = {
+  vanity: 'M4 14h40v22H4zM8 36v6h32v-6M14 14v22M34 14v22M24 14v22M4 22h10M34 22h10',
+  base: 'M12 8h24v30H12zM14 38v6h20v-6M12 16h24M21 12h6M32 24v6',
+  drawerBase: 'M12 8h24v30H12zM14 38v6h20v-6M12 16h24M12 27h24M21 12h6M21 21h6M21 32h6',
+  sinkBase: 'M6 8h36v30H6zM8 38v6h32v-6M6 16h36M24 16v22M20 26v4M28 26v4M18 4h12v4',
+  upper: 'M8 6h32v30H8zM24 6v30M20 24v6M28 24v6M4 2h40',
+};
+
+/** Other kinds of project Ashley asked for, which the app cannot build yet. */
+const LATER: readonly string[] = ['A whole kitchen', 'Laundry room', 'Mudroom', 'Built-ins', 'Closet', 'Custom cabinet'];
 
 export function ProjectsPanel({ projects, currentId, onOpen, onCreate, onRename, onRemove }: Props) {
   const current = projects.find((p) => p.id === currentId)!;
@@ -68,14 +71,22 @@ export function ProjectsPanel({ projects, currentId, onOpen, onCreate, onRename,
       <section>
         <h2>Start something new</h2>
         <ul className="kinds">
-          {KINDS.map((kind) => (
-            <li key={kind.name}>
-              <button type="button" disabled={!kind.ready} onClick={onCreate}>
+          {cabinetKinds.map((kind) => (
+            <li key={kind.type}>
+              <button type="button" onClick={() => onCreate(kind.type)}>
                 <svg className="icon" viewBox="0 0 48 48" aria-hidden="true">
-                  <path d={kind.picture} />
+                  <path d={PICTURES[kind.type]} />
                 </svg>
                 <span>{kind.name}</span>
-                {!kind.ready && <span className="hint">Not yet</span>}
+                <span className="hint">{kind.blurb}</span>
+              </button>
+            </li>
+          ))}
+          {LATER.map((name) => (
+            <li key={name}>
+              <button type="button" disabled>
+                <span>{name}</span>
+                <span className="hint">Not yet</span>
               </button>
             </li>
           ))}

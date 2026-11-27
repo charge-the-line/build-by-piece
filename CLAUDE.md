@@ -27,7 +27,9 @@ From Ashley, the first user.
 
 ## Current status
 
-**Phase 7 (Cutting tick-off, picture shopping lists, three approaches, multiple projects) is built and waiting for Max's review. The next item is the cabinet library, which needs its construction rules agreed with Max before any code.**
+**Phase 8 (kitchen cabinets, one at a time) is built and waiting for Max's review. Next would be stage 2, a run of cabinets along a wall; write its rules for Max's approval before any code.**
+
+The app now plans five cabinets: the bathroom vanity, and a kitchen base cabinet, drawer base, sink base and upper cabinet (section K of the rules). All are tested against made-up standard sizes; there are no real kitchen measurements yet.
 
 Ashley asked for a much larger, picture-first product; her feedback and Max's decisions are recorded in `docs/OPEN-QUESTIONS.md`, with what is still to do. Her rule for every screen: **more pictures, fewer words.** On construction screens aim for one or two short sentences per step, with anything longer behind "More detail".
 
@@ -35,9 +37,9 @@ She ticks her tools on the Choices screen (defaults are her own list). The plan 
 
 The engine builds a full plan from three numbers: openings, cut list, cutting diagrams, shopping list, hardware, validation, a 3D position for every piece, and assembly steps. The app has six screens: Size, Choices, Parts, Cutting, Shop, Build, plus a projects panel opened from the header. She can change the door and drawer layout on the Size screen, tap a part to see its trade term, and print the whole plan.
 
-Test case: vanity 01, 60" wide × 21" deep × 30" high, left end on a wall, right end exposed. The earlier AI mock-up survives only as a fixture of known errors.
+Test cases: vanity 01, 60" wide × 21" deep × 30" high, left end on a wall, right end exposed; and the five kitchen fixtures in `fixtures/kitchen.ts`. The earlier AI mock-up survives only as a fixture of known errors.
 
-Known limits: front styles (flat or framed) cannot be changed in the app; screws are counted but glue, nails and finish are not; only the vanity exists (other project types show as "Not yet"). Everything under "Later" needs its rules agreed with Max first, as in Phase 0.
+Known limits: front styles (flat or framed) cannot be changed in the app; screws are counted but glue, nails and finish are not; the door and drawer layout can only be changed for the vanity; each project is one cabinet (a whole kitchen and other project types show as "Not yet"). Everything under "Later" needs its rules agreed with Max first, as in Phase 0.
 
 | Phase | What | Status |
 |---|---|---|
@@ -48,8 +50,9 @@ Known limits: front styles (flat or framed) cannot be changed in the app; screws
 | 4 | Finish v1: layout editor, glossary, supplies list | Done |
 | 5 | Tool inventory driving the method | Done |
 | 6 | Picture-first Build screen: small steps, arrows, glue, screws, tool pictures | Done |
-| 7 | Cutting tick-off and sizes; picture shopping lists; three approaches; multiple projects | Done, in review |
-| Later | Cabinet library, kitchen, room planner (rules first); prices, 3D and AI undecided | Not started |
+| 7 | Cutting tick-off and sizes; picture shopping lists; three approaches; multiple projects | Done |
+| 8 | Kitchen cabinets: base, drawer base, sink base, upper (one at a time) | Done, in review |
+| Later | A run of cabinets along a wall, then a room (rules first); prices, 3D and AI undecided | Not started |
 
 Update this section at the end of every phase.
 
@@ -62,15 +65,15 @@ src/engine/      Pure TypeScript. Design + defaults + catalog in; parts, diagram
   derive.ts        Values that remember their source; builds each part's "how this was worked out".
   resolve.ts       Lays the user's changes over the defaults and reads every value, with its label and status.
   layout.ts        Sizes and places every opening; the "does not add up" checks (rules L1-L5).
-  vanity.ts        The construction rules: one block per rule in docs/RULES.md. Also places every piece in 3D (rule A0).
+  vanity.ts        The construction rules for every cabinet kind: one block per rule in docs/RULES.md. Also places every piece in 3D (rule A0).
   methods.ts       Chooses a method for each job from the tools ticked, and lists the tools a plan needs (rules T1-T8).
   geometry.ts      Where pieces meet (glue faces) and where screws go along a joint (rule J4).
   assembly.ts      The small assembly steps: pieces and the way each arrives, glue, screws, tools, hardware (section A).
   cutting.ts       Cutting diagrams (rules C1-C6); the shopping list is the diagrams, counted.
   generatePlan.ts  The engine's single entry point.
   colorRoles.ts    The fixed instructional colours (data).
-  defaults/        Every value the app decides: vanity.ts (options, layouts), catalog.ts (materials, hardware, supplies), tools.ts (tool list, default ticks, safety gear).
-  fixtures/        vanity-01.ts is the test case (three numbers). mockup-errors.ts holds the old mock-up's mistakes.
+  defaults/        Every value the app decides: vanity.ts (options, layouts), cabinets.ts (cabinet kinds, starting sizes, proposed layouts), catalog.ts (materials, hardware, supplies), tools.ts (tool list, default ticks, safety gear).
+  fixtures/        vanity-01.ts and kitchen.ts are the test cases (a kind and three numbers each). mockup-errors.ts holds the old mock-up's mistakes.
   __tests__/       Vitest tests. The expected sizes are the worked example in docs/RULES.md.
 src/app/         React UI: Size, Choices, Parts, Cutting, Shop and Build screens. Imports from the engine; never the reverse.
   steps/           Step pictures (drawn from the engine's positions), tool icons, and the written step templates.
@@ -83,6 +86,7 @@ src/app/         React UI: Size, Choices, Parts, Cutting, Shop and Build screens
 docs/RULES.md    Construction rules with formulas. The engine implements exactly these.
 docs/OPEN-QUESTIONS.md   Decisions waiting on Max, and the record of what he decided.
 docs/TOOLS-PROPOSAL.md   The approved tool-inventory proposal: what changed on approval, and Max's answers.
+docs/CABINETS-PROPOSAL.md   The approved kitchen cabinets proposal (stage 1 built; stages 2 and 3 not started).
 public/          Web app manifest and icons.
 ```
 
@@ -99,7 +103,7 @@ Engine rules:
 - Validation returns structured issues: severity, parts, explanation, suggested fix. Any error blocks plan generation.
 - Every rule in the engine cites its number in `docs/RULES.md`. Change the document and the code together.
 - No AI calls, no accounts, no backend (reconfirmed 27 Nov; revisit with the room planner). Explanations are written templates filled with the user's numbers. Projects save on the device, with export and import of a project file.
-- Colour roles are fixed everywhere: blue left side, green right side, yellow bottom, purple back, orange platform and toe kick, red dividers, teal face frame, pink doors, light blue drawer fronts, grey support pieces, white (dark outline) drawer boxes. In step pictures, lime marks glue and black dots mark screws; no part uses those. Never rely on colour alone; always show the part ID.
+- Colour roles are fixed everywhere: blue left side, green right side, yellow bottom, purple back, orange platform and toe kick, red dividers, teal face frame, pink doors, light blue drawer fronts (and fixed sink panels), grey support pieces, white (dark outline) drawer boxes, brown top panel on wall cabinets; shelves are red like dividers. In step pictures, lime marks glue and black dots mark screws; no part uses those. Never rely on colour alone; always show the part ID.
 
 ## Working rules
 

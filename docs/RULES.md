@@ -349,6 +349,65 @@ Steps that do not apply are left out.
 
 ---
 
+## K. Kitchen cabinets
+
+Four more cabinets, built the same way as the vanity. Every rule above applies unless this section says otherwise. Each is planned one at a time.
+
+| Cabinet | What it is | Starts at (width × depth × height) |
+|---|---|---|
+| Base cabinet | A drawer over a door, with a shelf | 18" × 24" × 31" |
+| Drawer base | Three drawers | 18" × 24" × 31" |
+| Sink base | Doors under fixed panels, room for the sink | 36" × 24" × 31" |
+| Upper cabinet | Hangs on the wall; doors and shelves | 30" × 12" × 30" |
+
+**K1. Three numbers, with a sensible start.** Width, depth and height mean what they mean for the vanity (G2), and each kind starts with the standard sizes above. A 31" box on the 3 1/2" platform is 34 1/2", which is 36" with a 1 1/2" kitchen countertop (the countertop default for kitchen base cabinets).
+
+**K2. Base cabinets sit on the vanity's platform** (P1 to P5). Why: she has built one, it is easy to level, and the sides stay plain rectangles. Alternative: a toe kick notched out of the side panels.
+
+**K3. A stack of openings.** Any space in the frame can hold a stack, top to bottom, of drawers, doors and fixed panels.
+- A base cabinet's space is a drawer over a door. The drawer front is one board high (L4), a frame piece goes under it (F5), and the door takes the rest (L3).
+- A drawer base is one space: a shallow drawer (one board high) over two equal deep ones.
+- Drawer boxes, slides, spacers and dividers follow X1 to X6, B5 and B8, counted per drawer.
+
+**K4. One door or two.** The app uses the fewest spaces for which no opening is wider than the widest door (default 18").
+- Spaces needed = the smallest n where (W − (n + 1) × S) ÷ n is no more than the widest door.
+- Each space gets its own stack, so a 30" base cabinet has two drawers over two doors, with a divider between for the slides.
+- Neighbouring doors are hinged on opposite edges; a single door is hinged on the left.
+- Alternative, left out: one wide drawer across both doors.
+
+**K5. Shelves (red, like dividers).**
+- Base cabinet: one shelf in each section, its middle at half the height of the door opening.
+- Upper cabinet: the fewest shelves for which no gap is taller than 14" (a default), spaced evenly. Shelves = (inside height ÷ 14", rounded up) − 1.
+- Length = the clear width of the section. Width = box depth − back thickness, less 1" (a default) on a base cabinet so the door closes.
+- Fixed with pocket screws from underneath, before the back goes on. Why: no extra tool. Alternative: adjustable shelves on pins, which needs a shelf-pin jig.
+- A drawer base and a sink base have none.
+
+**K6. Sink base.** Doors by K4. Above each door, a fixed panel the size of a drawer front (D1, L4) is screwed on from behind through the frame. No drawer box, slides or shelf. The back stays, with openings cut for the pipes (A8). A sink base narrower than 30" (a default) gets a warning.
+
+**K7. Upper cabinet.**
+- No platform, toe kick or countertop; its height is the whole cabinet.
+- A top panel (brown) the same size as the bottom, between the sides and flush with the top. It replaces the top front supports.
+- Dividers, if any, are the box height less both panels.
+- A mounting strip under the top panel and a lower one above the bottom panel, both inside against the back.
+- The bottom is seen from below, so its pocket holes go on its top face, inside the cabinet (J2).
+- Hung by resting it on a temporary ledge board screwed level to the wall, then screwing through both mounting strips into studs. Two people.
+
+**K8. Part numbers** stay P01, P02 for a single cabinet. A cabinet number in front (C01-01) arrives with stage 2, when a project can hold more than one cabinet.
+
+**Not yet:** a run of cabinets along a wall with a shared platform and shopping list (stage 2), and a room (stage 3). Changing the layout of a kitchen cabinet in the app is also not built; the Size screen's door and drawer editor is for the vanity only.
+
+### Worked examples (test sizes, not a real kitchen)
+
+| Cabinet | Openings | A few sizes |
+|---|---|---|
+| Base 18" | Drawer 15" × 4 1/2" over door 15" × 22" | Sides 31" × 23 1/4"; bottom 16 1/2" × 23"; shelf 16 1/2" × 22"; door 16" × 23"; drawer box 14" wide on 22" slides |
+| Base 30" | Two spaces of 12 3/4", each drawer over door | One divider; shelves 13 1/2" and 14 1/4" |
+| Drawer base 18" | 4 1/2", 10 1/4", 10 1/4" | Three pairs of 22" slides |
+| Sink base 36" | Two spaces of 15 3/4": fixed panel over door | Panels 16 3/4" × 5 1/2"; no drawers |
+| Upper 30" × 12" × 30" | Two doors, 12 3/4" × 27" openings | Top and bottom 28 1/2" × 11"; two shelves with 9" gaps |
+
+---
+
 ## T. Tools and methods
 
 **T1. The tool list.** Each tool is ticked or not, on the Choices screen. The default ticks are Ashley's own list (mitre saw, circular saw, jigsaw, pocket-hole jig, drills, with a router being bought), so nothing is asked up front.

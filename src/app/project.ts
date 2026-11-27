@@ -6,7 +6,8 @@ import { useEffect, useState } from 'react';
 import { defaultCatalog } from '../engine/defaults/catalog';
 import { userChoice, userEntered } from '../engine/defaults/values';
 import { vanity01 } from '../engine/fixtures/vanity-01';
-import type { Approach, EndCondition, PanelMethod, ProjectFile, ToolId, VanityDesign } from '../engine/types';
+import { cabinetKind } from '../engine/defaults/cabinets';
+import type { Approach, CabinetType, EndCondition, PanelMethod, ProjectFile, ToolId, VanityDesign } from '../engine/types';
 
 const STORAGE_KEY = 'build-by-piece:project';
 
@@ -103,18 +104,24 @@ export function useProject() {
     currentId: project.design.id,
     open: (id: string) => setShelf((s) => ({ ...s, currentId: id })),
     rename: (name: string) => update((p) => ({ ...p, design: { ...p.design, name } })),
-    /** A new vanity. It keeps the open project's tools and approach, so the tool list is only set up once. */
-    create: () =>
+    /** A new cabinet of a kind, at its starting sizes. It keeps the open project's tools and approach, so the tool list is only set up once. */
+    create: (type: CabinetType) =>
       setShelf((s) => {
         const taken = new Set(s.projects.map((p) => p.design.id));
         let n = s.projects.length + 1;
         while (taken.has(`project-${n}`)) n += 1;
+        const kind = cabinetKind(type);
+        const sameKind = s.projects.filter((p) => (p.design.cabinet ?? 'vanity') === type).length;
         const { tools, approach } = project.design.overrides;
         const design: VanityDesign = {
-          ...startingDesign,
+          projectType: 'vanity',
+          cabinet: type,
           id: `project-${n}`,
-          name: `Bathroom vanity ${n}`,
-          overrides: { ...startingDesign.overrides, ...(tools ? { tools } : {}), ...(approach ? { approach } : {}) },
+          name: sameKind === 0 ? kind.name : `${kind.name} ${sameKind + 1}`,
+          width: userEntered(kind.start.width),
+          depth: userEntered(kind.start.depth),
+          height: userEntered(kind.start.height),
+          overrides: { ...(tools ? { tools } : {}), ...(approach ? { approach } : {}) },
         };
         return { currentId: design.id, projects: [...s.projects, { design, checked: {} }] };
       }),

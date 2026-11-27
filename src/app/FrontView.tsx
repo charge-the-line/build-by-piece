@@ -49,7 +49,7 @@ export function FrontView({ plan }: { plan: PlanResult }) {
           </li>
         ))}
       </ul>
-      <p className="note">Brown is the face frame. Each door and drawer front shows its first part number.</p>
+      <p className="note">{frame.colorName.charAt(0).toUpperCase() + frame.colorName.slice(1)} is the face frame. Each door and drawer front shows its first part number.</p>
     </figure>
   );
 }

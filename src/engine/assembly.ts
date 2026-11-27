@@ -91,19 +91,26 @@ export function assemble(r: Resolved, built: VanityBuild, methods: PlanMethods, 
   const rightSide = role('rightSide');
   const bottom = role('bottom');
   const back = role('back');
-  const dividers = role('divider');
+  const dividers = named('Interior divider');
+  const shelves = named('Shelf');
+  const topPanel = role('top');
   const topSupports = named('Top front support');
-  const mountingStrips = named('Mounting strip');
+  const mountingStrips = [...named('Mounting strip'), ...named('Lower mounting strip')];
   const spacers = named('Slide spacer');
   const frameEnds = named('Vertical frame piece (end)');
   const frameRails = [...named('Top frame piece'), ...named('Bottom frame piece')];
   const frameInner = named('Vertical frame piece (inner)');
-  const drawerRails = named('Piece between drawers');
+  const drawerRails = [...named('Piece between drawers'), ...named('Piece between openings')];
   const frame = role('faceFrame');
-  const box = [...leftSide, ...rightSide, ...bottom, ...dividers, ...topSupports, ...mountingStrips, ...back];
+  const box = [...leftSide, ...rightSide, ...bottom, ...topPanel, ...dividers, ...shelves, ...topSupports, ...mountingStrips, ...back];
   const drawerBoxes = role('drawerBox');
   const doors = role('door');
-  const drawerFronts = role('drawerFront');
+  // K6: a fixed panel looks like a drawer front but is screwed to the frame.
+  const fixedPanels = all((p) => p.colorRole === 'drawerFront' && p.name.endsWith(': panel'));
+  const drawerFronts = all((p) => p.colorRole === 'drawerFront' && !p.name.endsWith(': panel'));
+  const hangs = !r.kind.hasPlatform;
+  // K7: under a wall cabinet the bottom is seen, so its pocket holes go on top, inside.
+  const bottomFace: JointFace = hangs ? 'top face' : 'underside';
 
   // Fine-thread pocket screws for solid hardwood; coarse for plywood and softwood.
   const isHardwoodBoard = (ref: PieceRef) => {
@@ -223,7 +230,8 @@ export function assemble(r: Resolved, built: VanityBuild, methods: PlanMethods, 
     scene: 'cabinet',
     templateId: 'boxLeft',
     pieces: [...still(bottom), ...from(leftSide, 'left')],
-    joints: [{ method: 'pocketScrews', face: 'underside', through: bottom, into: leftSide, fastener: pocketScrew(bottom) }],
+    values: { hangs: hangs ? 1 : 0 },
+    joints: [{ method: 'pocketScrews', face: bottomFace, through: bottom, into: leftSide, fastener: pocketScrew(bottom) }],
   });
   add({
     id: 'boxRight',
@@ -231,7 +239,16 @@ export function assemble(r: Resolved, built: VanityBuild, methods: PlanMethods, 
     scene: 'cabinet',
     templateId: 'boxRight',
     pieces: from(rightSide, 'right'),
-    joints: [{ method: 'pocketScrews', face: 'underside', through: bottom, into: rightSide, fastener: pocketScrew(bottom) }],
+    values: { hangs: hangs ? 1 : 0 },
+    joints: [{ method: 'pocketScrews', face: bottomFace, through: bottom, into: rightSide, fastener: pocketScrew(bottom) }],
+  });
+  add({
+    id: 'topPanel',
+    chapter: 'box',
+    scene: 'cabinet',
+    templateId: 'topPanel',
+    pieces: from(topPanel, 'above'),
+    joints: [{ method: 'pocketScrews', face: 'top face', through: topPanel, into: [...leftSide, ...rightSide], fastener: pocketScrew(topPanel) }],
   });
   // Pocket holes on the drawer side of each divider, where drawers hide them (J3).
   add({
@@ -260,13 +277,24 @@ export function assemble(r: Resolved, built: VanityBuild, methods: PlanMethods, 
     pieces: from(mountingStrips, 'above'),
     joints: [{ method: 'pocketScrews', face: 'back face', through: mountingStrips, into: uprightPanels, fastener: pocketScrew(mountingStrips) }],
   });
+  // K5: shelves go in from the front, before the back closes the box.
+  add({
+    id: 'shelves',
+    chapter: 'box',
+    scene: 'cabinet',
+    templateId: 'shelves',
+    values: { shelves: shelves.length },
+    pieces: from(shelves, 'front'),
+    joints: [{ method: 'pocketScrews', face: 'underside', through: shelves, into: uprightPanels, fastener: pocketScrew(shelves) }],
+    tools: ['measuring'],
+  });
   add({
     id: 'back',
     chapter: 'box',
     scene: 'cabinet',
     templateId: 'back',
     pieces: from(back, 'back'),
-    joints: [{ method: 'glueAndNails', through: back, into: [...bottom, ...dividers, ...mountingStrips] }],
+    joints: [{ method: 'glueAndNails', through: back, into: [...bottom, ...topPanel, ...dividers, ...mountingStrips] }],
     tools: ['measuring'],
   });
 
@@ -314,7 +342,7 @@ export function assemble(r: Resolved, built: VanityBuild, methods: PlanMethods, 
     joints: [
       { method: 'pocketScrews', face: sideFace(r.ends.left), through: leftSide, into: frameEnds, fastener: pocketScrew(leftSide) },
       { method: 'pocketScrews', face: sideFace(r.ends.right), through: rightSide, into: frameEnds, fastener: pocketScrew(rightSide) },
-      { method: 'glue', through: frame, into: [...bottom, ...dividers, ...topSupports] },
+      { method: 'glue', through: frame, into: [...bottom, ...topPanel, ...dividers, ...topSupports] },
     ],
   });
 
@@ -417,7 +445,8 @@ export function assemble(r: Resolved, built: VanityBuild, methods: PlanMethods, 
   add({ id: 'topcoat', chapter: 'finish', scene: 'cabinet', templateId: 'topcoat', pieces: still(seen), tools: ['brush'] });
 
   // --- A8: putting it in place --------------------------------------------
-  add({
+  if (r.kind.hasPlumbing)
+    add({
     id: 'plumbing',
     chapter: 'install',
     scene: 'cabinet',
@@ -434,7 +463,9 @@ export function assemble(r: Resolved, built: VanityBuild, methods: PlanMethods, 
     pieces: still([...platformRails, ...crossSupports]),
     tools: ['measuring', 'drill'],
   });
-  add({ id: 'setBox', chapter: 'install', scene: 'cabinet', templateId: 'setBox', pieces: still(box), tools: ['measuring'] });
+  // K7: a wall cabinet rests on a temporary ledge while it is screwed to the wall.
+  if (hangs) add({ id: 'ledger', chapter: 'install', scene: 'cabinet', templateId: 'ledger', pieces: still(mountingStrips), tools: ['measuring', 'drill'] });
+  add({ id: 'setBox', chapter: 'install', scene: 'cabinet', templateId: hangs ? 'hangCabinet' : 'setBox', pieces: still(box), tools: ['measuring'] });
   add({
     id: 'wallScrews',
     chapter: 'install',
@@ -482,6 +513,17 @@ export function assemble(r: Resolved, built: VanityBuild, methods: PlanMethods, 
       tools: ['measuring', 'clamps'],
     });
   }
+  // K6: fixed panels are screwed on from behind, through the frame.
+  add({
+    id: 'fixedPanels',
+    chapter: 'drawers',
+    scene: 'cabinet',
+    templateId: 'fixedPanels',
+    values: { panels: fixedPanels.length, overlay: facts.overlay },
+    pieces: from(fixedPanels, 'front'),
+    joints: [{ method: 'screws', through: frame, into: fixedPanels, fastener: 'short-screws' }],
+    tools: ['measuring', 'clamps'],
+  });
   const doorCount = built.openings.filter((o) => o.kind === 'door').length;
   if (doors.length > 0) {
     const doorValues = { overlay: facts.overlay, doors: doorCount, hingeInset: facts.hingeInset };

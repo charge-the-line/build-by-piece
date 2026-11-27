@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 import { colorRoles } from '../engine/colorRoles';
+import { cabinetKind } from '../engine/defaults/cabinets';
 import type { ColorRole, VanityDesign } from '../engine/types';
 
 const hex = (role: ColorRole) => colorRoles.find((c) => c.role === role)?.hex ?? '#888888';
@@ -61,6 +62,8 @@ export function MeasureGuide({ design }: { design: VanityDesign }) {
   const depth = shown(design.depth);
   const height = shown(design.height);
   const leftWall = design.overrides.ends?.left?.value === 'wall';
+  // A wall cabinet has no platform under it and no countertop on it.
+  const stands = cabinetKind(design.cabinet).hasPlatform;
 
   return (
     <div className="guide">
@@ -69,18 +72,18 @@ export function MeasureGuide({ design }: { design: VanityDesign }) {
         label={`Front view. Width ${width} is the whole cabinet from end to end. Height ${height} is the box only.`}
       >
         {leftWall && <Wall x={10} />}
-        <rect className="top" x={24} y={84} width={222} height={16} />
+        {stands && <rect className="top" x={24} y={84} width={222} height={16} />}
         <text className="small" x={132} y={78} textAnchor="middle">
-          top (not included)
+          {stands ? 'top (not included)' : ''}
         </text>
         <rect x={24} y={100} width={216} height={116} fill={hex('faceFrame')} />
         <rect x={32} y={110} width={44} height={96} fill={hex('drawerFront')} />
         <rect x={84} y={110} width={44} height={96} fill={hex('door')} />
         <rect x={136} y={110} width={44} height={96} fill={hex('door')} />
         <rect x={188} y={110} width={44} height={96} fill={hex('drawerFront')} />
-        <rect x={24} y={216} width={192} height={24} fill={hex('platform')} />
+        {stands && <rect x={24} y={216} width={192} height={24} fill={hex('platform')} />}
         <text className="small" x={120} y={258} textAnchor="middle">
-          platform (not included)
+          {stands ? 'platform (not included)' : ''}
         </text>
         <Bracket x1={24} y1={56} x2={240} y2={56} />
         <text className="dim" x={132} y={48} textAnchor="middle">
@@ -100,14 +103,14 @@ export function MeasureGuide({ design }: { design: VanityDesign }) {
         label={`Side view. Depth ${depth} runs from the wall to the front of the face frame. Doors stick out further.`}
       >
         <Wall x={10} />
-        <rect className="top" x={24} y={84} width={196} height={16} />
+        {stands && <rect className="top" x={24} y={84} width={196} height={16} />}
         <rect className="box" x={24} y={100} width={160} height={116} />
         <text className="small" x={104} y={162} textAnchor="middle">
           box
         </text>
         <rect x={184} y={100} width={12} height={116} fill={hex('faceFrame')} />
         <rect className="outside" x={196} y={106} width={10} height={104} stroke={hex('door')} />
-        <rect x={24} y={216} width={136} height={24} fill={hex('platform')} />
+        {stands && <rect x={24} y={216} width={136} height={24} fill={hex('platform')} />}
         <Bracket x1={24} y1={56} x2={196} y2={56} />
         <text className="dim" x={110} y={48} textAnchor="middle">
           Depth {depth}
@@ -140,7 +143,7 @@ export function MeasureGuide({ design }: { design: VanityDesign }) {
           further.
         </dd>
         <dt>Height {height}</dt>
-        <dd>The box only. The platform underneath and the top are added on.</dd>
+        <dd>{stands ? 'The box only. The platform underneath and the top are added on.' : 'The whole cabinet, top to bottom. It hangs on the wall.'}</dd>
       </dl>
       <p className="note">Pictures show what each number means. They are not to scale.</p>
     </div>
