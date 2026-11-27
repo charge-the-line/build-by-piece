@@ -8,6 +8,7 @@ import { toolList } from './defaults/tools';
 import { proposedVanityLayout } from './defaults/vanity';
 import type { Val } from './derive';
 import type {
+  Approach,
   Bay,
   BoardDimension,
   BoardStock,
@@ -92,6 +93,7 @@ export interface Resolved {
   readonly D: Val;
   readonly H: Val;
   readonly ends: { readonly left: EndCondition; readonly right: EndCondition };
+  readonly approach: Approach;
   /** Which tools are ticked (rule T1). */
   readonly tools: Readonly<Record<ToolId, boolean>>;
   readonly wallOverhang: Val;
@@ -268,6 +270,7 @@ export function resolveVanity(design: VanityDesign, defaults: VanityOptions, cat
     right: choice(options.ends.right, 'ends.right', 'right end'),
   };
   const tools = Object.fromEntries(toolList.map((tool) => [tool.id, tick(options.tools[tool.id], `tools.${tool.id}`, tool.name)])) as Record<ToolId, boolean>;
+  const approach = choice(options.approach, 'approach', 'how the plan chooses its methods');
   const wallOverhang = length(options.ends.wallOverhang, 'ends.wallOverhang', 'frame overhang on a wall end');
 
   const caseSheet = sheet(options.box.caseMaterial);
@@ -373,6 +376,7 @@ export function resolveVanity(design: VanityDesign, defaults: VanityOptions, cat
     D,
     H,
     ends,
+    approach,
     tools,
     wallOverhang,
     caseSheet,

@@ -11,18 +11,21 @@ import type { PanelMethod, PlanMethods, PlanTool, Ticks, ToolId, ValidationIssue
 
 export function chooseMethods(r: Resolved): PlanMethods {
   const has = r.tools;
-  // T5: the easiest panel method her tools allow, unless she picked one.
-  const panel: PanelMethod = r.panelMethod !== 'auto' ? r.panelMethod : has.router ? 'routedRecess' : has.tableSaw ? 'sawnGroove' : 'panelOnBack';
+  // T5 and T9: the panel method. Her own pick wins; otherwise the approach decides.
+  const byTools: PanelMethod = has.router ? 'routedRecess' : has.tableSaw ? 'sawnGroove' : 'panelOnBack';
+  const byApproach: PanelMethod = r.approach === 'easiest' ? 'panelOnBack' : r.approach === 'professional' ? 'routedRecess' : byTools;
+  const professional = r.approach === 'professional';
   return {
     solidWidths: has.tableSaw ? 'anyWidth' : 'boardsAsSold',
     // T4: sections first is only replaced when a track saw is ticked; see cutting.ts for the comparison.
     sheetSaw: has.trackSaw ? 'trackSaw' : 'circularSaw',
     boardSaw: has.mitreSaw ? 'mitreSaw' : 'circularSaw',
-    panel,
-    nailing: has.bradNailer ? 'bradNailer' : 'hammer',
-    sanding: has.sander ? 'sander' : 'sandingBlock',
-    // Plumbing openings: a hole saw is neater; a jigsaw is the fallback, and what is asked for if she has neither.
-    cutouts: has.holeSaw ? 'holeSaw' : 'jigsaw',
+    panel: r.panelMethod !== 'auto' ? r.panelMethod : byApproach,
+    // T9: a professional finish uses the powered tools, and asks for them if they are missing.
+    nailing: has.bradNailer || professional ? 'bradNailer' : 'hammer',
+    sanding: has.sander || professional ? 'sander' : 'sandingBlock',
+    // A hole saw is neater; a jigsaw is the fallback, and the easiest to control.
+    cutouts: r.approach === 'easiest' ? 'jigsaw' : has.holeSaw || professional ? 'holeSaw' : 'jigsaw',
   };
 }
 
@@ -91,6 +94,16 @@ export function toolsForPlan(r: Resolved, methods: PlanMethods, facts: PlanFacts
   if (facts.doors > 0) {
     tools.push({ id: 'bit-hinge', kind: 'bit', name: facts.hingeBit, status: 'required', usedFor: ['The cup hole for each door hinge.'] });
   }
+
+  // Not needed, but worth knowing about: what a tool she lacks would improve.
+  const optional = (id: ToolId, why: string) => {
+    if (!r.tools[id] && !needs.has(id)) tools.push({ id, kind: 'tool', name: toolName(id), status: 'optional', usedFor: [why] });
+  };
+  if (methods.nailing === 'hammer') optional('bradNailer', 'Fixes the back panel and drawer bottoms faster than a hammer.');
+  if (methods.sanding === 'sandingBlock') optional('sander', 'Makes sanding much quicker.');
+  if (methods.cutouts === 'jigsaw') optional('holeSaw', 'Cuts a neat round hole for each pipe.');
+  if (methods.boardSaw === 'circularSaw') optional('mitreSaw', 'Cuts boards square to length with less measuring.');
+  if (facts.framedFronts > 0 && methods.panel === 'panelOnBack') optional('router', 'Lets the door panels sit in a recess, flush with the back.');
 
   for (const gear of safetyGear) tools.push({ id: gear.id, kind: 'safety', name: gear.name, status: 'required', usedFor: [gear.usedFor] });
 

@@ -18,6 +18,7 @@ import type {
   PartId,
   SheetStock,
   Ticks,
+  ToolId,
 } from './types';
 import { asTicks } from './units';
 import { lengthOf, sheetSize } from './vanity';
@@ -46,6 +47,9 @@ export interface CuttingOptions {
   readonly keepOffcutsFrom: Ticks;
   /** T4: with a track saw, long cuts first is tried too and used when it needs fewer sheets. */
   readonly allowLongCutsFirst: boolean;
+  /** The saws the chosen methods use, for the wording and pictures (rule T7). */
+  readonly sheetSaw: ToolId;
+  readonly boardSaw: ToolId;
 }
 
 /** Numbers the leftovers worth keeping; the rest stay unlabelled scrap. */
@@ -185,6 +189,7 @@ function sheetDiagram(
           measure: asTicks(item.along),
           makes: item.partId,
           partId: item.partId,
+          pieceIndex: pieces.length - 1,
           // The last piece is whatever is left of the strip when that is exactly its length.
           noCutNeeded: start + item.along === section.length,
         });
@@ -222,6 +227,7 @@ function sheetDiagram(
     stockWidth: size.width,
     hasGrain: stock.hasGrain,
     kerf: options.kerf,
+    saw: options.sheetSaw,
     order: longCutsFirst ? 'longCutsFirst' : 'sectionsFirst',
     pieces,
     offcuts: labelOffcuts(offcuts, options.keepOffcutsFrom),
@@ -278,6 +284,7 @@ function boardDiagram(
     measure: asTicks(item.along),
     makes: item.partId,
     partId: item.partId,
+    pieceIndex: i,
     noCutNeeded: start + item.along === stockLength,
   }));
   return {
@@ -289,6 +296,7 @@ function boardDiagram(
     stockWidth,
     hasGrain: true,
     kerf: options.kerf,
+    saw: options.boardSaw,
     order: 'sectionsFirst',
     pieces,
     offcuts: labelOffcuts(

@@ -75,6 +75,7 @@ export const vanityDefaults: VanityOptions = {
   tapeIncrement: '1/16in',
   joinery: defaultChoice('pocketHolesAndGlue', 'One jig, no long clamps, joints pull themselves tight.'),
 
+  approach: defaultChoice('useWhatIOwn', 'Uses the tools you have ticked, and buys as little as possible.'),
   tools: defaultTools,
 
   ends: {

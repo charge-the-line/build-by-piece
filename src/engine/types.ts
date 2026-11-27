@@ -255,6 +255,14 @@ export type ToolId =
  */
 export type PanelMethod = 'routedRecess' | 'stoppedGroove' | 'sawnGroove' | 'panelOnBack';
 
+/**
+ * How she wants the plan to choose its methods (rule T9):
+ *  - useWhatIOwn:  only the tools ticked; hand tools stand in for missing powered ones
+ *  - easiest:      the most forgiving method for each job
+ *  - professional: the neatest result, even if that means buying a tool
+ */
+export type Approach = 'useWhatIOwn' | 'easiest' | 'professional';
+
 /** The method the engine settled on for each job that can be done more than one way. */
 export interface PlanMethods {
   readonly solidWidths: 'boardsAsSold' | 'anyWidth';
@@ -271,8 +279,11 @@ export interface PlanTool {
   readonly id: string;
   readonly kind: 'tool' | 'bit' | 'safety';
   readonly name: string;
-  /** have = ticked; buyOrBorrow = needed but not ticked; required = needed on every such plan, not tracked. */
-  readonly status: 'have' | 'buyOrBorrow' | 'required';
+  /**
+   * have = ticked; buyOrBorrow = needed but not ticked; required = needed on every
+   * such plan, not tracked; optional = not needed, but would make a job quicker or neater.
+   */
+  readonly status: 'have' | 'buyOrBorrow' | 'required' | 'optional';
   /** What it is used for, in plain words. */
   readonly usedFor: readonly string[];
   /** For a router bit: the cut it has to make, from the plan's sizes. */
@@ -294,6 +305,7 @@ export interface VanityOptions {
   readonly tapeIncrement: TapeIncrement;
   readonly joinery: Choice<JoineryMethod>;
 
+  readonly approach: Choice<Approach>;
   /** Which tools she has (rule T1). Ticks, not questions: each has a default. */
   readonly tools: Readonly<Record<ToolId, Choice<boolean>>>;
 
@@ -556,6 +568,8 @@ export interface CutStep {
   /** What the cut produces: "section A", "strip A1", or a part ID. */
   readonly makes: string;
   readonly partId?: PartId;
+  /** For a piece: its place in the diagram's list of pieces, so the picture can show it as cut. */
+  readonly pieceIndex?: number;
   /** True when the piece is already this size, so there is nothing to cut. */
   readonly noCutNeeded: boolean;
 }
@@ -573,6 +587,8 @@ export interface CutDiagram {
   readonly hasGrain: boolean;
   /** Width of the saw cut left between pieces. */
   readonly kerf: Ticks;
+  /** The saw this sheet or board is cut with (rule T7). */
+  readonly saw: ToolId;
   /** For a sheet: which cuts come first (rules C4, T4). */
   readonly order: 'sectionsFirst' | 'longCutsFirst';
   readonly pieces: readonly CutPiece[];
