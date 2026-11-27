@@ -3,10 +3,11 @@ import type { PlanResult, ResolvedInput, VanityDesign } from '../engine/types';
 import { formatLength } from '../engine/units';
 import { choiceWords, fmt } from './format';
 import { toolList } from '../engine/defaults/tools';
-import type { PanelMethod, ToolId } from '../engine/types';
+import type { Approach, PanelMethod, ToolId } from '../engine/types';
 import { glossary } from './glossary';
 import { LengthField } from './LengthField';
-import { type Checked, fromProjectText, isChangeable, startingDesign, toProjectFile, withChange, withPanelMethod, withTool } from './project';
+import { type Checked, fromProjectText, isChangeable, startingDesign, toProjectFile, withApproach, withChange, withPanelMethod, withTool } from './project';
+import { Icon } from './steps/icons';
 
 interface Props {
   readonly design: VanityDesign;
@@ -64,7 +65,14 @@ function Row({ input, design, onChange }: { input: ResolvedInput } & Pick<Props,
 export function ChoicesTab({ design, plan, onChange, checked, onReplace }: Props) {
   const [importError, setImportError] = useState('');
   // Tools and the panel method have their own controls below.
-  const listed = plan.inputs.filter((i) => !i.path.startsWith('tools.') && i.path !== 'fronts.panelMethod');
+  const listed = plan.inputs.filter((i) => !i.path.startsWith('tools.') && i.path !== 'fronts.panelMethod' && i.path !== 'approach');
+  const approach = (plan.inputs.find((i) => i.path === 'approach')?.value ?? 'useWhatIOwn') as Approach;
+  const approaches: readonly [Approach, string, string, string][] = [
+    ['useWhatIOwn', 'Use what I own', 'Buys as little as possible.', 'measuring'],
+    ['easiest', 'Easiest method', 'The most forgiving way to do each job.', 'glue'],
+    ['professional', 'Professional finish', 'The neatest result, even if it means buying a tool.', 'router'],
+  ];
+  const buying = plan.tools.filter((t) => t.status === 'buyOrBorrow').map((t) => t.name);
   const has = (id: ToolId) => plan.inputs.find((i) => i.path === `tools.${id}`)?.value === true;
   const chosenPanel = (plan.inputs.find((i) => i.path === 'fronts.panelMethod')?.value ?? 'auto') as 'auto' | PanelMethod;
   const panelOptions: readonly ['auto' | PanelMethod, string, string][] = [
@@ -109,6 +117,26 @@ export function ChoicesTab({ design, plan, onChange, checked, onReplace }: Props
   return (
     <>
       <section>
+        <h2>How should the plan choose?</h2>
+        <ul className="approaches">
+          {approaches.map(([value, name, note, icon]) => (
+            <li key={value}>
+              <button type="button" aria-pressed={approach === value} onClick={() => onChange(withApproach(design, value))}>
+                <Icon id={icon} />
+                <span>
+                  <strong>{name}</strong>
+                  <span className="hint">{note}</span>
+                </span>
+              </button>
+            </li>
+          ))}
+        </ul>
+        <p>
+          <strong>To buy or borrow now:</strong> {buying.length > 0 ? buying.join(', ') : 'nothing'}.
+        </p>
+      </section>
+
+      <section>
         <h2>Your tools</h2>
         <p>Tick what you have. The plan picks its methods to suit, and tells you if it needs something you do not have.</p>
         <ul className="toolTicks">
@@ -116,6 +144,7 @@ export function ChoicesTab({ design, plan, onChange, checked, onReplace }: Props
             <li key={tool.id}>
               <label>
                 <input type="checkbox" checked={has(tool.id)} onChange={(e) => onChange(withTool(design, tool.id, e.target.checked))} />
+                <Icon id={tool.id} />
                 <span>
                   <strong>{tool.name}</strong>
                   <span className="hint">{tool.changes}</span>

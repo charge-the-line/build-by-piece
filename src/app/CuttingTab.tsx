@@ -1,20 +1,27 @@
+import { useState } from 'react';
 import type { CutDiagram, CutStep, Part, PlanResult, VanityDesign } from '../engine/types';
 import { formatLength, incrementTicks } from '../engine/units';
 import { colorOf, fmt } from './format';
 import { LengthField } from './LengthField';
+import { cutKey, progressOf } from './progress';
 import { withChange } from './project';
+import { Icon, toolLabel } from './steps/icons';
 
 interface Props {
   readonly design: VanityDesign;
   readonly plan: PlanResult;
   readonly onChange: (design: VanityDesign) => void;
-  /** On paper: no text boxes, and every cut list opened out. */
+  readonly checked: Readonly<Record<string, boolean>>;
+  readonly onCheck: (key: string, value: boolean) => void;
+  /** On paper: no text boxes, every list opened out, empty tick boxes. */
   readonly forPrint?: boolean;
 }
 
 // One drawing unit is one tape mark, so every shape is an exact whole number.
 const mark = incrementTicks('1/16in');
 const u = (ticks: number) => ticks / mark;
+/** A size without the inch marks, so two fit on a piece: 58 1/4 × 20. */
+const bare = (ticks: number) => fmt(ticks as never).replace('"', '');
 
 const HATCH = 'offcutHatch';
 
@@ -29,8 +36,15 @@ function Hatch() {
   );
 }
 
+interface PictureProps {
+  readonly diagram: CutDiagram;
+  readonly parts: ReadonlyMap<string, Part>;
+  /** Which pieces (by their place in the diagram) are already cut. */
+  readonly cut: ReadonlySet<number>;
+}
+
 /** A sheet, drawn to scale with its length running down the screen. */
-function SheetPicture({ diagram, parts }: { diagram: CutDiagram; parts: ReadonlyMap<string, Part> }) {
+function SheetPicture({ diagram, parts, cut }: PictureProps) {
   const width = u(diagram.stockWidth);
   const length = u(diagram.stockLength);
   const margin = 70;
@@ -57,14 +71,22 @@ function SheetPicture({ diagram, parts }: { diagram: CutDiagram; parts: Readonly
         const turn = w < 110 && h > w;
         const room = turn ? w : Math.min(w * 0.4, h);
         const fontSize = Math.min(44, room * 0.8);
+        // The size goes under the part number when the piece is big enough to hold both.
+        const showSize = !turn && w >= 230 && h >= 120;
         return (
-          <g key={`p${i}`}>
+          <g key={`p${i}`} className={cut.has(i) ? 'isCut' : undefined}>
             <rect x={u(p.fromEdge)} y={u(p.fromEnd)} width={w} height={h} fill={color.hex} className="piece" />
             {fontSize >= 20 && (
-              <text x={cx} y={cy} textAnchor="middle" dominantBaseline="central" fontSize={fontSize} fontWeight={700} fill={color.textHex} transform={turn ? `rotate(-90 ${cx} ${cy})` : undefined}>
+              <text x={cx} y={showSize ? cy - 18 : cy} textAnchor="middle" dominantBaseline="central" fontSize={fontSize} fontWeight={700} fill={color.textHex} transform={turn ? `rotate(-90 ${cx} ${cy})` : undefined}>
                 {p.partId}
               </text>
             )}
+            {showSize && (
+              <text x={cx} y={cy + 24} textAnchor="middle" dominantBaseline="central" fontSize={28} fontWeight={700} fill={color.textHex}>
+                {bare(p.along)} × {bare(p.across)}
+              </text>
+            )}
+            {cut.has(i) && <path d={`M ${cx - 22} ${cy} l 14 16 l 30 -34`} className="cutTick" />}
           </g>
         );
       })}
@@ -82,9 +104,9 @@ function SheetPicture({ diagram, parts }: { diagram: CutDiagram; parts: Readonly
 }
 
 /** A board, drawn to scale along its length. Its width is drawn larger so labels fit. */
-function BoardPicture({ diagram, parts }: { diagram: CutDiagram; parts: ReadonlyMap<string, Part> }) {
+function BoardPicture({ diagram, parts, cut }: PictureProps) {
   const length = u(diagram.stockLength);
-  const height = 150;
+  const height = 190;
   return (
     <svg viewBox={`-10 -10 ${length + 20} ${height + 20}`} role="img" aria-label={`${diagram.title}: ${diagram.pieces.length} pieces. The cuts are listed below.`}>
       <Hatch />
@@ -102,14 +124,21 @@ function BoardPicture({ diagram, parts }: { diagram: CutDiagram; parts: Readonly
       {diagram.pieces.map((p, i) => {
         const color = colorOf(parts.get(p.partId)!.colorRole);
         const w = u(p.along);
+        const cx = u(p.fromEnd) + w / 2;
         return (
-          <g key={`p${i}`}>
+          <g key={`p${i}`} className={cut.has(i) ? 'isCut' : undefined}>
             <rect x={u(p.fromEnd)} y={0} width={w} height={height} fill={color.hex} className="piece" />
             {w >= 130 && (
-              <text x={u(p.fromEnd) + w / 2} y={height / 2} textAnchor="middle" dominantBaseline="central" fontSize={60} fontWeight={700} fill={color.textHex}>
+              <text x={cx} y={height * 0.36} textAnchor="middle" dominantBaseline="central" fontSize={58} fontWeight={700} fill={color.textHex}>
                 {p.partId}
               </text>
             )}
+            {w >= 150 && (
+              <text x={cx} y={height * 0.74} textAnchor="middle" dominantBaseline="central" fontSize={44} fontWeight={700} fill={color.textHex}>
+                {bare(p.along)}
+              </text>
+            )}
+            {cut.has(i) && <path d={`M ${cx - 30} ${height / 2} l 20 24 l 44 -50`} className="cutTick" />}
           </g>
         );
       })}
@@ -117,65 +146,88 @@ function BoardPicture({ diagram, parts }: { diagram: CutDiagram; parts: Readonly
   );
 }
 
-/** Written templates, filled in with this plan's numbers. */
-function sentence(step: CutStep, diagram: CutDiagram, parts: ReadonlyMap<string, Part>, boardSaw: string): string {
-  const size = fmt(step.measure);
+/** Short written templates, filled in with this plan's numbers. The size comes first, in bold. */
+function CutLine({ step, diagram, parts }: { step: CutStep; diagram: CutDiagram; parts: ReadonlyMap<string, Part> }) {
+  const size = <strong>{fmt(step.measure)}</strong>;
   const part = step.partId ? parts.get(step.partId) : undefined;
-  const named = part ? `${part.id} ${part.name}` : step.makes;
+  const result = <strong>{part ? part.id : step.makes}</strong>;
+  if (step.noCutNeeded) {
+    return (
+      <>
+        No cut: what is left of {step.from} is {result}.
+      </>
+    );
+  }
   if (step.kind === 'section') {
-    return step.noCutNeeded
-      ? `What is left of the sheet is ${step.makes}. No cut needed.`
-      : `Measure ${size} from the end of the sheet and cut straight across, across the grain. This piece is ${step.makes}.`;
+    return (
+      <>
+        {size} from the end, straight across → {result}
+      </>
+    );
   }
   if (step.kind === 'strip') {
-    return step.noCutNeeded
-      ? `What is left of ${step.from} is ${step.makes}. No cut needed.`
-      : step.from === 'the sheet'
-        ? `Measure ${size} from the edge of the sheet and cut the full length, along the grain. This is ${step.makes}.`
-        : `On ${step.from}, measure ${size} from the edge and cut along the grain. This is ${step.makes}.`;
+    return (
+      <>
+        {step.from === 'the sheet' ? 'Full length' : step.from.replace('section', 'Section')}: {size} from the edge, along the grain → {result}
+      </>
+    );
   }
-  if (diagram.kind === 'board') {
-    return step.noCutNeeded
-      ? `What is left of the board is ${named}. No cut needed.`
-      : `Measure ${size} from the end and cut ${boardSaw}. This is ${named}.`;
-  }
-  return step.noCutNeeded
-    ? `What is left of ${step.from} is ${size} long. It is ${named}. No cut needed.`
-    : `Measure ${size} along ${step.from} and cut. This is ${named}.`;
+  return diagram.kind === 'board' ? (
+    <>
+      {size} from the end → {result}
+    </>
+  ) : (
+    <>
+      {step.from.replace('strip', 'Strip')}: cut at {size} → {result}
+    </>
+  );
 }
 
-function Diagram({ diagram, parts, open, boardSaw }: { diagram: CutDiagram; parts: ReadonlyMap<string, Part>; open: boolean; boardSaw: string }) {
+function Diagram({ diagram, parts, checked, onCheck, forPrint }: { diagram: CutDiagram; parts: ReadonlyMap<string, Part> } & Pick<Props, 'checked' | 'onCheck' | 'forPrint'>) {
+  const [zoomed, setZoomed] = useState(false);
   const kept = diagram.offcuts.filter((o) => o.label);
+  const cut = new Set(diagram.steps.filter((s) => s.pieceIndex !== undefined && checked[cutKey(diagram, s)]).map((s) => s.pieceIndex!));
   return (
     <article className="diagram">
       <h3>{diagram.title}</h3>
-      <p className="hint">
-        {diagram.kind === 'sheet'
-          ? `${fmt(diagram.stockLength)} long × ${fmt(diagram.stockWidth)} wide. Drawn to scale.`
-          : `${fmt(diagram.stockLength)} long. Length is to scale; the width is drawn larger so the numbers fit.`}
+      <p className="cutWith">
+        <Icon id={diagram.saw} />
+        <span>
+          {toolLabel(diagram.saw)}
+          <span className="hint">
+            {diagram.kind === 'sheet' ? `${fmt(diagram.stockLength)} × ${fmt(diagram.stockWidth)}, to scale` : `${fmt(diagram.stockLength)} long; width drawn larger`}
+          </span>
+        </span>
       </p>
-      {diagram.kind === 'sheet' ? <SheetPicture diagram={diagram} parts={parts} /> : <BoardPicture diagram={diagram} parts={parts} />}
-      <details open={open || diagram.kind === 'board'}>
-        <summary>
-          {diagram.steps.length} {diagram.steps.length === 1 ? 'step' : 'steps'}, in order
-        </summary>
-        <ol className="cuts">
-          {diagram.steps.map((step) => (
-            <li key={step.number}>{sentence(step, diagram, parts, boardSaw)}</li>
-          ))}
-        </ol>
-      </details>
-      {kept.length > 0 && (
-        <p className="hint">
-          Worth keeping:{' '}
-          {kept.map((o) => `${o.label} (${fmt(o.along)} × ${fmt(o.across)})`).join(', ')}. Striped areas are leftovers.
-        </p>
+      <div className={zoomed ? 'zoomBox zoomed' : 'zoomBox'}>
+        {diagram.kind === 'sheet' ? <SheetPicture diagram={diagram} parts={parts} cut={cut} /> : <BoardPicture diagram={diagram} parts={parts} cut={cut} />}
+      </div>
+      {!forPrint && diagram.kind === 'sheet' && (
+        <button type="button" className="quiet" aria-pressed={zoomed} onClick={() => setZoomed(!zoomed)}>
+          {zoomed ? 'Make the picture smaller' : 'Make the picture bigger'}
+        </button>
       )}
+      <ol className="cutList">
+        {diagram.steps.map((step) => {
+          const key = cutKey(diagram, step);
+          return (
+            <li key={step.number}>
+              <label>
+                <input type="checkbox" checked={!forPrint && (checked[key] ?? false)} onChange={(e) => onCheck(key, e.target.checked)} />
+                <span>
+                  <CutLine step={step} diagram={diagram} parts={parts} />
+                </span>
+              </label>
+            </li>
+          );
+        })}
+      </ol>
+      {kept.length > 0 && <p className="hint">Keep: {kept.map((o) => `${o.label} (${fmt(o.along)} × ${fmt(o.across)})`).join(', ')}.</p>}
     </article>
   );
 }
 
-export function CuttingTab({ design, plan, onChange, forPrint = false }: Props) {
+export function CuttingTab({ design, plan, onChange, checked, onCheck, forPrint = false }: Props) {
   if (!plan.canGeneratePlan) {
     return (
       <section>
@@ -188,15 +240,14 @@ export function CuttingTab({ design, plan, onChange, forPrint = false }: Props) 
   const toCheck = plan.inputs.filter((i) => i.path.startsWith('measuredThickness.') && typeof i.value === 'number');
   const kerf = plan.cutDiagrams[0]?.kerf;
   const materials = [...new Set(plan.cutDiagrams.map((d) => d.materialId))];
-  const boardSaw = plan.methods?.boardSaw === 'mitreSaw' ? 'with the mitre saw' : 'with the circular saw and a square';
-  const longCuts = plan.cutDiagrams.some((d) => d.order === 'longCutsFirst');
+  const { cut } = progressOf(plan, checked);
 
   return (
     <>
       {!forPrint && (
         <section className="beforeCut">
           <h2>Before you cut</h2>
-          <p>Measure how thick your plywood really is. If it is different, type what you measure and every size updates.</p>
+          <p>Measure how thick your plywood really is. If it differs, type it in and every size updates.</p>
           {toCheck.map((input) => (
             <LengthField
               key={input.path}
@@ -210,13 +261,20 @@ export function CuttingTab({ design, plan, onChange, forPrint = false }: Props) 
       )}
 
       <section className="cuttingIntro">
-        <h2>Cutting diagrams</h2>
+        <h2>Cutting</h2>
+        {!forPrint && (
+          <>
+            <progress value={cut.done} max={cut.total} aria-label={`${cut.done} of ${cut.total} pieces cut`} />
+            <p className="hint">
+              {cut.done} of {cut.total} pieces cut
+            </p>
+          </>
+        )}
         <p>
-          One picture for each sheet and board on the shopping list. Each cut is measured from the fresh edge the
-          last cut left{kerf ? `, and ${fmt(kerf)} is allowed for the saw blade between pieces` : ''}. Write the part
-          number on each piece as you cut it.
+          Measure each cut from the fresh edge. Tick it when it is done, and write the part number on the piece.
+          {kerf ? ` The plan allows ${fmt(kerf)} for the blade.` : ''}
         </p>
-        {longCuts && <p>With the track saw, some sheets are cut into full-length strips first because that saves a sheet.</p>}
+        {plan.cutDiagrams.some((d) => d.order === 'longCutsFirst') && <p>With the track saw, some sheets are cut into full-length strips first because that saves a sheet.</p>}
       </section>
 
       {materials.map((id) => (
@@ -224,7 +282,7 @@ export function CuttingTab({ design, plan, onChange, forPrint = false }: Props) 
           {plan.cutDiagrams
             .filter((d) => d.materialId === id)
             .map((d) => (
-              <Diagram key={d.id} diagram={d} parts={parts} open={forPrint} boardSaw={boardSaw} />
+              <Diagram key={d.id} diagram={d} parts={parts} checked={checked} onCheck={onCheck} forPrint={forPrint} />
             ))}
         </section>
       ))}

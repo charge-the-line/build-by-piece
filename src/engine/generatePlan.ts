@@ -54,6 +54,8 @@ export const generatePlan: GeneratePlan = (design, defaults, catalog) => {
     kerf: resolved.kerf.value,
     keepOffcutsFrom: resolved.keepOffcutsFrom.value,
     allowLongCutsFirst: methods.sheetSaw === 'trackSaw',
+    sheetSaw: methods.sheetSaw,
+    boardSaw: methods.boardSaw,
   });
 
   const assembly = assemble(resolved, built, methods, catalog);

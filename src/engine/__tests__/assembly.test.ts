@@ -365,7 +365,7 @@ describe('tools for this plan (rules T1, T2)', () => {
   });
 
   it('lists the tools the chosen methods use, and not the ones they do not', () => {
-    const ids = result.tools.filter((t) => t.kind === 'tool').map((t) => t.id);
+    const ids = result.tools.filter((t) => t.kind === 'tool' && t.status !== 'optional').map((t) => t.id);
     expect(ids).toEqual(expect.arrayContaining(['measuring', 'clamps', 'drill', 'pocketHoleJig', 'circularSaw', 'mitreSaw', 'jigsaw', 'router', 'hammer', 'sandingBlock']));
     for (const unused of ['tableSaw', 'trackSaw', 'holeSaw', 'bradNailer', 'sander']) expect(ids).not.toContain(unused);
     for (const t of result.tools) expect(t.usedFor.length, t.name).toBeGreaterThan(0);
@@ -485,7 +485,7 @@ describe('panel on the back, with neither router nor table saw (rules D8, D10)',
   it('is chosen automatically and needs no extra tool', () => {
     expect(r.methods?.panel).toBe('panelOnBack');
     expect(problems(r)).toEqual([]);
-    expect(r.tools.map((t) => t.id)).not.toContain('router');
+    expect(r.tools.filter((t) => t.status !== 'optional').map((t) => t.id)).not.toContain('router');
     expect(r.steps.filter((s) => s.chapter === 'fronts').map((s) => s.templateId).slice(0, 2)).toEqual(['frontFrame', 'frontPanelOnBack']);
   });
 
@@ -583,7 +583,7 @@ describe('breaking down plywood with a track saw (rule T4)', () => {
   // Six pieces whose lengths pair up to fill a sheet end to end, but which need
   // more than one sheet if the sheet is first cut into sections.
   const parts = [piece('P01', '60'), piece('P02', '55'), piece('P03', '50'), piece('P04', '45'), piece('P05', '40'), piece('P06', '35')];
-  const options = { kerf: inches('1/8'), keepOffcutsFrom: inches('6') };
+  const options = { kerf: inches('1/8'), keepOffcutsFrom: inches('6'), sheetSaw: 'circularSaw', boardSaw: 'mitreSaw' } as const;
   const sectionsFirst = cutDiagrams(parts, defaultCatalog, { ...options, allowLongCutsFirst: false });
   const withTrackSaw = cutDiagrams(parts, defaultCatalog, { ...options, allowLongCutsFirst: true });
 
@@ -614,5 +614,67 @@ describe('breaking down plywood with a track saw (rule T4)', () => {
     expect(r.materials).toEqual(result.materials);
     expect(tool(r, 'trackSaw')?.status).toBe('have');
     expect(tool(r, 'circularSaw')).toBeUndefined();
+  });
+});
+
+describe('three approaches (rule T9)', () => {
+  const approach = (value: 'useWhatIOwn' | 'easiest' | 'professional', changes: Partial<Record<ToolId, boolean>> = {}) =>
+    plan(vanityWith({}, { ...ticks(changes), approach: userChoice(value) }));
+  const toBuy = (r: PlanResult) => r.tools.filter((t) => t.status === 'buyOrBorrow').map((t) => t.id).sort();
+
+  it('uses what she owns by default, buying as little as possible', () => {
+    expect(result.inputs.find((i) => i.path === 'approach')).toMatchObject({ value: 'useWhatIOwn', origin: 'appDefault' });
+    expect(approach('useWhatIOwn').parts).toEqual(result.parts);
+    expect(approach('useWhatIOwn').methods).toEqual(result.methods);
+    expect(toBuy(result)).toEqual(['clamps']);
+  });
+
+  it('picks the most forgiving methods for "easiest", whatever she owns', () => {
+    const r = approach('easiest');
+    expect(r.methods).toMatchObject({ panel: 'panelOnBack', cutouts: 'jigsaw', nailing: 'hammer', sanding: 'sandingBlock' });
+    expect(toBuy(r)).toEqual(['clamps']);
+    expect(approach('easiest', { holeSaw: true }).methods?.cutouts).toBe('jigsaw');
+    checkPlacements(r, 'easiest:');
+  });
+
+  it('picks the neatest methods for "professional", and lists what to buy', () => {
+    const r = approach('professional', { router: false });
+    expect(r.methods).toMatchObject({ panel: 'routedRecess', cutouts: 'holeSaw', nailing: 'bradNailer', sanding: 'sander' });
+    expect(toBuy(r)).toEqual(['bradNailer', 'clamps', 'holeSaw', 'router', 'sander']);
+    expect(r.canGeneratePlan).toBe(true);
+    expect(tool(r, 'bit-recess')).toBeDefined();
+  });
+
+  it('lets her own choice of panel method win over the approach', () => {
+    const r = plan(vanityWith({}, { approach: userChoice('easiest'), fronts: { panelMethod: userChoice('stoppedGroove') } }));
+    expect(r.methods?.panel).toBe('stoppedGroove');
+  });
+
+  it('lists tools that are optional: not needed, but they would help', () => {
+    const optional = (r: PlanResult) => r.tools.filter((t) => t.status === 'optional').map((t) => t.id).sort();
+    expect(optional(result)).toEqual(['bradNailer', 'holeSaw', 'sander']);
+    expect(optional(approach('easiest', { router: false }))).toContain('router');
+    expect(optional(approach('professional'))).toEqual([]);
+    for (const t of result.tools.filter((x) => x.status === 'optional')) expect(t.usedFor[0]!.length).toBeGreaterThan(10);
+  });
+});
+
+describe('cutting diagrams for the picture screen', () => {
+  it('links every piece-cutting step to its piece in the picture', () => {
+    for (const d of result.cutDiagrams) {
+      const pieceSteps = d.steps.filter((s) => s.kind === 'piece');
+      expect(pieceSteps.map((s) => s.pieceIndex).sort((a, b) => a! - b!), d.title).toEqual(d.pieces.map((_, i) => i));
+      for (const s of pieceSteps) {
+        expect(d.pieces[s.pieceIndex!]!.partId, d.title).toBe(s.partId);
+        expect(d.pieces[s.pieceIndex!]!.along, d.title).toBe(s.measure);
+      }
+    }
+  });
+
+  it('names the saw for every sheet and board', () => {
+    expect([...new Set(result.cutDiagrams.filter((d) => d.kind === 'sheet').map((d) => d.saw))]).toEqual(['circularSaw']);
+    expect([...new Set(result.cutDiagrams.filter((d) => d.kind === 'board').map((d) => d.saw))]).toEqual(['mitreSaw']);
+    const noMitre = withTools({ mitreSaw: false, trackSaw: true });
+    expect([...new Set(noMitre.cutDiagrams.map((d) => d.saw))].sort()).toEqual(['circularSaw', 'trackSaw']);
   });
 });

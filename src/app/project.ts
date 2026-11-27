@@ -6,7 +6,7 @@ import { useEffect, useState } from 'react';
 import { defaultCatalog } from '../engine/defaults/catalog';
 import { userChoice, userEntered } from '../engine/defaults/values';
 import { vanity01 } from '../engine/fixtures/vanity-01';
-import type { EndCondition, PanelMethod, ProjectFile, ToolId, VanityDesign } from '../engine/types';
+import type { Approach, EndCondition, PanelMethod, ProjectFile, ToolId, VanityDesign } from '../engine/types';
 
 const STORAGE_KEY = 'build-by-piece:project';
 
@@ -44,34 +44,86 @@ export function fromProjectText(text: string): Project | undefined {
   }
 }
 
-function load(): Project {
-  const fresh: Project = { design: startingDesign, checked: {} };
+/** Every project on this device, and which one is open. */
+interface Shelf {
+  readonly currentId: string;
+  readonly projects: readonly Project[];
+}
+
+const SHELF_KEY = 'build-by-piece:projects';
+
+function loadShelf(): Shelf {
+  const fresh: Shelf = { currentId: startingDesign.id, projects: [{ design: startingDesign, checked: {} }] };
   try {
-    const saved = localStorage.getItem(STORAGE_KEY);
-    return (saved && fromProjectText(saved)) || fresh;
+    const saved = localStorage.getItem(SHELF_KEY);
+    if (saved) {
+      const parsed = JSON.parse(saved) as { currentId?: unknown; projects?: unknown };
+      const projects = (Array.isArray(parsed.projects) ? parsed.projects : [])
+        .filter((p): p is Project => typeof p === 'object' && p !== null && isDesign((p as Project).design))
+        .map((p) => ({ design: p.design, checked: typeof p.checked === 'object' && p.checked !== null ? p.checked : {} }));
+      const first = projects[0];
+      if (first) {
+        const currentId = projects.some((p) => p.design.id === parsed.currentId) ? (parsed.currentId as string) : first.design.id;
+        return { currentId, projects };
+      }
+    }
+    // From before there could be more than one project.
+    const single = localStorage.getItem(STORAGE_KEY);
+    const old = single ? fromProjectText(single) : undefined;
+    return old ? { currentId: old.design.id, projects: [old] } : fresh;
   } catch {
     return fresh;
   }
 }
 
 export function useProject() {
-  const [project, setProject] = useState<Project>(load);
+  const [shelf, setShelf] = useState<Shelf>(loadShelf);
+  const project = shelf.projects.find((p) => p.design.id === shelf.currentId) ?? shelf.projects[0]!;
 
   useEffect(() => {
     try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(toProjectFile(project.design, project.checked)));
+      localStorage.setItem(SHELF_KEY, JSON.stringify(shelf));
     } catch {
-      // Private browsing or a full disk: the project still works, it just is not saved.
+      // Private browsing or a full disk: the projects still work, they just are not saved.
     }
-  }, [project]);
+  }, [shelf]);
+
+  const update = (change: (p: Project) => Project) =>
+    setShelf((s) => ({ ...s, projects: s.projects.map((p) => (p.design.id === s.currentId ? change(p) : p)) }));
 
   return {
     design: project.design,
     checked: project.checked,
-    setDesign: (design: VanityDesign) => setProject((p) => ({ ...p, design })),
-    setChecked: (key: string, value: boolean) => setProject((p) => ({ ...p, checked: { ...p.checked, [key]: value } })),
-    /** Replaces everything, as when a backup file is opened or the project is started over. */
-    replace: (next: Project) => setProject(next),
+    setDesign: (design: VanityDesign) => update((p) => ({ ...p, design })),
+    setChecked: (key: string, value: boolean) => update((p) => ({ ...p, checked: { ...p.checked, [key]: value } })),
+    /** Replaces the open project, as when a backup file is opened or it is started over. Keeps its place on the shelf. */
+    replace: (next: Project) => update((p) => ({ design: { ...next.design, id: p.design.id }, checked: next.checked })),
+
+    projects: shelf.projects.map((p) => ({ id: p.design.id, name: p.design.name, size: `${p.design.width.entered}" × ${p.design.depth.entered}" × ${p.design.height.entered}"` })),
+    currentId: project.design.id,
+    open: (id: string) => setShelf((s) => ({ ...s, currentId: id })),
+    rename: (name: string) => update((p) => ({ ...p, design: { ...p.design, name } })),
+    /** A new vanity. It keeps the open project's tools and approach, so the tool list is only set up once. */
+    create: () =>
+      setShelf((s) => {
+        const taken = new Set(s.projects.map((p) => p.design.id));
+        let n = s.projects.length + 1;
+        while (taken.has(`project-${n}`)) n += 1;
+        const { tools, approach } = project.design.overrides;
+        const design: VanityDesign = {
+          ...startingDesign,
+          id: `project-${n}`,
+          name: `Bathroom vanity ${n}`,
+          overrides: { ...startingDesign.overrides, ...(tools ? { tools } : {}), ...(approach ? { approach } : {}) },
+        };
+        return { currentId: design.id, projects: [...s.projects, { design, checked: {} }] };
+      }),
+    remove: (id: string) =>
+      setShelf((s) => {
+        const projects = s.projects.filter((p) => p.design.id !== id);
+        if (projects.length === 0) return s; // always keep one
+        return { currentId: s.currentId === id ? projects[0]!.design.id : s.currentId, projects };
+      }),
   };
 }
 
@@ -89,6 +141,12 @@ export const withEnd = (design: VanityDesign, side: 'left' | 'right', value: End
 export const withTool = (design: VanityDesign, tool: ToolId, has: boolean): VanityDesign => ({
   ...design,
   overrides: { ...design.overrides, tools: { ...design.overrides.tools, [tool]: userChoice(has) } },
+});
+
+/** Picks how the plan chooses its methods (rule T9). */
+export const withApproach = (design: VanityDesign, approach: Approach): VanityDesign => ({
+  ...design,
+  overrides: { ...design.overrides, approach: userChoice(approach) },
 });
 
 /** Picks how framed fronts hold their panel, or hands the choice back to the app. */
