@@ -6,6 +6,8 @@ Rule numbers refer to [RULES.md](RULES.md).
 
 Nothing blocks the next piece of work.
 
+**Kitchen run:** Max approved [RUN-PROPOSAL.md](RUN-PROPOSAL.md) with the default for every question and said to use test data, so it is built against a made-up 120" wall.
+
 **Kitchen cabinets:** Max approved [CABINETS-PROPOSAL.md](CABINETS-PROPOSAL.md) with the default for every question and said to use test data, so stage 1 is built against standard made-up sizes. When there are real sizes from Ashley's kitchen, add them as fixtures.
 
 Two earlier readings are still unconfirmed and are built as described:
@@ -28,7 +30,7 @@ Done since then (Phase 7): Cutting screen with sizes on pieces, the saw for each
 
 Still to do from her feedback:
 
-1. Kitchen stage 2 (a run of cabinets along a wall, shared platform and shopping) and stage 3 (a room). Other project types after that. Each needs its rules agreed first.
+1. Kitchen stage 3: corners, uppers over a run, and a room. Other project types after that. Each needs its rules agreed first.
 2. Wood species and finishes per component, with previews.
 3. Cabinet numbers with part letters (C01-A), once there is more than one cabinet in a project.
 4. Prices, an interactive 3D view and AI features: undecided, and not started.

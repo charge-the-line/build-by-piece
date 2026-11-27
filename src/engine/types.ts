@@ -316,8 +316,11 @@ export interface PlanTool {
   readonly cut?: { readonly kind: 'recess' | 'groove'; readonly width: Ticks; readonly depth: Ticks };
 }
 
-/** wall = that end touches a wall; exposed = that end will be seen. */
-export type EndCondition = 'wall' | 'exposed';
+/**
+ * wall = that end touches a wall; exposed = that end will be seen;
+ * joined = that end meets the next cabinet in a run (rule R3). Only a run sets "joined".
+ */
+export type EndCondition = 'wall' | 'exposed' | 'joined';
 
 export type JoineryMethod = 'pocketHolesAndGlue';
 
@@ -469,15 +472,74 @@ export interface VanityDesign {
   readonly overrides: Overrides<VanityOptions>;
 }
 
-/** Other cabinet types join this union later. */
-export type Design = VanityDesign;
+// ---------------------------------------------------------------------------
+// A run of cabinets along one wall (section R)
+// ---------------------------------------------------------------------------
+
+export type ApplianceType = 'range' | 'dishwasher' | 'fridge';
+
+/** One thing along the wall, left to right. A width is only stored if she fixed it (rule R2). */
+export type RunItem =
+  | { readonly id: string; readonly kind: 'cabinet'; readonly cabinet: 'base' | 'drawerBase' | 'sinkBase'; readonly width?: Measurement }
+  | { readonly id: string; readonly kind: 'appliance'; readonly appliance: ApplianceType; readonly width?: Measurement };
+
+export interface RunDesign {
+  readonly projectType: 'run';
+  readonly id: string;
+  readonly name: string;
+  /** The whole run, end to end (rule R1). */
+  readonly length: Measurement;
+  /** Shared by every cabinet in the run; they mean what they mean for one cabinet (rule G2). */
+  readonly depth: Measurement;
+  readonly height: Measurement;
+  readonly items: readonly RunItem[];
+  /** Only what she changed from the defaults. Shared by every cabinet in the run. */
+  readonly overrides: Overrides<VanityOptions>;
+}
+
+export type Design = VanityDesign | RunDesign;
+
+/** What a run tells each of its cabinets, in place of what a lone cabinet works out for itself. */
+export interface PlanContext {
+  /** The width the run gave this cabinet (rule R2). */
+  readonly width?: Ticks;
+  readonly ends?: { readonly left: EndCondition; readonly right: EndCondition };
+  /** Part numbers start with this instead of "P": "C01-" (rule R5). */
+  readonly idPrefix?: `C${string}`;
+  /** The run builds one platform for the stretch, so the cabinet builds none (rule R4). */
+  readonly sharedPlatform?: boolean;
+}
+
+/** One cabinet's place in a run. */
+export interface RunCabinet {
+  /** C01, C02, ... left to right. */
+  readonly id: string;
+  readonly itemId: string;
+  readonly kind: CabinetType;
+  readonly name: string;
+  readonly left: Ticks;
+  readonly width: Ticks;
+}
+
+/** A space left for an appliance. */
+export interface RunSpace {
+  readonly itemId: string;
+  readonly appliance: ApplianceType;
+  readonly name: string;
+  readonly left: Ticks;
+  readonly width: Ticks;
+}
 
 // ---------------------------------------------------------------------------
 // Output — parts
 // ---------------------------------------------------------------------------
 
-/** Stable ID printed on every list, diagram and step: P01, P02, ... */
-export type PartId = `P${string}`;
+/**
+ * Stable ID printed on every list, diagram and step: P01, P02, ... for a
+ * single cabinet; C01-01 for a cabinet in a run; R-01 for a run's platform
+ * and toe kick (rule R5).
+ */
+export type PartId = `${'P' | 'C' | 'R'}${string}`;
 
 export type GrainDirection = 'alongLength' | 'alongWidth' | 'none';
 
@@ -781,6 +843,8 @@ export interface Step {
   readonly id: string;
   readonly number: number;
   readonly chapter: StepChapter;
+  /** In a run: which cabinet this step builds. Absent for steps that deal with the whole run. */
+  readonly cabinet?: { readonly id: string; readonly name: string };
   /**
    * cabinet: drawn in place in the cabinet, with what is already there.
    * bench:   a sub-assembly built on its own (the face frame, a drawer box, a door).
@@ -836,6 +900,8 @@ export interface PlanResult {
   readonly issues: readonly ValidationIssue[];
   /** False when any issue has severity "error"; everything below is then empty. */
   readonly canGeneratePlan: boolean;
+  /** For a run: where each cabinet and appliance space sits along the wall. */
+  readonly run?: { readonly length: Ticks; readonly cabinets: readonly RunCabinet[]; readonly spaces: readonly RunSpace[] };
   /** Overall sizes worked out from the three numbers. Absent when the plan is blocked. */
   readonly overall?: OverallSizes;
   readonly openings: readonly Opening[];
@@ -868,9 +934,10 @@ export interface OverallSizes {
 
 /** The whole engine, as seen from outside. See generatePlan.ts. */
 export type GeneratePlan = (
-  design: Design,
+  design: VanityDesign,
   defaults: VanityOptions,
   catalog: MaterialCatalog,
+  context?: PlanContext,
 ) => PlanResult;
 
 // ---------------------------------------------------------------------------

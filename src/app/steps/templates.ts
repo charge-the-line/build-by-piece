@@ -55,6 +55,27 @@ export const stepTemplates: Readonly<Record<string, StepTemplate>> = {
     say: (v) => `Screw in ${count(v, 'supports')} more, one every ${size(v, 'spacing')} from the left end.`,
     more: () => ['Mark the centres on both long boards before you start.', 'Keep the tops flush.'],
   },
+  runPlatform: {
+    title: (v) => (count(v, 'sections') > 1 ? `Build platform ${count(v, 'section')} of ${count(v, 'sections')}` : 'Build the platform'),
+    say: (v) => `Stand the two long boards on edge. Screw ${count(v, 'supports')} short supports between them: one at each end, the rest every ${size(v, 'spacing')} from the left.`,
+    more: () => ['Keep the tops flush.', SQUARE, 'Each platform sits under one unbroken stretch of cabinets.'],
+  },
+  runSetCabinet: {
+    title: (v) => `Set cabinet C${String(count(v, 'cabinet')).padStart(2, '0')} in place`,
+    say: (v) =>
+      is(v, 'joins')
+        ? 'Lift it onto the platform, tight against the last cabinet. Clamp the two frames flush and screw them together.'
+        : 'Lift it onto the platform with its back against the wall.',
+    more: (v) => [
+      'This is a two-person lift.',
+      ...(is(v, 'joins') ? ['Line up the front faces and the tops of the two frames before you clamp.', 'Drill through one vertical frame piece into the next, then drive the screws.'] : ['The box overhangs the platform at the front.']),
+    ],
+  },
+  runToeKick: {
+    title: fixed('Cover the platforms'),
+    say: (_v, m) => `Glue the toe kick pieces to the platforms and nail them ${nailIt(m)}. Where an end can be seen, fix the short piece first.`,
+    more: (v) => [`The face of the toe kick sits ${size(v, 'toeSpace')} back from the front of the cabinets.`, 'The long front piece covers the end of the short one.'],
+  },
   boxLeft: {
     title: fixed('Attach the left side'),
     say: () => 'Glue the end of the bottom panel. Screw through its pocket holes into the left side.',

@@ -47,7 +47,8 @@ export function StepView({ plan, step }: Props) {
   return (
     <article className="step">
       <p className="stepMeta">
-        Step {step.number} of {plan.steps.length} · {chapterNames[step.chapter]}
+        Step {step.number} of {plan.steps.length} · {step.cabinet ? `${step.cabinet.id} ${step.cabinet.name} · ` : ''}
+        {chapterNames[step.chapter]}
       </p>
       <h2>{title}</h2>
       {step.repeat > 1 && <p className="repeat">Make {step.repeat} of these</p>}
@@ -81,8 +82,9 @@ export function StepView({ plan, step }: Props) {
         </figure>
       )}
 
-      <h3>Pieces</h3>
-      <ul className="pieceCards">
+      {/* A whole cabinet being moved is one thing to lift, not a list of parts. */}
+      {shown.length <= 8 && <h3>Pieces</h3>}
+      <ul className="pieceCards" hidden={shown.length > 8}>
         {shown.map(({ part, count }) => {
           const color = colorOf(part.colorRole);
           return (
