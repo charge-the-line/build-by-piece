@@ -367,7 +367,7 @@ function planWall(run: RunDesign, defaults: VanityOptions, catalog: MaterialCata
         'RUN_UPPER_WIDTH',
         'W2',
         `${id} ${cabinetKind('upper').name}, over the ${under}, comes out ${text(Math.max(width, 0))} wide, which is too ${width < narrowest ? `narrow to build (the least is ${text(narrowest)})` : `wide to build (the most is ${text(widest)})`}.`,
-        'Leave the space above it empty, or change the width underneath.',
+        corner?.role === 'front' && i === cornerIndex ? 'Make the cabinet under it narrower, or leave the space above it empty. At the corner, this upper is wider than the cabinet under it.' : 'Leave the space above it empty, or change the width underneath.',
         [`uppers.above.${item.id}`, `items.${item.id}.width`],
       );
     }
@@ -678,12 +678,16 @@ function planWall(run: RunDesign, defaults: VanityOptions, catalog: MaterialCata
     return quantity === undefined ? supply : { ...supply, quantity };
   });
 
+  const shown = ({ ends: _ends, blind, ...cabinet }: Unit): RunCabinet => ({
+    ...cabinet,
+    ...(blind ? { hidden: { left: asTicks(blind.side === 'left' ? cabinet.left : cabinet.left + cabinet.width - blind.by), width: blind.by } } : {}),
+  });
   const first = plans[0]!.overall!;
   return {
     inputs,
     issues,
     canGeneratePlan: true,
-    run: { length, cabinets: cabinets.map(({ ends: _ends, ...cabinet }) => cabinet), uppers: uppers.map(({ ends: _ends, ...cabinet }) => cabinet), spaces, above, pictureHeight, ...(uppers.length > 0 ? { upperBottom } : {}) },
+    run: { length, cabinets: cabinets.map(shown), uppers: uppers.map(shown), spaces, above, pictureHeight, ...(uppers.length > 0 ? { upperBottom } : {}) },
     overall: { ...first, frameWidth: length },
     openings,
     parts: allParts,

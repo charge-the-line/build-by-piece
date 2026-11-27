@@ -554,6 +554,8 @@ export interface RunCabinet {
   readonly height: Ticks;
   /** For the drawing: how far its top is below the top of the picture. */
   readonly fromTop: Ticks;
+  /** N3: the part of a corner cabinet's front that is hidden behind the other wall's cabinets. */
+  readonly hidden?: { readonly left: Ticks; readonly width: Ticks };
   readonly itemId: string;
   readonly kind: CabinetType;
   readonly name: string;

@@ -34,6 +34,7 @@ export function FrontView({ plan, wall = 1 }: { plan: PlanResult; wall?: 1 | 2 }
             {[...row.cabinets, ...row.uppers].map((c) => (
               <g key={c.id}>
                 <rect x={u(c.left)} y={u(c.fromTop)} width={u(c.width)} height={u(c.height)} fill={frame.hex} stroke="#000000" strokeWidth={2} />
+                {c.hidden && <rect x={u(c.hidden.left)} y={u(c.fromTop)} width={u(c.hidden.width)} height={u(c.height)} fill={colorOf('support').hex} stroke="#000000" strokeWidth={2} />}
                 {/* Upper numbers go above the picture, base numbers below the floor. */}
                 <text x={u(c.left) + u(c.width) / 2} y={c.row === 'upper' ? -pad * 0.3 : height + pad * 0.85} textAnchor="middle" fontSize={fontSize} fontWeight={700} className="runLabel">
                   {c.id}
@@ -83,6 +84,7 @@ export function FrontView({ plan, wall = 1 }: { plan: PlanResult; wall?: 1 | 2 }
           </ul>
           <p className="note">
             Dashed boxes are spaces for appliances. Each cabinet has its own frame.
+            {row.cabinets.some((c) => c.hidden) ? ' The grey part is hidden behind the cabinets on the other wall.' : ''}
             {plan.run.upperBottom && wall === 1 ? ` The upper cabinets start ${fmt(plan.run.upperBottom.result)} above the floor.` : ''}
           </p>
         </>

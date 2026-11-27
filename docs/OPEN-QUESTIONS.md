@@ -4,7 +4,9 @@ Rule numbers refer to [RULES.md](RULES.md).
 
 ## Waiting on Max
 
-**The corner proposal has seven questions: see [CORNERS-PROPOSAL.md](CORNERS-PROPOSAL.md).** Each has a default, so "keep the defaults" is a fine answer.
+Nothing blocks the next step, but **a room, an island and a cabinet over the range each need a rules proposal** before any code, as before. **Real sizes for Ashley's kitchen** are still wanted: the corner test case is shaped like her kitchen from a photo, with made-up sizes.
+
+**A corner:** Max approved [CORNERS-PROPOSAL.md](CORNERS-PROPOSAL.md) by sending a photo of the kitchen and saying to do whatever is best. Built at the defaults as section N; what changed while building is recorded in the proposal (the gap is 3 1/2", the width of an oak 1x4 as sold).
 
 **Upper cabinets over a run:** Max approved [UPPERS-PROPOSAL.md](UPPERS-PROPOSAL.md): there is a window over the sink (nothing above it), base cabinets first, 18" above the countertop. Questions he did not answer were built at their defaults. Built as section W.
 
@@ -32,7 +34,7 @@ Done since then (Phase 7): Cutting screen with sizes on pieces, the saw for each
 
 Still to do from her feedback:
 
-1. Kitchen stage 3: corners, then a room (uppers over a run are done). Other project types after that. Each needs its rules agreed first.
+1. Kitchen stage 3: a room (uppers over a run and a corner are done). An island, and a cabinet over the range, are in her kitchen and not yet in the app. Other project types after that. Each needs its rules agreed first.
 2. Wood species and finishes per component, with previews.
 3. Cabinet numbers with part letters (C01-A), once there is more than one cabinet in a project.
 4. Prices, an interactive 3D view and AI features: undecided, and not started.

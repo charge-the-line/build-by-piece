@@ -439,7 +439,7 @@ Several base cabinets side by side, with spaces for appliances, planned as one p
 
 **R8. Checks.** The widths must add up (R2). A cabinet that comes out narrower than 9" or wider than 48" is an error, with the fix (remove or add a cabinet). Every single-cabinet check applies to each cabinet.
 
-**Not yet:** corners, filler strips, and changing the doors and drawers of a cabinet inside a run.
+**Not yet:** filler strips at a wall, and changing the doors and drawers of a cabinet inside a run.
 
 ### Worked example (a made-up wall, not a real kitchen)
 
@@ -496,6 +496,65 @@ The same made-up 120" wall. Three uppers, each 30" high and 12" deep, with their
 | U03 | C03 Base cabinet | 30" | Joined to U02; seen on the right |
 
 U03 is screwed to U02 with five screws along 30" of frame. U01 stands alone.
+
+---
+
+## N. A corner: two walls that meet
+
+A project can have two walls that meet. Each wall is a run (sections R and W); this section covers where they meet. Approved by Max; see [CORNERS-PROPOSAL.md](CORNERS-PROPOSAL.md). The corner is a **blind corner**: one wall's last cabinet runs into the corner and the other wall's cabinets start in front of it, so every box stays a plain rectangle.
+
+**N1. What she enters.** The length of each wall, from the corner to its far end. What goes along each, left to right as she faces it (R1). Which side the second wall is on (default right), and what is at each far end. Depth, height and every other choice are shared by both walls.
+
+**N2. Which wall goes into the corner.** The first wall's. She can swap the two walls.
+
+**N3. The corner cabinet.** The app adds a corner base cabinet at the corner end of the first wall; she is not asked.
+
+- Hidden part = depth of the cabinets + the gap (N4). With the defaults: 24" + 3 1/2" = 27 1/2".
+- Its face frame covers only the part that shows: frame width = cabinet width − hidden part. That frame is laid out by the usual rules (K4): doors only, hinged on the side away from the corner when there is one door.
+- Its box is as wide as the whole cabinet: box width = frame width + hidden part. Sides, bottom, back, top front support and mounting strip follow from the box width as usual; one shelf, as in a base cabinet (K5), runs the full width.
+- A **blind panel** of box plywood, box height × hidden part, closes the hidden part of the front, in line with the frame. It is glued to the box and pocket-screwed to the end of the frame.
+- The cabinet starts at 45" wide, a default she can change. If the frame would be narrower than 9", that is an error with the fix (make it wider).
+- At the corner end nothing overhangs: the end is treated as joined.
+
+**N4. The gap strip.** Doors and drawers need room to open past the handles on the other wall. The second wall's first cabinet starts one gap out from the front of the first wall's cabinets, and an oak **gap strip** (trade term: filler strip) closes it.
+
+- The strip is an oak 1x4 at the width it is sold, so nothing is cut lengthwise (M5). The gap is therefore 3 1/2".
+- Its length is the height of the face frame. It sits in line with the face frames and is screwed to the end frame piece of the second wall's first cabinet (J4 spacing).
+
+**N5. The second wall.** Length for cabinets = wall length − depth of the cabinets − gap. That length is shared out by R2. The corner end of this run is joined. An appliance space cannot be the first thing at the corner; that is an error with the fix.
+
+**N6. Platforms and toe kick.** Each wall has its own platforms (R4). The first wall's run to the corner. The second wall's first platform, and its toe kick, start at the face of the first wall's toe kick, so the floor line is continuous.
+
+**N7. Upper cabinets at the corner.** The same, with the depth of the uppers.
+
+- The first wall's corner upper is as wide as the corner cabinet under it. Its hidden part = upper depth + gap (12" + 3 1/2" = 15 1/2"), closed with a blind panel as in N3.
+- The second wall's uppers start that far from the corner, with their own gap strip, as long as the uppers are high.
+- So the second wall's first upper is wider than the cabinet under it by (cabinet depth − upper depth) = 12". This is the one exception to W2. If that makes it wider than 48", it is an error with the fix (a narrower cabinet under it, or nothing above).
+- If either wall has nothing above at the corner, there is no blind panel and no upper gap strip: the first wall's corner upper is then an ordinary upper against a wall, or the second wall's first upper has a finished end.
+
+**N8. Numbers, lists and building order.** Cabinets are numbered along the first wall, then the second (C01..., U01...). One shopping list, one set of cutting diagrams and one tool list cover both walls. Order: build every base cabinet, then every upper; set the first wall's base cabinets starting at the corner, then the second wall's starting at the corner, fitting the gap strip to its first cabinet; hang the uppers in the same order; then fit drawers, doors and handles. Every piece has a place in one room, and no two may share space.
+
+**Not yet:** a third wall or an island, a turntable or pull-out in the corner, diagonal corner cabinets, and anything over a range or fridge.
+
+### Worked example (made up, shaped like Ashley's kitchen; the sizes are not hers)
+
+First wall 150", corner at its right end, open at the left: drawer base, sink base, dishwasher space, base cabinet. Second wall 126", open at the far end: base cabinet, range space, base cabinet.
+
+| | Where | Width | Notes |
+|---|---|---|---|
+| C01 Drawer base | First wall | 22 1/2" | Shares: (150" − 36" − 24" − 45") ÷ 2 |
+| C02 Sink base | First wall | 36" | |
+| Dishwasher space | First wall | 24" | |
+| C03 Base cabinet | First wall | 22 1/2" | Shares |
+| C04 Corner base cabinet | First wall | 45" | 17 1/2" frame with one door; 27 1/2" hidden |
+| C05 Base cabinet | Second wall | 34 1/4" | Starts 27 1/2" from the corner. Shares: (126" − 27 1/2" − 30") ÷ 2 |
+| Range space | Second wall | 30" | |
+| C06 Base cabinet | Second wall | 34 1/4" | Shares |
+
+- C04: bottom 43 1/2" long, blind panel 31" × 27 1/2", shelf 43 1/2" long.
+- Gap strip 31" × 3 1/2". Upper gap strip 30" × 3 1/2".
+- Uppers: U01 (22 1/2"), nothing over the sink, U02 (24"), U03 (22 1/2"), U04 (45", with 15 1/2" hidden). Second wall: U05 (46 1/4", starting 15 1/2" from the corner), nothing over the range, U06 (34 1/4").
+- The second wall's first platform starts 21" from the corner: 24" less the 3" toe space.
 
 ---
 

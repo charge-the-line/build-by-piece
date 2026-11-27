@@ -1,6 +1,6 @@
-# Proposed rules: a corner (two walls)
+# A corner (two walls): what was approved
 
-**Status: proposal for Max's approval. Nothing here is built yet.** Once approved, these become section N of [RULES.md](RULES.md) and the engine is changed to match.
+**Status: approved by Max and built.** The rules are now section N of [RULES.md](RULES.md), which is the version to trust. What changed while building, and Max's answer, are at the end. This page is kept as the record of what was proposed.
 
 ## The idea
 
@@ -105,3 +105,19 @@ Made up, as before. Wall 1 is the 120" test wall with the corner at its **left**
 5. **Uppers turn the corner too** (N7). Or leave the corner on the wall empty to keep it simple?
 6. **Does Ashley's kitchen have one corner or two?** If it is a U-shape I would build one corner now and the second the same way afterwards.
 7. **Real sizes.** If you have her wall lengths I will use them as the test case. Otherwise I use the made-up one above.
+
+## Max's answer
+
+Max sent a photo of the kitchen and said to do whatever is best. From the photo: one corner, a window over the sink, a range on the second wall, and an island. So every question was built at its default, the corner is built once, and the test case was reshaped to look like that kitchen. **No size was taken from the photo**; the test sizes are made up.
+
+## What changed while building
+
+- **The gap is 3 1/2", not 3".** The gap strip is an oak 1x4 at the width it is sold, so there is no lengthwise cut in solid wood (rule M5). The hidden parts are therefore 27 1/2" and 15 1/2".
+- **The corner cabinet has a door and a shelf, no drawer.** A drawer would need something to hang its slide on where the box runs on into the corner.
+- **The corner cabinet's frame covers only the part that shows.** The hidden part of the front is closed by a plywood blind panel in line with the frame.
+- **The test case** is a 150" sink wall and a 126" range wall (rule N worked example), not the 120" wall.
+
+## Still to decide
+
+- The island in the photo is not part of this. It would be its own proposal.
+- The existing kitchen has a microwave over the range. The app still puts nothing over a range.
