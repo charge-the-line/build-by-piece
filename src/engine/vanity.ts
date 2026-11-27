@@ -456,7 +456,7 @@ export function buildVanity(r: Resolved, bays: readonly LaidBay[], methods: Plan
       const id = add({
         name: inBay('Slide spacer', bayLabel, where),
         role: 'support',
-        assembly: bayLabel,
+        assembly: bayLabel || 'Box',
         material: sheet,
         length: derive('B8', 'slide length', slideLength),
         width: derive('B8', 'slide spacer width', r.spacerWidth),
