@@ -27,7 +27,7 @@ From Ashley, the first user.
 
 ## Current status
 
-**Phase 9 (a run of cabinets along one wall) is built and waiting for Max's review. Next would be stage 3 (corners, uppers over a run, a room); write its rules for Max's approval before any code.**
+**Phase 9 is live. Next is a row of upper cabinets over a run: its rules are proposed in `docs/UPPERS-PROPOSAL.md` and waiting for Max's approval. Do not write that code until Max approves the document and answers its questions. Corners and a room follow, each with its own proposal.**
 
 A project is now either one cabinet or a run: several base cabinets and appliance spaces along one wall, sized by the app from the run's length, with one platform per stretch, shared cutting diagrams and one shopping list (section R of the rules). The run is tested against a made-up 120" wall.
 
@@ -54,8 +54,9 @@ Known limits: front styles (flat or framed) cannot be changed in the app; screws
 | 6 | Picture-first Build screen: small steps, arrows, glue, screws, tool pictures | Done |
 | 7 | Cutting tick-off and sizes; picture shopping lists; three approaches; multiple projects | Done |
 | 8 | Kitchen cabinets: base, drawer base, sink base, upper (one at a time) | Done |
-| 9 | A run of cabinets along one wall: shared widths, platform, shopping and cutting | Done, in review |
-| Later | Corners, uppers over a run, then a room (rules first); prices, 3D and AI undecided | Not started |
+| 9 | A run of cabinets along one wall: shared widths, platform, shopping and cutting | Done |
+| 10 | Upper cabinets over a run | Rules proposed, in review |
+| Later | Corners, then a room (rules first); prices, 3D and AI undecided | Not started |
 
 Update this section at the end of every phase.
 
@@ -92,6 +93,7 @@ docs/OPEN-QUESTIONS.md   Decisions waiting on Max, and the record of what he dec
 docs/TOOLS-PROPOSAL.md   The approved tool-inventory proposal: what changed on approval, and Max's answers.
 docs/CABINETS-PROPOSAL.md   The approved kitchen cabinets proposal (stage 1 built).
 docs/RUN-PROPOSAL.md   The approved proposal for a run of cabinets along a wall (built).
+docs/UPPERS-PROPOSAL.md   Proposed rules for upper cabinets over a run (not yet approved or built).
 public/          Web app manifest and icons.
 ```
 

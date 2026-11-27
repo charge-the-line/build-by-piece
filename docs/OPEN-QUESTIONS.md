@@ -4,7 +4,7 @@ Rule numbers refer to [RULES.md](RULES.md).
 
 ## Waiting on Max
 
-Nothing blocks the next piece of work.
+**The upper cabinets proposal has seven questions: see [UPPERS-PROPOSAL.md](UPPERS-PROPOSAL.md).** Each has a default, so "keep the defaults" is a fine answer.
 
 **Kitchen run:** Max approved [RUN-PROPOSAL.md](RUN-PROPOSAL.md) with the default for every question and said to use test data, so it is built against a made-up 120" wall.
 
