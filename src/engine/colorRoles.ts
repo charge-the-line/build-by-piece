@@ -23,9 +23,9 @@ export const colorRoles: readonly ColorRoleInfo[] = [
   { role: 'back', colorName: 'purple', hex: '#6a3fb5', textHex: '#ffffff', label: 'Back' },
   { role: 'platform', colorName: 'orange', hex: '#e8730c', textHex: '#000000', label: 'Platform and toe kick' },
   { role: 'divider', colorName: 'red', hex: '#c62828', textHex: '#ffffff', label: 'Interior dividers' },
-  { role: 'faceFrame', colorName: 'brown', hex: '#7a4a21', textHex: '#ffffff', label: 'Face frame' },
-  { role: 'door', colorName: 'teal', hex: '#0b7f7f', textHex: '#ffffff', label: 'Doors' },
-  { role: 'drawerFront', colorName: 'pink', hex: '#e86aa6', textHex: '#000000', label: 'Drawer fronts' },
+  { role: 'faceFrame', colorName: 'teal', hex: '#0b7f7f', textHex: '#ffffff', label: 'Face frame' },
+  { role: 'door', colorName: 'pink', hex: '#e86aa6', textHex: '#000000', label: 'Doors' },
+  { role: 'drawerFront', colorName: 'light blue', hex: '#8fd0f5', textHex: '#000000', label: 'Drawer fronts' },
   { role: 'support', colorName: 'grey', hex: '#5f6368', textHex: '#ffffff', label: 'Support pieces' },
   { role: 'drawerBox', colorName: 'white', hex: '#ffffff', textHex: '#000000', label: 'Drawer boxes' },
 ];

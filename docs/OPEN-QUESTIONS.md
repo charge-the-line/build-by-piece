@@ -4,10 +4,29 @@ Rule numbers refer to [RULES.md](RULES.md).
 
 ## Waiting on Max
 
-Two readings of the tool-inventory changes to confirm; both are built as described:
+Nothing blocks the next piece of work. Two earlier readings are still unconfirmed and are built as described:
 
-1. **Recess depth, not width, follows the panel thickness.** For a groove the width matches the measured panel. For a routed recess it is the depth that matches (so the panel sits flush); how far the recess reaches into the frame is a separate default of 3/8" (rule D9). OK?
-2. **Panel on the back sets the drawer boxes back.** With that method a framed drawer front has a panel behind it, so every drawer box sits back by the panel thickness (rule X6). OK?
+1. **Recess depth, not width, follows the panel thickness** (rule D9).
+2. **Panel on the back sets the drawer boxes back** by the panel thickness (rule X6).
+
+## Ashley's feedback (27 Nov) and what was decided
+
+Ashley described a much larger, picture-first product. Max's decisions:
+
+| Topic | Decision |
+|---|---|
+| Build screen | Rebuild it picture-first. Done: small steps, arrows, glue, screws, a "when it is done" picture, tool pictures, one or two short sentences. |
+| Colours | Use Ashley's: teal face frame, pink doors, light blue drawer fronts. The rest are unchanged. |
+| Tools | Use Ashley's list. No brad nailer, sander or clamps by default, so the plan uses a hammer and a sanding block and lists clamps under "Buy or borrow". The router stays ticked because one is being bought. |
+| AI, photos, backend | Left to Claude: **not for now.** The app stays on the device with no AI and no server, so it works in a garage with no signal, costs nothing to run, and no photos leave the phone. To be revisited when the room planner is designed, since photo-based suggestions would need a server. |
+
+Still to do from her feedback, in the order proposed:
+
+1. Cutting screen: sizes on the pieces, which tool for each cut, tick off each piece as it is cut, zoom.
+2. Tool list with pictures, grouped as owned / to buy / optional, and her three approaches (Use What I Own, Easiest Method, Professional Finish).
+3. More than one saved project; shopping in three picture lists; "pieces cut" and "materials bought" in progress.
+4. A cabinet library and other project types (kitchen first), then a room planner. Each needs its rules agreed first.
+5. Prices, an interactive 3D view and AI features: undecided, and not started.
 
 ## Tool inventory
 

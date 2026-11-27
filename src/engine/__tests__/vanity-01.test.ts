@@ -10,7 +10,7 @@ import { appDefault, userChoice, userEntered } from '../defaults/values';
 import { vanity01 } from '../fixtures/vanity-01';
 import { generatePlan } from '../generatePlan';
 import type { Measurement, Part } from '../types';
-import { inches, part, plan, size, sized, vanityWith } from './helpers';
+import { inches, part, plan, problems, size, sized, vanityWith } from './helpers';
 
 /** Collects every Measurement anywhere inside a value. */
 function measurementsIn(value: unknown, found: Measurement[] = []): Measurement[] {
@@ -84,7 +84,7 @@ describe('three numbers in, a whole plan out (rules G1-G3)', () => {
 
   it('builds vanity 01 with no errors and no warnings', () => {
     expect(result.canGeneratePlan).toBe(true);
-    expect(result.issues).toEqual([]);
+    expect(problems(result)).toEqual([]);
   });
 
   it('lists every value it used, each with a label, and every default with its reason', () => {
@@ -401,7 +401,7 @@ describe('the platform and toe kick (rules P1-P5)', () => {
   it('warns when the toe space is changed to something uncomfortable (rule P4)', () => {
     const r = plan(vanityWith({}, { platform: { toeSpace: userEntered('1') } }));
     expect(r.canGeneratePlan).toBe(true);
-    expect(r.issues.map((i) => [i.severity, i.code])).toEqual([['warning', 'TOE_SPACE_UNUSUAL']]);
+    expect(problems(r).map((i) => [i.severity, i.code])).toEqual([['warning', 'TOE_SPACE_UNUSUAL']]);
   });
 });
 

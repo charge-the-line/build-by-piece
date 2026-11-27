@@ -3,7 +3,7 @@
  * inputs, issues, openings, parts, cutting diagrams, materials, hardware and assembly steps come out.
  * Pure TypeScript: no UI, DOM or network.
  */
-import { assemblySteps } from './assembly';
+import { assemble } from './assembly';
 import { layOut } from './layout';
 import { chooseMethods, toolsForPlan } from './methods';
 import { cutDiagrams, shoppingList } from './cutting';
@@ -20,6 +20,7 @@ const blocked = (base: Pick<PlanResult, 'inputs' | 'issues'>): PlanResult => ({
   materials: [],
   hardware: [],
   tools: [],
+  supplies: [],
   placements: [],
   steps: [],
 });
@@ -55,6 +56,8 @@ export const generatePlan: GeneratePlan = (design, defaults, catalog) => {
     allowLongCutsFirst: methods.sheetSaw === 'trackSaw',
   });
 
+  const assembly = assemble(resolved, built, methods, catalog);
+
   return {
     inputs,
     issues,
@@ -68,6 +71,7 @@ export const generatePlan: GeneratePlan = (design, defaults, catalog) => {
     methods,
     tools: needed.tools,
     placements: built.placements,
-    steps: assemblySteps(resolved, built, methods),
+    supplies: assembly.supplies,
+    steps: assembly.steps,
   };
 };

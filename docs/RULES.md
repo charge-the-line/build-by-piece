@@ -126,7 +126,7 @@ Two sizes are worked out first and used throughout:
 
 ---
 
-## F. The face frame (brown)
+## F. The face frame (teal)
 
 **Method: solid oak boards joined with pocket screws and glue on the back face.** Why: no visible fasteners and no long clamps. Alternative: dowels.
 
@@ -176,7 +176,7 @@ Two sizes are worked out first and used throughout:
 
 ---
 
-## D. Doors (teal) and drawer fronts (pink)
+## D. Doors (pink) and drawer fronts (light blue)
 
 **D1. Front size.** Every door and drawer front laps over its opening by the overlay on all four edges.
 - Width = opening width + 2 × V
@@ -289,6 +289,13 @@ New boxes on new side-mount slides. The app chooses the slides and sizes every b
 
 **J3.** Pocket holes on dividers go on the drawer side, where the drawers hide them.
 
+**J4. Where glue and screws go.** Glue goes on the faces where a step's pieces meet the others; the engine works these out from where the pieces sit. Screws run along each screwed joint:
+- a joint shorter than 2": one screw in the middle;
+- shorter than 4": two screws, a quarter of the way in from each end;
+- otherwise one screw 2" from each end, and enough between that none are more than 8" apart.
+
+The 2" and 8" are defaults. The screws in every step are counted by kind (coarse pocket screws for plywood and pine, fine for solid oak, construction screws for the platform, short screws for spacers and drawer fronts) and the totals go on the shopping list. Nails, glue, and screws into the wall are listed without a count.
+
 ---
 
 ## M. Materials and tools
@@ -315,25 +322,28 @@ New boxes on new side-mount slides. The app chooses the slides and sizes every b
 - A slide spacer has its bottom edge level with the bottom of its drawer opening and its front end at the front of the box.
 - **X6.** A drawer box sits between its slides, a quarter of the height clearance (1/4" by default) above the bottom of its opening, with its front flush with the front of the face frame. When framed drawer fronts have their panel on the back (D10), every box sits back by the panel thickness, and the slide length (X1) allows for it.
 
-**The steps, in order.** Each step has a picture with that step's pieces in colour and earlier pieces in grey, a list of what is needed, written instructions, how it is joined, and a checklist.
+**Small steps, pictures first.** The build is broken into many small steps (38 for vanity 01). Each shows:
+- a picture with this step's pieces in colour, pulled back from where they go, with an arrow to their place; pieces already built are grey;
+- glue marked on the faces where the pieces meet, and a dot for every screw (J4);
+- a second picture of how it looks when done;
+- the pieces with their part numbers and sizes, the tools as pictures, and the screws and hardware with quantities;
+- one or two short sentences. Anything longer sits behind "More detail".
 
-| Step | What | Rule notes |
+A sub-assembly (the platform, the face frame, a drawer box, a door) is drawn on its own while it is built, and joins the cabinet picture at the step where it is installed. Work on the back of a frame or door is drawn from the back. Identical drawer boxes and fronts are shown once, with "Make 4 of these".
+
+| Chapter | Steps | Rule notes |
 |---|---|---|
-| A1 | Build the platform | Rails front and back, cross supports between (P2, P3) |
-| A2 | Join the sides to the bottom | Pocket holes in the underside of the bottom (J2) |
-| A3 | Stand the dividers on the bottom | Pocket holes on the drawer side (J3); spaced with the top front supports |
-| A4 | Tie the top together | Top front supports and mounting strips, one of each per section |
-| A5 | Close the back | Glue and nails; squares the box |
-| A6 | Build the face frame and glue it on | Pocket holes on the back of the frame; through the side panels from the inside face on an exposed end, the outside face on a wall end (J2) |
-| A7 | Add the drawer slide spacers | Only when spacers are needed (B8) |
-| A8 | Build the drawer boxes | Pocket holes on the outside of the front and back pieces, hidden by the drawer front and the wall |
-| A9 | Build the doors and drawer fronts | Pocket screws on the back of the cross pieces; the panel by whichever method her tools allow (T5) |
-| A10 | Cut the openings for the pipes | In the back panel, before the cabinet goes against the wall. Hole saw if ticked, otherwise jigsaw. Positions are measured on site, so the app asks for none |
-| A11 | Set the cabinet in place | Level the platform, screw through the mounting strips into studs, fix the toe kick |
-| A12 | Fit the slides, drawers and drawer fronts | One pair of slides per drawer (X1, X6) |
-| A13 | Hang the doors | Two hinges per door (D7, D8) |
+| A1 Platform | Ends, then middle supports | Rails front and back, cross supports between (P2, P3) |
+| A2 Box | Left side, right side, dividers, top front supports, mounting strips, back | Pocket holes in the underside of the bottom (J2) and on the drawer side of dividers (J3); dividers are spaced with the top front supports |
+| A3 Face frame | Outer pieces, inner uprights, pieces between drawers, then onto the box | Pocket holes on the back; through the side panels from the inside face on an exposed end, the outside face on a wall end (J2) |
+| A4 Slide spacers | One step | Only when spacers are needed (B8) |
+| A5 Drawer boxes | Sides and ends, then bottom, for each size | Pocket holes on the outside of the front and back pieces |
+| A6 Doors and drawer fronts | Frame, then recess, then panel, for each size | Order follows the panel method (T5) |
+| A7 Sanding and finish | Sand, stain or paint, clear coat | Before anything is hung |
+| A8 Putting it in place | Pipe openings, platform, box, wall screws, toe kick end, toe kick front | Hole saw if ticked, otherwise jigsaw; pipe positions are measured on site |
+| A9 Drawers, doors, handles | Slides in the cabinet, drawer boxes, drawer fronts, hinges, hang doors, handles | X1, X6, D7, D8 |
 
-Steps that do not apply are left out: no A3 or A7 without dividers or spacers, no A8 or A12 without drawers, no A13 without doors.
+Steps that do not apply are left out.
 
 **The words are written templates** (`src/app/steps/templates.ts`), filled in with the plan's numbers. Nothing is generated, and no size is typed into a template.
 
@@ -341,7 +351,7 @@ Steps that do not apply are left out: no A3 or A7 without dividers or spacers, n
 
 ## T. Tools and methods
 
-**T1. The tool list.** Each tool is ticked or not, on the Choices screen. The default ticks are the first user's own tools, so nothing is asked up front.
+**T1. The tool list.** Each tool is ticked or not, on the Choices screen. The default ticks are Ashley's own list (mitre saw, circular saw, jigsaw, pocket-hole jig, drills, with a router being bought), so nothing is asked up front.
 
 | Tool | Ticked by default | What it changes |
 |---|---|---|
@@ -349,14 +359,15 @@ Steps that do not apply are left out: no A3 or A7 without dividers or spacers, n
 | Track saw | No | Allows long cuts first on plywood (T4) |
 | Table saw | No | Allows lengthwise cuts in solid wood (T3); can cut panel grooves (T5) |
 | Mitre saw | Yes | Wording only: how boards are cut to length |
-| Jigsaw | Yes | Cuts the opening for the pipes when there is no hole saw (A10) |
-| Hole saw | No | Cuts a round hole for each pipe (A10) |
+| Jigsaw | Yes | Cuts the opening for the pipes when there is no hole saw (A8) |
+| Hole saw | No | Cuts a round hole for each pipe (A8) |
 | Router | Yes | Cuts the recess or groove for the panel in framed fronts (T5) |
 | Pocket-hole jig | Yes | Every joint (T6) |
 | Drill and driver | Yes | Needed for every plan |
-| Brad nailer | Yes | Wording only: nailer, or hammer and small nails |
-| Sander | Yes | Wording only: sander, or sanding block |
-| Clamps; tape measure, square and level | Yes | Needed for every plan |
+| Brad nailer | No | Wording only: nailer, or hammer and small nails |
+| Sander | No | Wording only: sander, or sanding block |
+| Clamps | No | Needed for every plan, so they show under "Buy or borrow" |
+| Tape measure, square and level | Yes | Needed for every plan |
 
 **T2. How a method is chosen.** For each job that can be done more than one way, the app uses the first method her tools allow. A missing tool never blocks the plan: the simplest method is used and the tool goes on a "Buy or borrow" list.
 

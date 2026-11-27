@@ -117,6 +117,7 @@ export const defaultCatalog: MaterialCatalog = {
     { id: 'brad-nails', name: 'Small nails (brads) for 1/4" plywood', use: 'The back panel and the drawer bottoms.' },
     { id: 'construction-screws', name: 'Construction screws for 2x4s', use: 'The platform.' },
     { id: 'cabinet-screws', name: 'Cabinet screws long enough to reach the wall studs', use: 'Fixing the cabinet to the wall through the mounting strips.' },
+    { id: 'short-screws', name: 'Short wood screws', use: 'The slide spacers, and fixing drawer fronts from inside the drawer boxes.' },
     { id: 'shims', name: 'Shims', use: 'Levelling the platform.' },
     { id: 'sandpaper', name: 'Sandpaper', use: 'Smoothing edges and faces before finishing.' },
   ],

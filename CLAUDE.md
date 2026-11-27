@@ -27,9 +27,11 @@ From Ashley, the first user.
 
 ## Current status
 
-**The tool inventory (Phase 5) is built and waiting for Max's review. Do not start another cabinet type or the kitchen until its rules are agreed with Max first.**
+**Phase 6 (picture-first Build screen, from Ashley's feedback of 27 Nov) is built and waiting for Max's review.**
 
-She ticks her tools on the Choices screen (defaults are her own tools). The plan picks the method for each job from those ticks, lists "Tools for this plan" with the exact bits and safety gear, and never blocks on a missing tool: it says what to buy or borrow.
+Ashley asked for a much larger, picture-first product; her feedback and Max's decisions are recorded in `docs/OPEN-QUESTIONS.md`, with what is still to do. Her rule for every screen: **more pictures, fewer words.** On construction screens aim for one or two short sentences per step, with anything longer behind "More detail".
+
+She ticks her tools on the Choices screen (defaults are her own list). The plan picks the method for each job from those ticks, lists "Tools for this plan" with the exact bits and safety gear, and never blocks on a missing tool: it says what to buy or borrow.
 
 The engine builds a full plan from three numbers: openings, cut list, cutting diagrams, shopping list, hardware, validation, a 3D position for every piece, and assembly steps. The app has six screens: Size, Choices, Parts, Cutting, Shop, Build. She can change the door and drawer layout on the Size screen, tap a part to see its trade term, and print the whole plan.
 
@@ -44,8 +46,10 @@ Known limits: front styles (flat or framed) cannot be changed in the app; amount
 | 2 | Cutting diagrams: kerf, grain, cut order, offcuts | Done |
 | 3 | Assembly steps, checklists, print to PDF | Done |
 | 4 | Finish v1: layout editor, glossary, supplies list | Done |
-| 5 | Tool inventory driving the method | Done, in review |
-| Later | Other cabinets, kitchen | Not started |
+| 5 | Tool inventory driving the method | Done |
+| 6 | Picture-first Build screen: small steps, arrows, glue, screws, tool pictures | Done, in review |
+| Next | Cutting screen pictures and tick-off; picture tool list with three approaches; multiple projects | Not started |
+| Later | Cabinet library, kitchen, room planner (rules first); prices, 3D and AI undecided | Not started |
 
 Update this section at the end of every phase.
 
@@ -60,7 +64,8 @@ src/engine/      Pure TypeScript. Design + defaults + catalog in; parts, diagram
   layout.ts        Sizes and places every opening; the "does not add up" checks (rules L1-L5).
   vanity.ts        The construction rules: one block per rule in docs/RULES.md. Also places every piece in 3D (rule A0).
   methods.ts       Chooses a method for each job from the tools ticked, and lists the tools a plan needs (rules T1-T8).
-  assembly.ts      The assembly steps: parts, joints, hardware and the numbers each step quotes (rules A1-A13).
+  geometry.ts      Where pieces meet (glue faces) and where screws go along a joint (rule J4).
+  assembly.ts      The small assembly steps: pieces and the way each arrives, glue, screws, tools, hardware (section A).
   cutting.ts       Cutting diagrams (rules C1-C6); the shopping list is the diagrams, counted.
   generatePlan.ts  The engine's single entry point.
   colorRoles.ts    The fixed instructional colours (data).
@@ -68,7 +73,7 @@ src/engine/      Pure TypeScript. Design + defaults + catalog in; parts, diagram
   fixtures/        vanity-01.ts is the test case (three numbers). mockup-errors.ts holds the old mock-up's mistakes.
   __tests__/       Vitest tests. The expected sizes are the worked example in docs/RULES.md.
 src/app/         React UI: Size, Choices, Parts, Cutting, Shop and Build screens. Imports from the engine; never the reverse.
-  steps/           Step pictures (drawn from the engine's positions) and the written step templates.
+  steps/           Step pictures (drawn from the engine's positions), tool icons, and the written step templates.
   PrintPlan.tsx    The whole plan on paper; built only when Print is pressed.
   LayoutEditor.tsx Doors and drawers by space; sizes stay with the rules (rule L0a).
   glossary.ts      Plain words and their trade terms.
@@ -91,13 +96,14 @@ Engine rules:
 - A missing tool never blocks a plan; it becomes a "buy or borrow" line (rule T2).
 - Validation returns structured issues: severity, parts, explanation, suggested fix. Any error blocks plan generation.
 - Every rule in the engine cites its number in `docs/RULES.md`. Change the document and the code together.
-- No AI calls, no accounts, no backend in v1. Explanations are written templates filled with the user's numbers. Projects save on the device, with export and import of a project file.
-- Colour roles are fixed everywhere: blue left side, green right side, yellow bottom, purple back, orange platform and toe kick, red dividers, brown face frame, teal doors, pink drawer fronts, grey support pieces, white (dark outline) drawer boxes. Never rely on colour alone; always show the part ID.
+- No AI calls, no accounts, no backend (reconfirmed 27 Nov; revisit with the room planner). Explanations are written templates filled with the user's numbers. Projects save on the device, with export and import of a project file.
+- Colour roles are fixed everywhere: blue left side, green right side, yellow bottom, purple back, orange platform and toe kick, red dividers, teal face frame, pink doors, light blue drawer fronts, grey support pieces, white (dark outline) drawer boxes. In step pictures, lime marks glue and black dots mark screws; no part uses those. Never rely on colour alone; always show the part ID.
 
 ## Working rules
 
 - Max is new to the command line and git and often works from his phone. Anything he must do himself gets numbered, copy-and-paste steps.
 - The app is used in a garage on a phone or tablet: large tap targets, large type, high contrast, one-handed.
+- More pictures, fewer words. A picture, part numbers and sizes first; one or two short sentences; detail on request.
 - Beginner mode is the default. Plain words first ("vertical frame piece"), trade term in a tap-to-explain glossary ("stile").
 - Consistent formatting: proper fractions for inches, commas in numbers of 1,000 or more, dollars as $1,234.56.
 - Synthetic or placeholder data only. Never connect to an outside account or service.

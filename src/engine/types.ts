@@ -90,9 +90,9 @@ export type ColorRole =
   | 'back' // purple
   | 'platform' // orange: platform and toe kick
   | 'divider' // red
-  | 'faceFrame' // brown
-  | 'door' // teal
-  | 'drawerFront' // pink
+  | 'faceFrame' // teal
+  | 'door' // pink
+  | 'drawerFront' // light blue
   | 'support' // grey: top supports, mounting strips, slide spacers
   | 'drawerBox'; // white with a dark outline
 
@@ -169,6 +169,11 @@ export interface Supply {
   readonly name: string;
   /** What it is for, in plain words. */
   readonly use: string;
+}
+
+/** A supply on a plan, with how many the steps use when that can be counted. */
+export interface SupplyLine extends Supply {
+  readonly quantity?: number;
 }
 
 export interface MaterialCatalog {
@@ -355,6 +360,9 @@ export interface VanityOptions {
     readonly heightClearance: Measurement;
     /** Space kept free behind the slide (rule X1). */
     readonly rearClearance: Measurement;
+    /** J4: a screw this far from each end of a joint, and no further apart than `screwSpacing`. */
+    readonly screwEndInset: Measurement;
+    readonly screwSpacing: Measurement;
     /** Most a slide spacer may fall short of the opening edge (rule B8). */
     readonly spacerTolerance: Measurement;
   };
@@ -659,7 +667,7 @@ export interface Placement {
 /** Which face of a piece gets the pocket holes, in plain words. */
 export type JointFace = 'underside' | 'top face' | 'inside face' | 'outside face' | 'back face' | 'drawer side';
 
-/** One kind of joint made in a step (rules J1-J3). */
+/** One kind of joint made in a step (rules J1-J4). */
 export interface Joint {
   readonly method: 'pocketScrews' | 'glueAndNails' | 'glue' | 'screws';
   /** The piece that is drilled or fastened through. */
@@ -676,23 +684,80 @@ export interface StepHardware {
   readonly unit: 'pair' | 'each';
 }
 
+/** One physical piece: a part and which copy of it. */
+export interface PieceRef {
+  readonly partId: PartId;
+  readonly copy: number;
+}
+
+/** Which way a piece travels to reach its place, for the arrow in the picture. */
+export type Direction = 'left' | 'right' | 'above' | 'below' | 'front' | 'back' | 'none';
+
+export interface StepPiece extends PieceRef {
+  readonly from: Direction;
+}
+
+/** A flat rectangle in the cabinet: where two pieces meet. One of its three sizes is zero. */
+export interface Patch {
+  readonly x: Ticks;
+  readonly y: Ticks;
+  readonly z: Ticks;
+  readonly sizeX: Ticks;
+  readonly sizeY: Ticks;
+  readonly sizeZ: Ticks;
+}
+
+export interface Point3 {
+  readonly x: Ticks;
+  readonly y: Ticks;
+  readonly z: Ticks;
+}
+
+/** Screws used in a step, by kind (a supply in the catalog). */
+export interface StepFastener {
+  readonly supplyId: string;
+  readonly quantity: number;
+}
+
+export type StepChapter = 'platform' | 'box' | 'faceFrame' | 'drawerBoxes' | 'fronts' | 'finish' | 'install' | 'drawers' | 'doors';
+
 /**
- * One assembly step (rules A1-A13). The words come from a written template
- * in the app, filled in with `values`; nothing here is free text.
+ * One small assembly step (rules A1-A9). The words come from a written
+ * template in the app, filled in with `values`; nothing here is free text.
  */
 export interface Step {
   readonly id: string;
   readonly number: number;
+  readonly chapter: StepChapter;
+  /**
+   * cabinet: drawn in place in the cabinet, with what is already there.
+   * bench:   a sub-assembly built on its own (the face frame, a drawer box, a door).
+   */
+  readonly scene: 'cabinet' | 'bench';
+  /** Which side the picture looks from. Work on the back of a frame or door is shown from the back. */
+  readonly view: 'front' | 'back';
   /** Which written template describes this step. */
   readonly templateId: string;
   /** Numbers the template quotes: lengths in ticks, or counts. */
   readonly values: Readonly<Record<string, Ticks | number>>;
-  /** Parts added in this step (highlighted in the drawing). */
+  /** The pieces this step works with (highlighted), and which way each arrives. */
+  readonly pieces: readonly StepPiece[];
+  /** The parts those pieces belong to, plus any identical ones built the same way. */
   readonly partIds: readonly PartId[];
-  /** Parts placed in earlier steps (muted in the drawing). */
-  readonly earlierPartIds: readonly PartId[];
+  /** Pieces already in the picture from earlier steps (muted). */
+  readonly earlierPieces: readonly PieceRef[];
+  /** How many times to do this step: "make 4 of these". */
+  readonly repeat: number;
   readonly joints: readonly Joint[];
+  /** Where glue goes: the faces where this step's pieces meet the others (rule J4). */
+  readonly glue: readonly Patch[];
+  /** Where each screw goes (rule J4). */
+  readonly screws: readonly Point3[];
+  /** Screws this step uses in total, counting every repeat. */
+  readonly fasteners: readonly StepFastener[];
   readonly hardware: readonly StepHardware[];
+  /** Tools for this step: tool ids, plus "glue" and hand tools. */
+  readonly tools: readonly string[];
 }
 
 // ---------------------------------------------------------------------------
@@ -731,6 +796,8 @@ export interface PlanResult {
   readonly methods?: PlanMethods;
   /** Tools for this plan, including anything to buy or borrow. */
   readonly tools: readonly PlanTool[];
+  /** Screws, glue and the like; screws are counted from the steps (rule J4). */
+  readonly supplies: readonly SupplyLine[];
   /** Where every piece sits, for the step drawings. */
   readonly placements: readonly Placement[];
   readonly steps: readonly Step[];

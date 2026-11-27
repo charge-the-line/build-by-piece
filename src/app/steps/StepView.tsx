@@ -1,18 +1,14 @@
 import { defaultCatalog } from '../../engine/defaults/catalog';
 import type { Joint, PlanResult, Step } from '../../engine/types';
 import { colorOf, fmt } from '../format';
+import { Icon, toolLabel } from './icons';
 import { StepPicture } from './StepPicture';
-import { stepTemplates } from './templates';
+import { chapterNames, stepTemplates } from './templates';
 
 interface Props {
   readonly plan: PlanResult;
   readonly step: Step;
-  /** Which checklist lines are ticked. Omitted when printing, where boxes are left empty. */
-  readonly checked?: Readonly<Record<string, boolean>>;
-  readonly onCheck?: (key: string, value: boolean) => void;
 }
-
-export const checkKey = (step: Step, index: number) => `${step.id}:${index}`;
 
 const list = (ids: readonly string[]) => (ids.length <= 1 ? ids.join('') : `${ids.slice(0, -1).join(', ')} and ${ids.at(-1)}`);
 
@@ -28,86 +24,138 @@ function jointLines(joints: readonly Joint[]): string[] {
   return [...groups.values()].map(({ joint, through }) => {
     const pieces = list(through);
     const targets = list(joint.into);
-    if (joint.method === 'pocketScrews') return `Pocket screws and glue: drill pocket holes in the ${joint.face} of ${pieces}, then screw into ${targets}.`;
-    if (joint.method === 'glueAndNails') return `Glue and nails: fix ${pieces} to ${targets}.`;
-    if (joint.method === 'glue') return `Glue only: fix ${pieces} to ${targets}.`;
-    return joint.into.length === 0 ? `Screws: through ${pieces} into the wall studs.` : `Screws: through ${pieces} into ${targets}.`;
+    if (joint.method === 'pocketScrews') return `Pocket holes go in the ${joint.face} of ${pieces}. Screw into ${targets}.`;
+    if (joint.method === 'glueAndNails') return `Glue and nail ${pieces} to ${targets}.`;
+    if (joint.method === 'glue') return `Glue ${pieces} to ${targets}.`;
+    return joint.into.length === 0 ? `Screw through ${pieces} into the wall studs.` : `Screw through ${pieces} into ${targets}.`;
   });
 }
 
-export function StepView({ plan, step, checked, onCheck }: Props) {
+const supplyName = (id: string) => defaultCatalog.supplies.find((s) => s.id === id)?.name ?? id;
+
+export function StepView({ plan, step }: Props) {
   const template = stepTemplates[step.templateId]!;
-  const parts = plan.parts.filter((p) => step.partIds.includes(p.id));
+  const methods = plan.methods!;
+  const title = template.title(step.values);
+  const moves = step.pieces.some((p) => p.from !== 'none');
+  const shown = [...new Set(step.pieces.map((p) => p.partId))].map((id) => ({
+    part: plan.parts.find((p) => p.id === id)!,
+    count: step.pieces.filter((p) => p.partId === id).length,
+  }));
   const joints = jointLines(step.joints);
+
   return (
     <article className="step">
-      <h2>
-        Step {step.number}: {template.title}
-      </h2>
-      <StepPicture plan={plan} step={step} title={template.title} />
-      <p className="hint">Coloured pieces are the ones for this step. Grey pieces are already built. The picture shows where each piece ends up.</p>
+      <p className="stepMeta">
+        Step {step.number} of {plan.steps.length} · {chapterNames[step.chapter]}
+      </p>
+      <h2>{title}</h2>
+      {step.repeat > 1 && <p className="repeat">Make {step.repeat} of these</p>}
 
-      <h3>You need</h3>
-      <ul className="need">
-        {parts.map((p) => {
-          const color = colorOf(p.colorRole);
+      {step.view === 'back' && <p className="viewNote">Seen from the back</p>}
+      <StepPicture plan={plan} step={step} title={title} mode="before" />
+      <ul className="legend" aria-label="What the picture shows">
+        {moves && (
+          <li>
+            <span className="key keyArrow" aria-hidden="true" /> where it goes
+          </li>
+        )}
+        {step.glue.length > 0 && (
+          <li>
+            <span className="key keyGlue" aria-hidden="true" /> glue
+          </li>
+        )}
+        {step.screws.length > 0 && (
+          <li>
+            <span className="key keyScrew" aria-hidden="true" /> screw
+          </li>
+        )}
+      </ul>
+
+      <p className="say">{template.say(step.values, methods)}</p>
+
+      {moves && (
+        <figure className="after">
+          <figcaption>When it is done</figcaption>
+          <StepPicture plan={plan} step={step} title={title} mode="after" />
+        </figure>
+      )}
+
+      <h3>Pieces</h3>
+      <ul className="pieceCards">
+        {shown.map(({ part, count }) => {
+          const color = colorOf(part.colorRole);
           return (
-            <li key={p.id}>
+            <li key={part.id}>
               <span className="partId" style={{ background: color.hex, color: color.textHex }}>
-                {p.id}
+                {part.id}
               </span>
-              <span>
-                {p.name} × {p.quantity}
-                <span className="needSize">
-                  {fmt(p.length)} × {fmt(p.width)}
-                </span>
+              <span className="pieceCount">× {count}</span>
+              <span className="pieceSize">
+                {fmt(part.length)} × {fmt(part.width)}
               </span>
             </li>
           );
         })}
-        {step.hardware.map((h) => (
-          <li key={h.hardwareId}>
-            <span className="partId hardware">{h.quantity}</span>
-            <span>
-              {defaultCatalog.hardware.find((x) => x.id === h.hardwareId)?.name ?? h.hardwareId}
-              {h.unit === 'pair' ? ' (pairs)' : ''}
-            </span>
+      </ul>
+
+      <h3>Tools</h3>
+      <ul className="toolIcons">
+        {step.tools.map((id) => (
+          <li key={id}>
+            <Icon id={id} />
+            <span>{toolLabel(id)}</span>
           </li>
         ))}
       </ul>
 
-      <h3>What to do</h3>
-      <ol className="todo">
-        {template.instructions(step.values, plan.methods!).map((line, i) => (
-          <li key={i}>{line}</li>
-        ))}
-      </ol>
-
-      {joints.length > 0 && (
+      {(step.fasteners.length > 0 || step.hardware.length > 0) && (
         <>
-          <h3>How it is joined</h3>
-          <ul className="joints">
-            {joints.map((line, i) => (
-              <li key={i}>{line}</li>
+          <h3>Screws and hardware</h3>
+          <ul className="toolIcons wide">
+            {step.fasteners.map((f) => (
+              <li key={f.supplyId}>
+                <Icon id="screw" />
+                <span>
+                  <strong>× {f.quantity}</strong> {supplyName(f.supplyId)}
+                </span>
+              </li>
             ))}
+            {step.hardware.map((h) => {
+              const item = defaultCatalog.hardware.find((x) => x.id === h.hardwareId);
+              return (
+                <li key={h.hardwareId}>
+                  <Icon id={item?.kind === 'hinge' ? 'hinge' : 'slide'} />
+                  <span>
+                    <strong>
+                      × {h.quantity}
+                      {h.unit === 'pair' ? ' pairs' : ''}
+                    </strong>{' '}
+                    {item?.name ?? h.hardwareId}
+                  </span>
+                </li>
+              );
+            })}
           </ul>
         </>
       )}
 
-      <h3>Check before moving on</h3>
-      <ul className="checks">
-        {template.checklist(step.values, plan.methods!).map((line, i) => {
-          const key = checkKey(step, i);
-          return (
-            <li key={key}>
-              <label>
-                <input type="checkbox" checked={checked?.[key] ?? false} onChange={(e) => onCheck?.(key, e.target.checked)} />
-                <span>{line}</span>
-              </label>
+      <details className="more">
+        <summary>More detail</summary>
+        <ul>
+          {template.more(step.values, methods).map((line, i) => (
+            <li key={i}>{line}</li>
+          ))}
+          {joints.map((line, i) => (
+            <li key={`j${i}`}>{line}</li>
+          ))}
+          {shown.map(({ part }) => (
+            <li key={part.id}>
+              {part.id} is {part.name.charAt(0).toLowerCase() + part.name.slice(1)}.
             </li>
-          );
-        })}
-      </ul>
+          ))}
+        </ul>
+      </details>
     </article>
   );
 }

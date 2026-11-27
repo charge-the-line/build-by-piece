@@ -48,3 +48,6 @@ export function part(result: PlanResult, name: string): Part {
 /** Length x width of a part, in typed inches, for readable assertions. */
 export const size = (p: Part) => ({ length: p.length, width: p.width });
 export const sized = (length: string, width: string) => ({ length: inches(length), width: inches(width) });
+
+/** Errors and warnings, leaving out "buy or borrow" notes about tools. */
+export const problems = (r: PlanResult) => r.issues.filter((i) => i.severity !== 'info');

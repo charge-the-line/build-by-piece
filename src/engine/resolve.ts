@@ -135,6 +135,8 @@ export interface Resolved {
   readonly heightClearance: Val;
   readonly rearClearance: Val;
   readonly spacerTolerance: Val;
+  readonly screwEndInset: Val;
+  readonly screwSpacing: Val;
 
   readonly lumber: BoardValues;
   readonly toeSpace: Val;
@@ -349,6 +351,8 @@ export function resolveVanity(design: VanityDesign, defaults: VanityOptions, cat
   const drawerBottomSheet = sheet(options.drawers.bottomMaterial);
   const heightClearance = length(options.drawers.heightClearance, 'drawers.heightClearance', 'drawer height clearance');
   const rearClearance = length(options.drawers.rearClearance, 'drawers.rearClearance', 'room behind the slide');
+  const screwEndInset = length(options.drawers.screwEndInset, 'drawers.screwEndInset', 'screw distance from the end of a joint');
+  const screwSpacing = length(options.drawers.screwSpacing, 'drawers.screwSpacing', 'most space between screws');
   const spacerTolerance = length(options.drawers.spacerTolerance, 'drawers.spacerTolerance', 'slide spacer tolerance');
 
   const lumber = board(options.platform.lumber);
@@ -406,6 +410,8 @@ export function resolveVanity(design: VanityDesign, defaults: VanityOptions, cat
     heightClearance,
     rearClearance,
     spacerTolerance,
+    screwEndInset,
+    screwSpacing,
     lumber,
     toeSpace,
     supportSpacing,

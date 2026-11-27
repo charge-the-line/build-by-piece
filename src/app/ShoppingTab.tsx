@@ -1,5 +1,4 @@
 import type { PlanResult, PlanTool } from '../engine/types';
-import { defaultCatalog } from '../engine/defaults/catalog';
 import { fmt } from './format';
 
 /** Written templates for the cut a router bit has to make, filled with the plan's sizes. */
@@ -87,14 +86,17 @@ export function ShoppingTab({ plan }: { plan: PlanResult }) {
       <section>
         <h2>Also needed</h2>
         <ul className="supplies">
-          {defaultCatalog.supplies.map((supply) => (
+          {plan.supplies.map((supply) => (
             <li key={supply.id}>
-              <strong>{supply.name}</strong>
+              <strong>
+                {supply.quantity ? `${supply.quantity} × ` : ''}
+                {supply.name}
+              </strong>
               <span className="hint">{supply.use}</span>
             </li>
           ))}
         </ul>
-        <p className="hint">The app does not work out how much of each yet. Handles and the finish are your choice.</p>
+        <p className="hint">Screw counts are what the steps use; buy a few spare. Handles and the finish are your choice.</p>
       </section>
     </>
   );

@@ -558,9 +558,10 @@ header + .beforeCut {
   border: 3px solid var(--ink);
 }
 
-/* Build steps */
+/* Build steps: pictures first */
 .progress p {
-  margin-bottom: 0.4rem;
+  margin: 0.25rem 0 0;
+  font-size: 0.85rem;
 }
 
 progress {
@@ -569,54 +570,61 @@ progress {
   accent-color: var(--brand);
 }
 
-.stepDots {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.4rem;
-  margin: 0.6rem 0 0;
-  padding: 0;
-  list-style: none;
-}
-
-.stepDots button {
-  min-width: 48px;
-  min-height: 48px;
-  padding: 0;
-}
-
-.stepDots button.done {
-  background: var(--panel);
-  text-decoration: underline;
-}
-
-.stepDots button[aria-current='step'] {
-  background: var(--brand);
-  color: var(--on-brand);
-  border-color: var(--brand);
-}
-
 .step {
-  margin-top: 1.25rem;
+  margin-top: 1rem;
+}
+
+.stepMeta {
+  margin: 0;
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+
+.step h2 {
+  font-size: 1.6rem;
 }
 
 .step h3 {
-  margin-top: 1.25rem;
+  margin: 1.25rem 0 0.4rem;
+  font-size: 0.9rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.repeat {
+  display: inline-block;
+  margin: 0;
+  padding: 0.2rem 0.75rem;
+  border: 2px solid var(--ink);
+  border-radius: 999px;
+  font-weight: 700;
+}
+
+.viewNote {
+  margin: 0.5rem 0 0;
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+
+.say {
+  margin: 0.75rem 0 0;
+  font-size: 1.25rem;
+  line-height: 1.35;
 }
 
 .stepPicture {
   margin-top: 0.5rem;
-  background: var(--paper);
+  background: #ffffff;
+  border-radius: 10px;
 }
 
 .stepPicture .now path {
   stroke: #000000;
-  stroke-width: 1.5;
   stroke-linejoin: round;
 }
 
 .stepPicture .before path {
   stroke: #7f8791;
-  stroke-width: 0.75;
   stroke-linejoin: round;
 }
 
@@ -625,61 +633,180 @@ progress {
   fill: #000000;
   paint-order: stroke;
   stroke: #ffffff;
-  stroke-width: 6px;
   stroke-linejoin: round;
 }
 
-.need li {
-  display: flex;
-  align-items: center;
-  gap: 0.6rem;
-  padding: 0.35rem 0;
+/* Glue, screws and arrows use colours no part uses. */
+.glue,
+.keyGlue {
+  fill: #b6ff00;
+  stroke: #1a1a1a;
+  stroke-dasharray: 4 3;
+  background: #b6ff00;
 }
 
-.needSize {
-  display: block;
+.screwDot {
+  fill: #111111;
+  stroke: #ffffff;
+}
+
+.arrow {
+  stroke: #111111;
+  stroke-linecap: round;
+}
+
+.arrowHalo {
+  stroke: #ffffff;
+  stroke-linecap: round;
+}
+
+.arrowHead {
+  fill: #111111;
+}
+
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin: 0.4rem 0 0;
   font-size: 0.85rem;
 }
 
-.partId.hardware {
-  background: var(--paper);
-  color: var(--ink);
+.legend li {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
 }
 
-.todo,
-.joints {
-  margin: 0;
-  padding-left: 1.5rem;
+.key {
+  display: inline-block;
+  width: 1.1rem;
+  height: 1.1rem;
+  border: 2px solid var(--ink);
 }
 
-.joints {
-  list-style: disc;
+.keyGlue {
+  border-style: dashed;
+}
+
+.keyScrew {
+  border-radius: 50%;
+  background: #111111;
+  border-color: #ffffff;
+  outline: 2px solid #111111;
+  width: 0.8rem;
+  height: 0.8rem;
+}
+
+.keyArrow {
+  height: 0;
+  width: 1.5rem;
+  border: 0;
+  border-top: 4px solid var(--ink);
+  position: relative;
+}
+
+.keyArrow::after {
+  content: '';
+  position: absolute;
+  right: -2px;
+  top: -9px;
+  border: 7px solid transparent;
+  border-left-color: var(--ink);
+  border-right: 0;
+}
+
+.after {
+  margin-top: 1rem;
+  width: 62%;
+}
+
+.after figcaption {
+  font-size: 0.85rem;
+}
+
+.pieceCards {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.pieceCards li {
+  display: grid;
+  grid-template-columns: auto auto;
+  align-items: center;
+  gap: 0.15rem 0.5rem;
+  padding: 0.5rem 0.6rem;
+  border: 2px solid var(--rule);
+  border-radius: 10px;
+  background: var(--panel);
+}
+
+.pieceCount {
+  font-weight: 700;
+}
+
+.pieceSize {
+  grid-column: 1 / -1;
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+
+.toolIcons {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(5.2rem, 1fr));
+  gap: 0.5rem;
+}
+
+.toolIcons li {
+  display: grid;
+  justify-items: center;
+  gap: 0.2rem;
+  padding: 0.5rem 0.25rem;
+  border: 2px solid var(--rule);
+  border-radius: 10px;
+  text-align: center;
+  font-size: 0.75rem;
+  line-height: 1.2;
+}
+
+.toolIcons.wide {
+  grid-template-columns: 1fr;
+}
+
+.toolIcons.wide li {
+  grid-template-columns: auto 1fr;
+  justify-items: start;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.4rem 0.75rem;
+  text-align: left;
   font-size: 0.9rem;
 }
 
-.todo li,
-.joints li {
-  padding: 0.3rem 0;
+.icon {
+  width: 44px;
+  height: 44px;
+  fill: none;
+  stroke: var(--ink);
+  stroke-width: 2.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
 }
 
-.checks li {
+.more {
+  margin-top: 1rem;
   border-top: 1px solid var(--rule);
 }
 
-.checks label {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  min-height: 56px;
-  padding: 0.4rem 0;
-  cursor: pointer;
+.more ul {
+  list-style: disc;
+  padding-left: 1.25rem;
+  font-size: 0.95rem;
 }
 
-.checks input {
-  flex: none;
-  width: 32px;
-  height: 32px;
-  accent-color: var(--brand);
+.more li {
+  padding: 0.2rem 0;
 }
 
 .stepNav {
@@ -687,6 +814,11 @@ progress {
   grid-template-columns: 1fr 2fr;
   gap: 0.5rem;
   margin-top: 1.25rem;
+}
+
+.stepNav button {
+  min-height: 72px;
+  font-size: 1.2rem;
 }
 
 button.primary {
@@ -698,6 +830,31 @@ button.primary {
 button:disabled {
   opacity: 0.4;
   cursor: default;
+}
+
+.chapters {
+  display: grid;
+  gap: 0.4rem;
+}
+
+.chapters button {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  text-align: left;
+}
+
+.chapters button[aria-current='step'] {
+  background: var(--brand);
+  color: var(--on-brand);
+  border-color: var(--brand);
+}
+
+.chapterCount {
+  font-weight: 500;
+  white-space: nowrap;
 }
 
 /* Layout editor */
@@ -860,7 +1017,39 @@ button.quiet {
   }
 
   .printPlan .stepPicture {
-    max-width: 11cm;
+    max-width: 9cm;
+  }
+
+  .printPlan .after {
+    display: none;
+  }
+
+  .printPlan .step {
+    break-inside: avoid;
+    margin-top: 1rem;
+    padding-top: 0.5rem;
+    border-top: 1px solid var(--rule);
+  }
+
+  .printPlan .step:first-of-type {
+    break-before: page;
+  }
+
+  .printPlan .say {
+    font-size: 11pt;
+  }
+
+  .printPlan .toolIcons li {
+    padding: 0.1rem;
+  }
+
+  .printPlan .icon {
+    width: 22px;
+    height: 22px;
+  }
+
+  .printPlan details.more {
+    display: none;
   }
 
   .printPlan .step h3 {
@@ -876,7 +1065,6 @@ button.quiet {
     break-inside: avoid;
   }
 
-  .step,
   .cutTable,
   .printPlan .cuttingIntro {
     break-before: page;

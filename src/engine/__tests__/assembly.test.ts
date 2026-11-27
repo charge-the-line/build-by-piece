@@ -8,7 +8,7 @@ import { defaultCatalog } from '../defaults/catalog';
 import { userChoice, userEntered } from '../defaults/values';
 import { cutDiagrams } from '../cutting';
 import type { Overrides, Part, Placement, PlanResult, ToolId, VanityOptions } from '../types';
-import { inches, part, plan, vanityWith } from './helpers';
+import { inches, part, plan, problems, vanityWith } from './helpers';
 
 const result = plan();
 const name = (r: PlanResult, id: string) => r.parts.find((p) => p.id === id)!.name;
@@ -128,48 +128,139 @@ describe('platform cross supports at every width (rule P3)', () => {
   });
 });
 
-describe('assembly steps (rules A1-A12)', () => {
+describe('assembly steps (section A)', () => {
   const steps = result.steps;
+  const step = (id: string, r: PlanResult = result) => r.steps.find((s) => s.id === id)!;
+  const ids = (r: PlanResult = result) => r.steps.map((s) => s.id);
 
-  it('lists the steps in building order', () => {
-    expect(steps.map((s) => s.id)).toEqual(['platform', 'box', 'dividers', 'supports', 'back', 'faceFrame', 'spacers', 'drawerBoxes', 'fronts', 'plumbing', 'install', 'drawers', 'doors']);
+  it('breaks the build into many small steps, in building order', () => {
+    expect(ids()).toEqual([
+      'platformEnds', 'platformMiddle',
+      'boxLeft', 'boxRight', 'dividers', 'topSupports', 'mountingStrips', 'back',
+      'frameOuter', 'frameInner', 'frameDrawerRails', 'frameOn',
+      'spacers',
+      'drawerBox1', 'drawerBottom1', 'drawerBox2', 'drawerBottom2',
+      'frontFrame1', 'frontRecess1', 'frontPanel1', 'frontFrame2', 'frontRecess2', 'frontPanel2',
+      'sand', 'finish', 'topcoat',
+      'plumbing', 'setPlatform', 'setBox', 'wallScrews', 'toeKickReturn', 'toeKick',
+      'slidesCabinet', 'slidesDrawers', 'drawerFronts',
+      'hinges', 'hangDoors', 'handles',
+    ]);
     expect(steps.map((s) => s.number)).toEqual(steps.map((_, i) => i + 1));
   });
 
-  it('uses every part in at least one step, and only parts that exist', () => {
-    const ids = new Set(result.parts.map((p) => p.id));
+  it('uses every part in at least one step, and only pieces that exist', () => {
+    const partIds = new Set(result.parts.map((p) => p.id));
     const used = new Set(steps.flatMap((s) => s.partIds));
-    expect([...ids].filter((id) => !used.has(id)).map((id) => name(result, id))).toEqual([]);
-    expect([...used].every((id) => ids.has(id))).toBe(true);
-    for (const joint of steps.flatMap((s) => s.joints)) {
-      expect(ids.has(joint.through)).toBe(true);
-      expect(joint.into.every((id) => ids.has(id))).toBe(true);
+    expect([...partIds].filter((id) => !used.has(id)).map((id) => name(result, id))).toEqual([]);
+    const pieces = new Set(result.placements.map((p) => `${p.partId}#${p.copy}`));
+    for (const s of steps) {
+      expect(s.pieces.length, s.id).toBeGreaterThan(0);
+      for (const piece of [...s.pieces, ...s.earlierPieces]) expect(pieces.has(`${piece.partId}#${piece.copy}`), s.id).toBe(true);
     }
   });
 
-  it('mutes exactly the parts from earlier steps', () => {
-    const seen = new Set<string>();
-    for (const step of steps) {
-      expect([...step.earlierPartIds].sort(), step.id).toEqual([...seen].filter((id) => !step.partIds.includes(id as never)).sort());
-      expect(step.partIds.length, step.id).toBeGreaterThan(0);
-      step.partIds.forEach((id) => seen.add(id));
+  it('shows earlier pieces muted, and never a piece as both new and earlier', () => {
+    for (const s of steps) {
+      const now = new Set(s.pieces.map((p) => `${p.partId}#${p.copy}`));
+      expect(s.earlierPieces.filter((p) => now.has(`${p.partId}#${p.copy}`)), s.id).toEqual([]);
     }
+    // In the cabinet, what was fixed in place stays in the picture.
+    expect(step('boxRight').earlierPieces.map((p) => name(result, p.partId)).sort()).toEqual(['Bottom', 'Left side']);
+    // A sub-assembly is drawn on its own: the face frame starts with nothing around it.
+    expect(step('frameOuter')).toMatchObject({ scene: 'bench', earlierPieces: [] });
+    expect(step('frameInner').earlierPieces).toHaveLength(4);
+  });
+
+  it('adds each piece to the cabinet only when it is installed', () => {
+    const firstCabinetStep = (partName: string) => steps.find((s) => s.scene === 'cabinet' && s.pieces.some((p) => name(result, p.partId) === partName))!.id;
+    expect(firstCabinetStep('Top frame piece')).toBe('frameOn');
+    expect(firstCabinetStep('Left drawers, drawer 1: box side')).toBe('slidesDrawers');
+    expect(firstCabinetStep('Left door: door upright')).toBe('hangDoors');
+    expect(firstCabinetStep('Platform cross support')).toBe('setPlatform');
+  });
+
+  it('says which way each new piece arrives', () => {
+    const arrives = (id: string) => [...new Set(step(id).pieces.map((p) => `${name(result, p.partId)}: ${p.from}`))];
+    expect(arrives('boxLeft')).toEqual(['Bottom: none', 'Left side: left']);
+    expect(arrives('boxRight')).toEqual(['Right side: right']);
+    expect(arrives('back')).toEqual(['Back: back']);
+    expect(step('frameOn').pieces.every((p) => p.from === 'front')).toBe(true);
+    expect(arrives('toeKickReturn')).toEqual(['Toe kick (end return): right']);
+    // Spacers go on from inside the cabinet: the wall-side ones travel left, towards the wall side.
+    expect(arrives('spacers')).toEqual(['Slide spacer (left drawers, wall side): right', 'Slide spacer (right drawers, right side): left']);
+  });
+
+  it('builds one drawer box and one door of each size, and says how many to make', () => {
+    expect(step('drawerBox1')).toMatchObject({ repeat: 4, scene: 'bench' });
+    expect(step('drawerBox2').repeat).toBe(2);
+    expect(step('frontFrame1').repeat).toBe(2);
+    // The picture shows one; the step still accounts for the parts of all four.
+    expect(step('drawerBox1').pieces).toHaveLength(4);
+    expect(step('drawerBox1').partIds).toHaveLength(8);
   });
 
   it('puts no pocket hole on the outside face of an exposed side (rule J2)', () => {
-    const frameStep = steps.find((s) => s.id === 'faceFrame')!;
-    const face = (sideName: string) => frameStep.joints.find((j) => j.through === part(result, sideName).id)!.face;
-    expect(face('Right side')).toBe('inside face'); // exposed
-    expect(face('Left side')).toBe('outside face'); // against the wall, never seen
+    const face = (r: PlanResult, sideName: string) => step('frameOn', r).joints.find((j) => j.through === part(r, sideName).id)!.face;
+    expect(face(result, 'Right side')).toBe('inside face'); // exposed
+    expect(face(result, 'Left side')).toBe('outside face'); // against the wall, never seen
     const flipped = plan(vanityWith({}, { ends: { left: userChoice('exposed'), right: userChoice('wall') } }));
-    const flippedFace = (sideName: string) => flipped.steps.find((s) => s.id === 'faceFrame')!.joints.find((j) => j.through === part(flipped, sideName).id)!.face;
-    expect([flippedFace('Left side'), flippedFace('Right side')]).toEqual(['inside face', 'outside face']);
+    expect([face(flipped, 'Left side'), face(flipped, 'Right side')]).toEqual(['inside face', 'outside face']);
     // The sides are joined to the bottom from underneath, never through their own faces.
-    expect(steps.find((s) => s.id === 'box')!.joints).toEqual([{ method: 'pocketScrews', face: 'underside', through: part(result, 'Bottom').id, into: [part(result, 'Left side').id, part(result, 'Right side').id] }]);
+    expect(step('boxLeft').joints).toEqual([{ method: 'pocketScrews', face: 'underside', through: part(result, 'Bottom').id, into: [part(result, 'Left side').id] }]);
+    expect(step('boxRight').joints).toEqual([{ method: 'pocketScrews', face: 'underside', through: part(result, 'Bottom').id, into: [part(result, 'Right side').id] }]);
   });
 
   it('puts divider pocket holes on the drawer side (rule J3)', () => {
-    expect(steps.find((s) => s.id === 'dividers')!.joints.map((j) => j.face)).toEqual(['drawer side']);
+    expect(step('dividers').joints.map((j) => j.face)).toEqual(['drawer side']);
+  });
+
+  it('shows glue where the new pieces meet the others (rule J4)', () => {
+    // The left side meets the end of the bottom: one strip as long as the bottom is deep, as wide as the plywood is thick.
+    expect(step('boxLeft').glue).toEqual([{ x: inches('1'), y: inches('3 1/2'), z: inches('1/4'), sizeX: 0, sizeY: inches('3/4'), sizeZ: inches('20') }]);
+    expect(step('back').glue.length).toBeGreaterThan(3);
+    // Screws alone hold the platform; no glue is shown.
+    expect(step('platformEnds').glue).toEqual([]);
+    for (const s of steps) {
+      for (const g of s.glue) expect([g.sizeX, g.sizeY, g.sizeZ].filter((n) => n === 0), s.id).toHaveLength(1);
+    }
+  });
+
+  it('places screws along each joint: near both ends and never more than 8" apart (rule J4)', () => {
+    // A 20" joint: 2" from each end and one between.
+    expect(step('boxLeft').screws.map((p) => p.z - inches('1/4'))).toEqual([inches('2'), inches('10'), inches('18')]);
+    // A 30" joint between a side panel and the frame: five screws, 6 1/2" apart.
+    const sideToFrame = step('frameOn').screws.filter((p) => p.x < inches('2'));
+    expect(sideToFrame.map((p) => p.y - inches('3 1/2'))).toEqual([inches('2'), inches('8 1/2'), inches('15'), inches('21 1/2'), inches('28')]);
+    // A 1 1/2" frame joint is too short for two: one screw in the middle.
+    expect(step('frameOuter').screws).toHaveLength(4);
+    // A 3 1/2" joint takes two.
+    expect(step('platformEnds').screws).toHaveLength(8);
+  });
+
+  it('counts the screws for the shopping list, by kind', () => {
+    const count = (supplyId: string) => result.supplies.find((s) => s.id === supplyId)?.quantity;
+    const fromSteps = (supplyId: string) => steps.flatMap((s) => s.fasteners).filter((f) => f.supplyId === supplyId).reduce((n, f) => n + f.quantity, 0);
+    for (const id of ['pocket-screws-coarse', 'pocket-screws-fine', 'construction-screws', 'short-screws']) {
+      expect(count(id), id).toBe(fromSteps(id));
+      expect(count(id), id).toBeGreaterThan(0);
+    }
+    expect(count('construction-screws')).toBe(20);
+    // Repeated steps count every copy: four small drawer boxes at eight screws each.
+    expect(step('drawerBox1').fasteners).toEqual([{ supplyId: 'pocket-screws-coarse', quantity: 32 }]);
+    // Fine thread only where the screw goes through solid oak.
+    expect(step('frameOuter').fasteners).toEqual([{ supplyId: 'pocket-screws-fine', quantity: 4 }]);
+    expect(step('boxLeft').fasteners).toEqual([{ supplyId: 'pocket-screws-coarse', quantity: 3 }]);
+    expect(result.supplies.find((s) => s.id === 'wood-glue')?.quantity).toBeUndefined();
+  });
+
+  it('names the tools each step needs', () => {
+    expect(step('boxLeft').tools).toEqual(expect.arrayContaining(['pocketHoleJig', 'drill', 'clamps', 'glue']));
+    expect(step('back').tools).toEqual(expect.arrayContaining(['glue', 'hammer']));
+    expect(step('frontRecess1').tools).toEqual(['router']);
+    expect(step('plumbing').tools).toContain('jigsaw');
+    expect(step('sand').tools).toEqual(['sandingBlock']);
+    for (const s of steps) expect(s.tools.length, s.id).toBeGreaterThan(0);
   });
 
   it('hands out all the hardware, and no more, across the steps', () => {
@@ -178,22 +269,28 @@ describe('assembly steps (rules A1-A12)', () => {
   });
 
   it('quotes sizes that come from the plan', () => {
-    expect(steps.find((s) => s.id === 'drawers')!.values).toMatchObject({ slideLength: inches('18'), lift: inches('1/4'), overlay: inches('1/2'), drawers: 6 });
-    expect(steps.find((s) => s.id === 'platform')!.values).toMatchObject({ supports: 5, spacing: inches('16') });
-    expect(steps.find((s) => s.id === 'faceFrame')!.values).toMatchObject({ overhang: inches('1/4'), wallEnds: 1 });
-    expect(steps.find((s) => s.id === 'fronts')!.values).toMatchObject({ framed: 4, flat: 4, groove: inches('3/8') });
+    expect(step('slidesDrawers').values).toMatchObject({ slideLength: inches('18'), lift: inches('1/4'), drawers: 6 });
+    expect(step('platformMiddle').values).toMatchObject({ supports: 3, spacing: inches('16') });
+    expect(step('frameOn').values).toMatchObject({ overhang: inches('1/4'), wallEnds: 1 });
+    expect(step('frontRecess1').values).toMatchObject({ recess: inches('3/8'), panelThickness: inches('1/4') });
+  });
+
+  it('includes sanding, finishing and handles', () => {
+    expect(ids()).toEqual(expect.arrayContaining(['sand', 'finish', 'topcoat', 'handles']));
+    expect(ids().indexOf('topcoat')).toBeLessThan(ids().indexOf('setPlatform'));
   });
 
   it('leaves out drawer steps for a cabinet with only doors, and door steps for one with only drawers', () => {
-    const doorsOnly = plan(vanityWith({}, { layout: proposedVanityLayout.slice(1, 3) }));
-    expect(doorsOnly.steps.map((s) => s.id)).toEqual(['platform', 'box', 'supports', 'back', 'faceFrame', 'fronts', 'plumbing', 'install', 'doors']);
-    const drawersOnly = plan(vanityWith({}, { layout: [proposedVanityLayout[0]!, proposedVanityLayout[3]!] }));
-    expect(drawersOnly.steps.map((s) => s.id)).not.toContain('doors');
-    expect(drawersOnly.steps.map((s) => s.id)).toContain('drawers');
+    const doorsOnly = ids(plan(vanityWith({}, { layout: proposedVanityLayout.slice(1, 3) })));
+    for (const absent of ['dividers', 'spacers', 'drawerBox1', 'slidesCabinet', 'slidesDrawers', 'drawerFronts']) expect(doorsOnly).not.toContain(absent);
+    expect(doorsOnly).toEqual(expect.arrayContaining(['frontFrame1', 'hinges', 'hangDoors', 'plumbing']));
+    const drawersOnly = ids(plan(vanityWith({}, { layout: [proposedVanityLayout[0]!, proposedVanityLayout[3]!] })));
+    expect(drawersOnly).not.toContain('hangDoors');
+    expect(drawersOnly).toContain('slidesDrawers');
   });
 
   it('produces no steps or positions while an error blocks the plan', () => {
-    expect(plan(vanityWith({ depth: '12' }))).toMatchObject({ steps: [], placements: [] });
+    expect(plan(vanityWith({ depth: '12' }))).toMatchObject({ steps: [], placements: [], supplies: [] });
   });
 });
 
@@ -261,15 +358,16 @@ const sizeOf = (r: PlanResult, partName: string) => [part(r, partName).length, p
 
 describe('tools for this plan (rules T1, T2)', () => {
   it('needs nothing bought or borrowed with the default ticks', () => {
-    expect(result.tools.filter((t) => t.status === 'buyOrBorrow')).toEqual([]);
-    expect(result.issues).toEqual([]);
-    expect(result.methods).toEqual({ solidWidths: 'boardsAsSold', sheetSaw: 'circularSaw', boardSaw: 'mitreSaw', panel: 'routedRecess', nailing: 'bradNailer', sanding: 'sander', cutouts: 'jigsaw' });
+    // Her own list has no clamps, so the plan asks for them and nothing else.
+    expect(result.tools.filter((t) => t.status === 'buyOrBorrow').map((t) => t.id)).toEqual(['clamps']);
+    expect(result.issues.map((i) => [i.severity, i.code, i.inputPaths])).toEqual([['info', 'TOOL_TO_BUY_OR_BORROW', ['tools.clamps']]]);
+    expect(result.methods).toEqual({ solidWidths: 'boardsAsSold', sheetSaw: 'circularSaw', boardSaw: 'mitreSaw', panel: 'routedRecess', nailing: 'hammer', sanding: 'sandingBlock', cutouts: 'jigsaw' });
   });
 
   it('lists the tools the chosen methods use, and not the ones they do not', () => {
     const ids = result.tools.filter((t) => t.kind === 'tool').map((t) => t.id);
-    expect(ids).toEqual(expect.arrayContaining(['measuring', 'clamps', 'drill', 'pocketHoleJig', 'circularSaw', 'mitreSaw', 'jigsaw', 'router', 'bradNailer', 'sander']));
-    for (const unused of ['tableSaw', 'trackSaw', 'holeSaw']) expect(ids).not.toContain(unused);
+    expect(ids).toEqual(expect.arrayContaining(['measuring', 'clamps', 'drill', 'pocketHoleJig', 'circularSaw', 'mitreSaw', 'jigsaw', 'router', 'hammer', 'sandingBlock']));
+    for (const unused of ['tableSaw', 'trackSaw', 'holeSaw', 'bradNailer', 'sander']) expect(ids).not.toContain(unused);
     for (const t of result.tools) expect(t.usedFor.length, t.name).toBeGreaterThan(0);
   });
 
@@ -288,7 +386,7 @@ describe('tools for this plan (rules T1, T2)', () => {
     const r = withTools({ pocketHoleJig: false });
     expect(r.canGeneratePlan).toBe(true);
     expect(tool(r, 'pocketHoleJig')?.status).toBe('buyOrBorrow');
-    expect(r.issues.map((i) => [i.severity, i.code, i.inputPaths])).toEqual([['info', 'TOOL_TO_BUY_OR_BORROW', ['tools.pocketHoleJig']]]);
+    expect(r.issues.map((i) => [i.severity, i.code, i.inputPaths])).toContainEqual(['info', 'TOOL_TO_BUY_OR_BORROW', ['tools.pocketHoleJig']]);
     expect(r.steps.map((s) => s.joints)).toEqual(result.steps.map((s) => s.joints));
   });
 
@@ -298,13 +396,13 @@ describe('tools for this plan (rules T1, T2)', () => {
     expect(tool(drawersOnly, 'bit-hinge')).toBeUndefined();
   });
 
-  it('swaps in hand tools when the powered ones are not ticked, changing no part (rule T7)', () => {
-    const r = withTools({ bradNailer: false, sander: false, mitreSaw: false });
-    expect(r.methods).toMatchObject({ nailing: 'hammer', sanding: 'sandingBlock', boardSaw: 'circularSaw' });
-    expect(r.tools.map((t) => t.id)).toEqual(expect.arrayContaining(['hammer', 'sandingBlock']));
-    expect(r.tools.map((t) => t.id)).not.toContain('bradNailer');
+  it('uses the powered tools when they are ticked, changing no part (rule T7)', () => {
+    const r = withTools({ bradNailer: true, sander: true, mitreSaw: false });
+    expect(r.methods).toMatchObject({ nailing: 'bradNailer', sanding: 'sander', boardSaw: 'circularSaw' });
+    expect(r.tools.map((t) => t.id)).toEqual(expect.arrayContaining(['bradNailer', 'sander']));
+    expect(r.tools.map((t) => t.id)).not.toContain('hammer');
     expect(r.parts).toEqual(result.parts);
-    expect(r.issues).toEqual([]);
+    expect(problems(r)).toEqual([]);
   });
 });
 
@@ -318,8 +416,8 @@ describe('solid wood widths and a table saw (rule T3)', () => {
   });
 
   it('drops the lengthwise-cut warning only when a table saw is ticked', () => {
-    expect(plan(vanityWith({}, narrowRail)).issues.map((i) => i.code)).toEqual(['NEEDS_LENGTHWISE_CUT']);
-    expect(withTools({ tableSaw: true }, narrowRail).issues).toEqual([]);
+    expect(problems(plan(vanityWith({}, narrowRail))).map((i) => i.code)).toEqual(['NEEDS_LENGTHWISE_CUT']);
+    expect(problems(withTools({ tableSaw: true }, narrowRail))).toEqual([]);
   });
 });
 
@@ -334,7 +432,7 @@ describe('framed fronts: how the panel is held (rule T5)', () => {
     // The panel is let into the back of the frame, flush with it.
     const placedPanel = placed(result, 'Left door: door centre panel')[0]!;
     expect(placedPanel.z).toBe(inches('21'));
-    expect(result.steps.find((s) => s.id === 'fronts')!.templateId).toBe('fronts-routedRecess');
+    expect(result.steps.filter((s) => s.chapter === 'fronts').map((s) => s.templateId).slice(0, 3)).toEqual(['frontFrame', 'frontRecess', 'frontPanelRecess']);
   });
 
   it('follows a changed recess width', () => {
@@ -347,7 +445,7 @@ describe('framed fronts: how the panel is held (rule T5)', () => {
     const r = plan(vanityWith({}, { fronts: { panelMethod: userChoice('stoppedGroove') } }));
     expect(r.methods?.panel).toBe('stoppedGroove');
     expect(part(r, 'Left door: door centre panel').derivation.length.ruleId).toBe('D5');
-    expect(r.steps.find((s) => s.id === 'fronts')!.templateId).toBe('fronts-stoppedGroove');
+    expect(r.steps.filter((s) => s.chapter === 'fronts').map((s) => s.templateId).slice(0, 2)).toEqual(['frontGrooveRouter', 'frontFrameWithPanel']);
     // Centred in the thickness of the frame, not on its back.
     expect(placed(r, 'Left door: door centre panel')[0]!.z).toBe(inches('21') + inches('1/4'));
     checkPlacements(r, 'stopped groove:');
@@ -386,9 +484,9 @@ describe('panel on the back, with neither router nor table saw (rules D8, D10)',
 
   it('is chosen automatically and needs no extra tool', () => {
     expect(r.methods?.panel).toBe('panelOnBack');
-    expect(r.issues).toEqual([]);
+    expect(problems(r)).toEqual([]);
     expect(r.tools.map((t) => t.id)).not.toContain('router');
-    expect(r.steps.find((s) => s.id === 'fronts')!.templateId).toBe('fronts-panelOnBack');
+    expect(r.steps.filter((s) => s.chapter === 'fronts').map((s) => s.templateId).slice(0, 2)).toEqual(['frontFrame', 'frontPanelOnBack']);
   });
 
   it('sizes the panel from the front, the gap and the hinge space', () => {
@@ -447,8 +545,8 @@ describe('panel on the back, with neither router nor table saw (rules D8, D10)',
       const sides = r.placements.filter((p) => name(r, p.partId) === `${opening.label}: box side`);
       expect(Math.max(...sides.map((s) => s.z + s.sizeZ)), opening.label).toBe(inches('21') - inches('1/4'));
     }
-    expect(r.steps.find((s) => s.id === 'drawers')!.values.setback).toBe(inches('1/4'));
-    expect(result.steps.find((s) => s.id === 'drawers')!.values.setback).toBe(0);
+    expect(r.steps.find((s) => s.id === 'slidesDrawers')!.values.setback).toBe(inches('1/4'));
+    expect(result.steps.find((s) => s.id === 'slidesDrawers')!.values.setback).toBe(0);
   });
 
   it('still fits together with no two pieces sharing space', () => {
@@ -457,10 +555,10 @@ describe('panel on the back, with neither router nor table saw (rules D8, D10)',
   });
 });
 
-describe('plumbing openings (rule A10)', () => {
+describe('plumbing openings (rule A8)', () => {
   it('adds the step before the cabinet goes against the wall', () => {
     const ids = result.steps.map((s) => s.id);
-    expect(ids.indexOf('plumbing')).toBe(ids.indexOf('install') - 1);
+    expect(ids.indexOf('plumbing')).toBe(ids.indexOf('setPlatform') - 1);
     expect(result.steps.find((s) => s.id === 'plumbing')!.partIds).toEqual([part(result, 'Back').id]);
   });
 
