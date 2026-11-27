@@ -3,6 +3,7 @@
  * Data only.
  */
 import type { ApplianceType, Measurement, RunDesign, RunItem } from '../types';
+import type { EndCondition, RunItem as Item } from '../types';
 import { appDefault, checkAtCutting, userChoice, userEntered } from './values';
 
 export interface ApplianceKind {
@@ -31,6 +32,7 @@ export const upperRow = {
 /** W1: what the app puts above each thing in the bottom row, unless she changes it. */
 export const proposedAbove = {
   base: { choice: 'upper', reason: 'Doors line up top and bottom.' },
+  cornerBase: { choice: 'upper', reason: 'The upper cabinets turn the corner too.' },
   drawerBase: { choice: 'upper', reason: 'Doors line up top and bottom.' },
   sinkBase: { choice: 'none', reason: 'Most sinks sit under a window, so nothing goes above.' },
   dishwasher: { choice: 'upper', reason: 'The dishwasher is under the counter.' },
@@ -70,4 +72,46 @@ export const startingRun: RunDesign = {
     { id: 'item-4', kind: 'cabinet', cabinet: 'base' },
   ],
   overrides: { ends: { left: userChoice('wall'), right: userChoice('exposed') } },
+};
+
+/** Section N: what the app decides about a corner. */
+export const cornerDefaults = {
+  /** N3: the corner cabinet starts this wide; part of it is hidden. */
+  cabinetWidth: appDefault('45', 'Wide enough for the hidden part and one door.'),
+  /** N4: the gap strip is this board, at the width it is sold, so nothing is cut lengthwise (M5). */
+  stripMaterial: 'oak-1x4',
+  /** The far end of the second wall, until she says otherwise. */
+  end: 'exposed' as EndCondition,
+} as const;
+
+/** The item id the app uses for the corner cabinet it adds (N3). */
+export const CORNER_ITEM = 'corner';
+
+/**
+ * A made-up kitchen with a corner, shaped like Ashley's: a sink wall with a
+ * dishwasher, and a range wall on the right. The sizes are not hers.
+ */
+export const startingCorner: RunDesign = {
+  projectType: 'run',
+  id: 'corner-01',
+  name: 'Kitchen with a corner',
+  length: userEntered('150'),
+  depth: userEntered('24'),
+  height: userEntered('31'),
+  items: [
+    { id: 'item-1', kind: 'cabinet', cabinet: 'drawerBase' },
+    { id: 'item-2', kind: 'cabinet', cabinet: 'sinkBase' },
+    { id: 'item-3', kind: 'appliance', appliance: 'dishwasher' },
+    { id: 'item-4', kind: 'cabinet', cabinet: 'base' },
+  ] satisfies Item[],
+  corner: {
+    side: 'right',
+    length: userEntered('126'),
+    items: [
+      { id: 'item-1', kind: 'cabinet', cabinet: 'base' },
+      { id: 'item-2', kind: 'appliance', appliance: 'range' },
+      { id: 'item-3', kind: 'cabinet', cabinet: 'base' },
+    ],
+  },
+  overrides: { ends: { left: userChoice('exposed'), right: userChoice('exposed') } },
 };

@@ -27,9 +27,11 @@ From Ashley, the first user.
 
 ## Current status
 
-**Phase 10 is built and waiting for Max's review. Next is corners: a second run meeting the first. Write a rules proposal first and do not write that code until Max approves it. A room follows, with its own proposal.**
+**Phase 11 is built and waiting for Max's review. Ashley's kitchen (from a photo) is an L with a window over the sink, a range with a microwave over it, and an island. Still missing for it: an island, a cabinet over the range, and her real sizes. Each new piece needs a rules proposal that Max approves before any code.**
 
 A project is now either one cabinet or a run: several base cabinets and appliance spaces along one wall, sized by the app from the run's length, with one platform per stretch, shared cutting diagrams and one shopping list (section R of the rules). The app adds a row of upper cabinets above it (section W): the same widths as what is underneath, nothing over a sink, range or fridge unless she changes it, hung 18" above the countertop from one ledge after the base cabinets are in. The run is tested against a made-up 120" wall.
+
+A run can have a second wall meeting it at a corner (section N). The app adds a corner base cabinet to the first wall, with part of its box hidden behind a blind panel; the second wall starts in front of it after a 3 1/2" oak gap strip; uppers turn the corner the same way. Both walls are placed in one room and share the cutting diagrams, lists and build. Tested against a made-up kitchen shaped like Ashley's (150" and 126" walls).
 
 As single cabinets the app plans five: the bathroom vanity, and a kitchen base cabinet, drawer base, sink base and upper cabinet (section K of the rules). All are tested against made-up standard sizes; there are no real kitchen measurements yet.
 
@@ -41,7 +43,7 @@ The engine builds a full plan from three numbers: openings, cut list, cutting di
 
 Test cases: vanity 01, 60" wide × 21" deep × 30" high, left end on a wall, right end exposed; and the five kitchen fixtures in `fixtures/kitchen.ts`. The earlier AI mock-up survives only as a fixture of known errors.
 
-Known limits: front styles (flat or framed) cannot be changed in the app; screws are counted but glue, nails and finish are not; the door and drawer layout can only be changed for the vanity; a run is one straight wall (no corners; nothing over a fridge or range but an empty space or a full upper); the ledge step pictures the mounting strips, not the ledge; a whole room and other project types show as "Not yet". Everything under "Later" needs its rules agreed with Max first, as in Phase 0.
+Known limits: front styles (flat or framed) cannot be changed in the app; screws are counted but glue, nails and finish are not; the door and drawer layout can only be changed for the vanity; a kitchen is one wall or two meeting at one corner (no third wall, no island; nothing over a fridge or range but an empty space or a full upper); the first upper on the second wall of a corner is 12" wider than the cabinet under it and is refused over 48"; the ledge step pictures the mounting strips, not the ledge; a whole room and other project types show as "Not yet". Everything under "Later" needs its rules agreed with Max first, as in Phase 0.
 
 | Phase | What | Status |
 |---|---|---|
@@ -55,8 +57,9 @@ Known limits: front styles (flat or framed) cannot be changed in the app; screws
 | 7 | Cutting tick-off and sizes; picture shopping lists; three approaches; multiple projects | Done |
 | 8 | Kitchen cabinets: base, drawer base, sink base, upper (one at a time) | Done |
 | 9 | A run of cabinets along one wall: shared widths, platform, shopping and cutting | Done |
-| 10 | Upper cabinets over a run | Done, in review |
-| Later | Corners, then a room (rules first); prices, 3D and AI undecided | Not started |
+| 10 | Upper cabinets over a run | Done |
+| 11 | A corner: two walls meeting | Done, in review |
+| Later | An island, a cabinet over the range, a room (rules first); prices, 3D and AI undecided | Not started |
 
 Update this section at the end of every phase.
 
@@ -75,9 +78,9 @@ src/engine/      Pure TypeScript. Design + defaults + catalog in; parts, diagram
   assembly.ts      The small assembly steps: pieces and the way each arrives, glue, screws, tools, hardware (section A).
   cutting.ts       Cutting diagrams (rules C1-C6); the shopping list is the diagrams, counted.
   generatePlan.ts  The engine's entry point for one cabinet.
-  run.ts           The entry point for a run: shares the length out, plans each cabinet, adds the run's platform, cutting and steps (section R), and the row of uppers above it (section W).
+  run.ts           The entry point for a run: shares the length out, plans each cabinet, adds the run's platform, cutting and steps (section R), and the row of uppers above it (section W). With a corner it plans each wall, then puts both in one room (section N).
   colorRoles.ts    The fixed instructional colours (data).
-  defaults/        Every value the app decides: vanity.ts (options, layouts), cabinets.ts (cabinet kinds, starting sizes, proposed layouts), run.ts (appliance spaces, width limits, the upper row, the test wall), catalog.ts (materials, hardware, supplies), tools.ts (tool list, default ticks, safety gear).
+  defaults/        Every value the app decides: vanity.ts (options, layouts), cabinets.ts (cabinet kinds, starting sizes, proposed layouts), run.ts (appliance spaces, width limits, the upper row, the corner, the test wall and test kitchen), catalog.ts (materials, hardware, supplies), tools.ts (tool list, default ticks, safety gear).
   fixtures/        vanity-01.ts and kitchen.ts are the test cases (a kind and three numbers each). mockup-errors.ts holds the old mock-up's mistakes.
   __tests__/       Vitest tests. The expected sizes are the worked example in docs/RULES.md.
 src/app/         React UI: Size (or Run, for a run), Choices, Parts, Cutting, Shop and Build screens. Imports from the engine; never the reverse.
@@ -94,6 +97,7 @@ docs/TOOLS-PROPOSAL.md   The approved tool-inventory proposal: what changed on a
 docs/CABINETS-PROPOSAL.md   The approved kitchen cabinets proposal (stage 1 built).
 docs/RUN-PROPOSAL.md   The approved proposal for a run of cabinets along a wall (built).
 docs/UPPERS-PROPOSAL.md   The approved proposal for upper cabinets over a run (built).
+docs/CORNERS-PROPOSAL.md   The approved proposal for a corner (built).
 public/          Web app manifest and icons.
 ```
 
@@ -108,6 +112,7 @@ Engine rules:
 - Tools are data (`src/engine/defaults/tools.ts`) and ticks are choices with defaults. A method that changes a size is a rule with its own formulas (D5, D9, D10). Solid-wood parts default to boards as sold whatever the tools (rules M5, T3).
 - A missing tool never blocks a plan; it becomes a "buy or borrow" line (rule T2).
 - Validation returns structured issues: severity, parts, explanation, suggested fix. Any error blocks plan generation.
+- With a corner, `plan.placements` is the whole room as seen facing the first wall, and `plan.run.second.placements` is the same room facing the second wall. Steps and openings of the second wall carry `wall: 2`.
 - Every rule in the engine cites its number in `docs/RULES.md`. Change the document and the code together.
 - No AI calls, no accounts, no backend (reconfirmed 27 Nov; revisit with the room planner). Explanations are written templates filled with the user's numbers. Projects save on the device, with export and import of a project file.
 - Colour roles are fixed everywhere: blue left side, green right side, yellow bottom, purple back, orange platform and toe kick, red dividers, teal face frame, pink doors, light blue drawer fronts (and fixed sink panels), grey support pieces, white (dark outline) drawer boxes, brown top panel on wall cabinets; shelves are red like dividers. In step pictures, lime marks glue and black dots mark screws; no part uses those. Never rely on colour alone; always show the part ID.

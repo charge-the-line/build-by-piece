@@ -142,14 +142,16 @@ interface Props {
 }
 
 export function StepPicture({ plan, step, title, mode }: Props) {
-  const placeOf = new Map(plan.placements.map((p) => [keyOf(p), p]));
+  // N8: a step on the second wall of a corner is drawn facing that wall.
+  const placements = step.wall === 2 && plan.run?.second ? plan.run.second.placements : plan.placements;
+  const placeOf = new Map(placements.map((p) => [keyOf(p), p]));
   const partOf = new Map(plan.parts.map((p) => [p.id, p]));
   const earlierPlaces = step.earlierPieces.map((ref) => placeOf.get(keyOf(ref))!);
   const newPlaces = step.pieces.map((piece) => ({ piece, place: placeOf.get(keyOf(piece))! }));
 
   // The frame of the picture: the whole cabinet for a step done in place, or
   // just the sub-assembly for one built on the bench.
-  const whole = step.cabinet ? plan.placements.filter((p) => p.partId.startsWith(`${step.cabinet!.id}-`)) : plan.placements;
+  const whole = step.cabinet ? placements.filter((p) => p.partId.startsWith(`${step.cabinet!.id}-`)) : placements;
   const framed = step.scene === 'cabinet' ? whole : [...earlierPlaces, ...newPlaces.map((n) => n.place)];
   const extent = (lowKey: 'x' | 'y' | 'z', sizeKey: 'sizeX' | 'sizeY' | 'sizeZ') =>
     Math.max(...framed.map((p) => p[lowKey] + p[sizeKey])) / mark - Math.min(...framed.map((p) => p[lowKey])) / mark;

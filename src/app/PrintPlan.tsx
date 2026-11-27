@@ -1,7 +1,7 @@
 import type { PlanResult, Design } from '../engine/types';
 import { CutListTab } from './CutListTab';
 import { CuttingTab } from './CuttingTab';
-import { FrontView } from './FrontView';
+import { FloorView, FrontView } from './FrontView';
 import { ShoppingTab } from './ShoppingTab';
 import { StepView } from './steps/StepView';
 
@@ -14,7 +14,9 @@ export function PrintPlan({ design, plan }: { design: Design; plan: PlanResult }
         {design.projectType === 'run' ? `A run ${design.length.entered}" long` : `${design.width.entered}" wide`} × {design.depth.entered}" deep × {design.height.entered}" high. Depth is wall to
         the front of the face frame; height is the box without the platform or top.
       </p>
+      <FloorView plan={plan} />
       <FrontView plan={plan} />
+      {plan.run?.second && <FrontView plan={plan} wall={2} />}
       <ShoppingTab plan={plan} checked={{}} onCheck={() => undefined} forPrint />
       <CutListTab plan={plan} forPrint />
       <CuttingTab design={design} plan={plan} onChange={() => undefined} checked={{}} onCheck={() => undefined} forPrint />

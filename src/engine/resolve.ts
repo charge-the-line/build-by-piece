@@ -102,6 +102,8 @@ export interface Resolved {
   readonly idPrefix: string;
   /** False for a wall cabinet, and for a cabinet in a run, whose platform belongs to the run (R4). */
   readonly buildsPlatform: boolean;
+  /** N3: how far the box runs past one end of the frame, into a corner. */
+  readonly blind?: { readonly side: 'left' | 'right'; readonly by: Val };
   readonly W: Val;
   readonly D: Val;
   readonly H: Val;
@@ -341,7 +343,7 @@ export function resolveVanity(design: VanityDesign, defaults: VanityOptions, cat
       : { by: spec.by };
 
   const maxDoorWidth = length(options.fronts.maxDoorWidth, 'fronts.maxDoorWidth', 'widest single door');
-  const layout = options.layout === 'auto' ? proposeLayout(kind.type, W.value, S.value, maxDoorWidth.value) : options.layout;
+  const layout = options.layout === 'auto' ? proposeLayout(kind.type, W.value, S.value, maxDoorWidth.value, context.blind?.side) : options.layout;
   const heightWord = (spec: Bay['width']) => (spec.by === 'front' ? 'front' : 'opening');
   const capital = (text: string) => text.charAt(0).toUpperCase() + text.slice(1);
   const bays: ResolvedBay[] = layout.map((bay, index) => {
@@ -435,6 +437,7 @@ export function resolveVanity(design: VanityDesign, defaults: VanityOptions, cat
     kind,
     idPrefix: context.idPrefix ?? 'P',
     buildsPlatform: kind.hasPlatform && !context.sharedPlatform,
+    ...(context.blind ? { blind: { side: context.blind.side, by: { label: 'part hidden in the corner', value: context.blind.by, status: 'assumed' as const, origin: 'appDefault' as const, source: 'rule N3' } } } : {}),
     W,
     D,
     H,

@@ -26,6 +26,8 @@ export const glossary: readonly GlossaryEntry[] = [
   { plain: 'Leftover', term: 'offcut', meaning: 'A piece left after cutting that is big enough to keep and use again.' },
   { plain: 'Mounting strip', term: 'nailer', meaning: 'A board across the top back of the box. Screws go through it into the wall.' },
   { plain: 'Wall framing', term: 'stud', meaning: 'An upright timber inside the wall. Screws must go into studs to hold the cabinet.' },
+  { plain: 'Gap strip', term: 'filler strip', meaning: 'A board that closes the gap left at a corner so doors and drawers can open past the handles on the other wall.' },
+  { plain: 'Blind panel', term: 'blind panel', meaning: 'A plain panel that closes the part of a corner cabinet nobody sees. You reach behind it through the door.' },
   { plain: 'Thin wedge', term: 'shim', meaning: 'A thin wedge pushed under something to raise one side until it is level.' },
 ];
 

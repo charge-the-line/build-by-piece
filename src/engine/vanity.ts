@@ -132,9 +132,15 @@ export function buildVanity(r: Resolved, bays: readonly LaidBay[], methods: Plan
   const rightOverhang: Val | undefined = r.ends.right === 'wall' ? r.wallOverhang : undefined;
   const exposedEnds = [r.ends.left, r.ends.right].filter((end) => end === 'exposed').length;
   const less = (val: Val | undefined): Addend[] => (val ? [[-1, val]] : []);
+  // N3: at a corner the box runs on past one end of the frame.
+  const leftBlind: Val | undefined = r.blind?.side === 'left' ? r.blind.by : undefined;
+  const rightBlind: Val | undefined = r.blind?.side === 'right' ? r.blind.by : undefined;
+  const more = (val: Val | undefined): Addend[] => (val ? [[1, val]] : []);
 
   // --- B1: box size --------------------------------------------------------
-  const boxWidth = derive('B1', 'cabinet width minus the frame overhang on each wall end', sum(W, ...less(leftOverhang), ...less(rightOverhang)));
+  const boxWidth = r.blind
+    ? derive('N3', 'frame width plus the part hidden in the corner', sum(W, ...less(leftOverhang), ...less(rightOverhang), ...more(leftBlind), ...more(rightBlind)))
+    : derive('B1', 'cabinet width minus the frame overhang on each wall end', sum(W, ...less(leftOverhang), ...less(rightOverhang)));
   const WB = named('box width', boxWidth);
   const boxDepth = derive('B1', 'cabinet depth minus face frame thickness', sum(D, [-1, tf]));
   const DB = named('box depth', boxDepth);
@@ -151,8 +157,8 @@ export function buildVanity(r: Resolved, bays: readonly LaidBay[], methods: Plan
     return detail ? `${name} (${detail})` : name;
   };
   const topY = floorY + H.value;
-  const xLeft = leftOverhang?.value ?? 0; // outside face of the left side
-  const xRight = W.value - (rightOverhang?.value ?? 0); // outside face of the right side
+  const xLeft = (leftOverhang?.value ?? 0) - (leftBlind?.value ?? 0); // outside face of the left side
+  const xRight = W.value - (rightOverhang?.value ?? 0) + (rightBlind?.value ?? 0); // outside face of the right side
   const supportWidth = r.supportBoard.width.value;
 
   // --- B2: sides -----------------------------------------------------------
@@ -240,12 +246,12 @@ export function buildVanity(r: Resolved, bays: readonly LaidBay[], methods: Plan
 
   // --- B6, B7: one top front support and one mounting strip per section ---
   const panelEdges: { right: Expr; nextLeft: Expr }[] = [];
-  let previousRight = sum(...(leftOverhang ? [leftOverhang] : []), t);
+  let previousRight = sum(...(leftOverhang ? [leftOverhang] : []), ...less(leftBlind), t);
   for (const divider of [...dividers.values()]) {
     panelEdges.push({ right: previousRight, nextLeft: divider.left });
     previousRight = sum(divider.left, t);
   }
-  panelEdges.push({ right: previousRight, nextLeft: sum(W, ...less(rightOverhang), [-1, t]) });
+  panelEdges.push({ right: previousRight, nextLeft: sum(W, ...less(rightOverhang), ...more(rightBlind), [-1, t]) });
 
   const asSold = derive('M5', 'width of the board as sold', r.supportBoard.width);
   // B6: a wall cabinet's top panel does this job, so it has no top front supports.
@@ -286,7 +292,7 @@ export function buildVanity(r: Resolved, bays: readonly LaidBay[], methods: Plan
       const shelves = Math.max(0, Math.ceil(inside / r.shelfSpacing.value) - 1);
       const gap = Math.floor((inside - shelves * tv) / (shelves + 1));
       heights = Array.from({ length: shelves }, (_, k) => floorY + tv + (k + 1) * gap + k * tv);
-    } else if (r.kind.type === 'base') {
+    } else if (r.kind.type === 'base' || r.kind.type === 'cornerBase') {
       // One shelf, halfway up the door opening, set back so the door closes.
       const door = inSection.find((o) => o.kind === 'door');
       if (door) heights = [topY - door.top.value - door.height.value + Math.floor((door.height.value - tv) / 2)];
@@ -305,6 +311,21 @@ export function buildVanity(r: Resolved, bays: readonly LaidBay[], methods: Plan
     });
     place(id, heights.map((y): Box => [edge.right.value, y, tb.value, clear.value, tv, depth.value]));
   });
+
+  // --- N3: the panel that closes the hidden part of the front ---------------
+  if (r.blind) {
+    const panel = add({
+      name: 'Blind panel',
+      tradeTerm: 'blind panel',
+      role: 'support',
+      assembly: 'Box',
+      material: r.caseSheet,
+      length: derive('N3', 'box height', H),
+      width: derive('N3', 'the part of the box hidden in the corner', r.blind.by),
+    });
+    // In line with the face frame, from the end of the frame to the end of the box.
+    place(panel, [[leftBlind ? xLeft : W.value, floorY, DB.value, r.blind.by.value, H.value, t.value]]);
+  }
 
   // K6: a sink needs room.
   if (r.kind.type === 'sinkBase' && W.value < r.sinkMinimumWidth.value) {
