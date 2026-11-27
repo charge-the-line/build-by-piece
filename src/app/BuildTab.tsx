@@ -1,7 +1,7 @@
 import { useState } from 'react';
-import type { PlanResult, Step } from '../engine/types';
-import { checkKey, StepView } from './steps/StepView';
-import { stepTemplates } from './steps/templates';
+import type { PlanResult, Step, StepChapter } from '../engine/types';
+import { StepView } from './steps/StepView';
+import { chapterNames } from './steps/templates';
 
 interface Props {
   readonly plan: PlanResult;
@@ -10,12 +10,12 @@ interface Props {
   readonly onPrint: () => void;
 }
 
+export const doneKey = (step: Step) => `${step.id}:done`;
+
 export function BuildTab({ plan, checked, onCheck, onPrint }: Props) {
-  // Blocked plans have no steps, so the methods are only read when there is something to show.
-  const keysOf = (s: Step) => stepTemplates[s.templateId]!.checklist(s.values, plan.methods!).map((_, i) => checkKey(s, i));
-  const stepDone = (s: Step) => keysOf(s).every((k) => checked[k]);
-  // Open at the first step that still has something to check.
-  const [index, setIndex] = useState(() => Math.max(0, plan.steps.findIndex((s) => !stepDone(s))));
+  const isDone = (s: Step) => checked[doneKey(s)] === true;
+  // Open at the first step not yet done.
+  const [index, setIndex] = useState(() => Math.max(0, plan.steps.findIndex((s) => !isDone(s))));
   if (!plan.canGeneratePlan || plan.steps.length === 0) {
     return (
       <section>
@@ -24,49 +24,70 @@ export function BuildTab({ plan, checked, onCheck, onPrint }: Props) {
       </section>
     );
   }
-  const step = plan.steps[Math.min(index, plan.steps.length - 1)]!;
-  const allKeys = plan.steps.flatMap(keysOf);
-  const done = allKeys.filter((k) => checked[k]).length;
+  const last = plan.steps.length - 1;
+  const at = Math.min(index, last);
+  const step = plan.steps[at]!;
+  const done = plan.steps.filter(isDone).length;
+  const chapters = [...new Set(plan.steps.map((s) => s.chapter))];
   const go = (to: number) => {
-    setIndex(to);
+    setIndex(Math.max(0, Math.min(last, to)));
     window.scrollTo({ top: 0 });
+  };
+  const finishStep = () => {
+    onCheck(doneKey(step), true);
+    go(at + 1);
+  };
+  const chapterState = (chapter: StepChapter) => {
+    const mine = plan.steps.filter((s) => s.chapter === chapter);
+    return { first: plan.steps.indexOf(mine[0]!), done: mine.filter(isDone).length, total: mine.length };
   };
 
   return (
     <>
       <section className="progress" aria-label="Progress">
+        <progress value={done} max={plan.steps.length} aria-label={`${done} of ${plan.steps.length} steps done`} />
         <p>
-          <strong>
-            Step {step.number} of {plan.steps.length}
-          </strong>{' '}
-          · {done} of {allKeys.length} checks done
+          {done} of {plan.steps.length} steps done
         </p>
-        <progress value={done} max={allKeys.length} />
-        <ol className="stepDots">
-          {plan.steps.map((s, i) => (
-            <li key={s.id}>
-              <button type="button" aria-current={s.id === step.id ? 'step' : undefined} aria-label={`Step ${s.number}: ${stepTemplates[s.templateId]!.title}${stepDone(s) ? ', done' : ''}`} className={stepDone(s) ? 'done' : ''} onClick={() => go(i)}>
-                {s.number}
-              </button>
-            </li>
-          ))}
-        </ol>
       </section>
 
-      <StepView plan={plan} step={step} checked={checked} onCheck={onCheck} />
+      <StepView plan={plan} step={step} />
 
       <div className="stepNav">
-        <button type="button" disabled={step.number === 1} onClick={() => go(step.number - 2)}>
+        <button type="button" disabled={at === 0} onClick={() => go(at - 1)}>
           Back
         </button>
-        <button type="button" className="primary" disabled={step.number === plan.steps.length} onClick={() => go(step.number)}>
-          Next step
+        <button type="button" className="primary" onClick={finishStep}>
+          {isDone(step) ? 'Next' : at === last ? 'Done' : 'Done, next'}
         </button>
       </div>
+      {isDone(step) && (
+        <button type="button" className="quiet" onClick={() => onCheck(doneKey(step), false)}>
+          Mark this step as not done
+        </button>
+      )}
+
+      <section>
+        <h2>Jump to</h2>
+        <ul className="chapters">
+          {chapters.map((chapter) => {
+            const state = chapterState(chapter);
+            return (
+              <li key={chapter}>
+                <button type="button" aria-current={step.chapter === chapter ? 'step' : undefined} onClick={() => go(state.first)}>
+                  <span>{chapterNames[chapter]}</span>
+                  <span className="chapterCount">
+                    {state.done} of {state.total}
+                  </span>
+                </button>
+              </li>
+            );
+          })}
+        </ul>
+      </section>
 
       <section>
         <h2>Print the whole plan</h2>
-        <p>Shopping list, cut list, cutting diagrams and every step, ready to print or save as a PDF.</p>
         <button type="button" onClick={onPrint}>
           Print or save as PDF
         </button>

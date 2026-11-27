@@ -1,232 +1,284 @@
 /**
  * The words for each assembly step. Written templates, filled in with the
- * plan's numbers: no text here is generated, and no size is typed in.
+ * plan's numbers: nothing here is generated and no size is typed in.
+ *
+ * Pictures first: `say` is the one or two short sentences shown under the
+ * picture. `more` is the fuller explanation, tucked behind "More detail".
  */
-import type { PlanMethods, Step, Ticks } from '../../engine/types';
+import type { PlanMethods, Step, StepChapter, Ticks } from '../../engine/types';
 import { fmt } from '../format';
 
 type Values = Step['values'];
 
 export interface StepTemplate {
-  readonly title: string;
-  /** `m` is the method chosen for each job, so the words match her tools (rule T7). */
-  readonly instructions: (v: Values, m: PlanMethods) => readonly string[];
-  readonly checklist: (v: Values, m: PlanMethods) => readonly string[];
+  readonly title: (v: Values) => string;
+  readonly say: (v: Values, m: PlanMethods) => string;
+  readonly more: (v: Values, m: PlanMethods) => readonly string[];
 }
 
 const size = (v: Values, key: string) => fmt((v[key] ?? 0) as Ticks);
 const count = (v: Values, key: string) => Number(v[key] ?? 0);
+const is = (v: Values, key: string) => count(v, key) > 0;
 
 const nailIt = (m: PlanMethods) => (m.nailing === 'bradNailer' ? 'with the brad nailer' : 'with a hammer and small nails');
 const sandIt = (m: PlanMethods) => (m.sanding === 'sander' ? 'with the sander' : 'with a sanding block');
+const fixed = (title: string) => () => title;
 
-/** Shared by every way of making the fronts. */
-const flatFronts = (v: Values, m: PlanMethods): string[] =>
-  count(v, 'flat') > 0 ? [`${count(v, 'flat')} of the fronts are flat boards, already the right size. Smooth their edges ${sandIt(m)}.`] : [];
+const SQUARE = 'Measure corner to corner both ways. The two numbers should match.';
+const pipes = [
+  'Do this before the cabinet goes against the wall.',
+  'Measure from the floor and from the side wall to each pipe. The cabinet sits on the platform, so measure up from the floor, not from the bottom of the box.',
+  'Mark from inside the cabinet, and measure twice.',
+  'Keep the opening clear of the mounting strips.',
+];
 
-const buildFrame = 'Drill pocket holes in the back of each cross piece, then glue and screw the cross pieces between the uprights. Check each frame is flat and square.';
+export const chapterNames: Readonly<Record<StepChapter, string>> = {
+  platform: 'Platform',
+  box: 'Box',
+  faceFrame: 'Face frame',
+  drawerBoxes: 'Drawer boxes',
+  fronts: 'Doors and drawer fronts',
+  finish: 'Sanding and finish',
+  install: 'Putting it in place',
+  drawers: 'Drawers',
+  doors: 'Doors and handles',
+};
 
 export const stepTemplates: Readonly<Record<string, StepTemplate>> = {
-  platform: {
-    title: 'Build the platform',
-    instructions: (v) => [
-      'Stand the 2x4s on edge. The two long rails go at the front and back, and the short cross supports fit between them.',
-      `Put a cross support at each end, then one every ${size(v, 'spacing')} measured from the left end. There are ${count(v, 'supports')} in all.`,
-    ],
-    checklist: (v) => [
-      'Rails and cross supports are flush along the top',
-      'Corner to corner measures the same both ways, so it is square',
-      `The platform is ${size(v, 'height')} high all the way round`,
+  platformEnds: {
+    title: fixed('Start the platform'),
+    say: () => 'Stand the two long boards on edge. Screw a short support between them at each end.',
+    more: () => ['Keep the tops flush.', SQUARE],
+  },
+  platformMiddle: {
+    title: fixed('Add the middle supports'),
+    say: (v) => `Screw in ${count(v, 'supports')} more, one every ${size(v, 'spacing')} from the left end.`,
+    more: () => ['Mark the centres on both long boards before you start.', 'Keep the tops flush.'],
+  },
+  boxLeft: {
+    title: fixed('Attach the left side'),
+    say: () => 'Glue the end of the bottom panel. Screw through its pocket holes into the left side.',
+    more: () => [
+      'First drill pocket holes along both short edges of the underside of the bottom panel.',
+      'The bottom is flush with the front and bottom edges of the side. At the back it stops short, leaving room for the back panel.',
+      'If this end will be seen, put the good face out.',
     ],
   },
-  box: {
-    title: 'Join the sides to the bottom',
-    instructions: () => [
-      'Lay the bottom panel upside down and drill pocket holes along both short edges of its underside.',
-      'Stand the side panels up with the bottom between them, flush with their bottom edges. Glue, clamp and screw.',
-      'Keep the bottom flush with the front edges of the sides. At the back it stops short, leaving room for the back panel.',
-    ],
-    checklist: () => [
-      'The good face points out on any end that will be seen',
-      'Bottom is flush with the front and bottom edges of both sides',
-      'Both corners are square',
-    ],
+  boxRight: {
+    title: fixed('Attach the right side'),
+    say: () => 'Do the same at the other end with the right side.',
+    more: () => ['Flush with the front and bottom edges, as before.', 'If this end will be seen, put the good face out.'],
   },
   dividers: {
-    title: 'Stand the dividers on the bottom',
-    instructions: (v) => [
-      `The ${count(v, 'dividers')} dividers stand on the bottom panel, flush with its front and back edges. Drill their pocket holes on the side that faces the drawers, where they will be hidden.`,
-      'The top front supports from the next step are cut to the exact gap between panels. Use them as spacers to set each divider before you screw it down.',
+    title: fixed('Stand the dividers'),
+    say: (v) => `Glue and screw the ${count(v, 'dividers')} dividers to the bottom panel.`,
+    more: () => [
+      'Pocket holes go on the side that faces the drawers, where they will be hidden.',
+      'Do not measure where they go. The top front supports in the next step are cut to the exact gap, so use them as spacers.',
+      'Flush with the front edge of the bottom panel.',
     ],
-    checklist: () => ['Each divider is spaced with its top front support', 'Dividers are flush with the front edge of the bottom', 'Dividers stand straight up'],
   },
-  supports: {
-    title: 'Tie the top together',
-    instructions: () => [
-      'Each section of the box gets two boards across the top: a top front support lying flat at the front, and a mounting strip standing on edge at the back.',
-      'Fit them between the sides and dividers, flush with the top edges. Each board is cut to the exact width of its section, so a snug fit means the panels are in the right place.',
-      'Line up the back of each mounting strip with the back edge of the bottom panel, so the back panel can sit against both.',
-    ],
-    checklist: (v) => [
-      `${count(v, 'sections')} top front supports are flush with the front and top`,
-      `${count(v, 'sections')} mounting strips are flush with the top`,
-      'Dividers are still straight up',
-    ],
+  topSupports: {
+    title: fixed('Add the top front supports'),
+    say: () => 'Lay one board flat across the top front of each section. Glue and screw.',
+    more: () => ['Flush with the front edge and the top.', 'Each board is cut for its own section. A snug fit means the panels are in the right place.', 'Pocket holes face up, where the top will hide them.'],
+  },
+  mountingStrips: {
+    title: fixed('Add the mounting strips'),
+    say: () => 'Stand one board on edge across the top back of each section. Glue and screw.',
+    more: () => ['Flush with the top.', 'Line its back up with the back edge of the bottom panel, so the back panel can sit against both.'],
   },
   back: {
-    title: 'Close the back',
-    instructions: (_v, m) => [
-      `Run glue along the back edges of the bottom, the dividers and the mounting strips. Drop the back panel in between the two sides and nail it on ${nailIt(m)}.`,
-      'Before the glue sets, measure corner to corner both ways and nudge the box until the two numbers match.',
-    ],
-    checklist: () => ['Back sits between the sides, not over them', 'Corner to corner measures the same both ways', 'Squeezed-out glue is wiped off'],
+    title: fixed('Close the back'),
+    say: (_v, m) => `Glue the back edges. Drop the back panel between the sides and nail it ${nailIt(m)}.`,
+    more: () => ['Glue goes on the back edges of the bottom, the dividers and the mounting strips.', `Before the glue sets: ${SQUARE} Nudge the box until they do.`],
   },
-  faceFrame: {
-    title: 'Build the face frame and glue it on',
-    instructions: (v) => [
-      'Lay the frame pieces face down on a flat surface in the positions shown. Drill pocket holes in the back of every piece that butts into another, then glue and screw them together.',
-      'Lay the box on its back. Glue its front edges, set the frame on top, and screw through the pocket holes in the side panels.',
-      count(v, 'wallEnds') > 0
+  frameOuter: {
+    title: fixed('Start the face frame'),
+    say: () => 'Lay the pieces face down. Glue and screw the long pieces between the two end pieces.',
+    more: () => ['Pocket holes go in the back of the long pieces.', 'Clamp each joint flat while you drive the screw, so the front faces stay flush.', SQUARE],
+  },
+  frameInner: {
+    title: fixed('Add the inner uprights'),
+    say: () => 'Glue and screw each inner upright between the top and bottom pieces.',
+    more: () => ['Pocket holes go in the back of each upright, at both ends.', 'The gap between uprights is the width of each opening. Cut a scrap to that width and use it as a spacer.'],
+  },
+  frameDrawerRails: {
+    title: fixed('Add the pieces between drawers'),
+    say: () => 'Glue and screw the short pieces between the uprights of each drawer column.',
+    more: () => ['Pocket holes go in the back of each short piece, at both ends.', 'Set the same heights in both columns so the drawers line up.'],
+  },
+  frameOn: {
+    title: fixed('Fix the frame to the box'),
+    say: () => 'Glue the front edges of the box. Lay the frame on and screw through the side panels.',
+    more: (v) => [
+      'Lay the box on its back first.',
+      is(v, 'wallEnds')
         ? `On a wall end the frame runs ${size(v, 'overhang')} past the side panel, so it can be trimmed to fit the wall. On an end that will be seen, keep it flush.`
         : 'Keep the frame flush with the outside of both side panels.',
-      'The top and bottom of the frame are flush with the top and bottom of the box.',
-    ],
-    checklist: (v) => [
-      'Frame joints are flush on the front face',
-      'Frame is flush with the top and bottom of the box',
-      count(v, 'wallEnds') > 0 ? `Frame overhangs the wall end by ${size(v, 'overhang')}` : 'Frame is flush with both ends',
-      'Each opening measures the same corner to corner both ways',
+      'Top and bottom of the frame are flush with the top and bottom of the box.',
     ],
   },
   spacers: {
-    title: 'Add the drawer slide spacers',
-    instructions: () => [
-      'The frame stands proud of the side panels, so each drawer slide on a side panel needs a spacer behind it.',
-      'Glue and screw each spacer to the inside of the side panel, with its bottom edge level with the bottom of its drawer opening and its front end against the back of the face frame. Where two thin layers are shown, stack them.',
-      'The face of the spacer should end up level with the edge of the opening. Hold a straight edge across to check.',
-    ],
-    checklist: (v) => [`${count(v, 'spacers')} spacer strips are fixed`, 'Each spacer face is level with the edge of its opening'],
-  },
-  drawerBoxes: {
-    title: 'Build the drawer boxes',
-    instructions: (v, m) => [
-      `There are ${count(v, 'boxes')} boxes. In each one, the front and back pieces fit between the two sides. Drill pocket holes on the outside faces of the front and back pieces, then glue and screw.`,
-      `Check the box is square, then glue the bottom on underneath, flush all round, and nail it ${nailIt(m)}.`,
-    ],
-    checklist: () => [
-      'Front and back pieces sit between the sides, flush top and bottom',
-      'Each box measures the same corner to corner both ways',
-      'Bottoms are flush all round',
-      'Each box has its drawer name written inside',
+    title: fixed('Add the slide spacers'),
+    say: () => 'Glue and screw a spacer strip to the side panel behind each drawer opening.',
+    more: () => [
+      'The frame stands proud of the side panel, so the slide needs a spacer behind it.',
+      'Bottom edge level with the bottom of its drawer opening. Front end against the back of the face frame.',
+      'Where two thin layers are shown, stack them.',
+      'The face of the spacer should end up level with the edge of the opening. Check with a straight edge.',
     ],
   },
-  // T5, default with a router: build the frame, then rout a recess round the back for the panel.
-  'fronts-routedRecess': {
-    title: 'Build the doors and drawer fronts',
-    instructions: (v, m) => [
-      `${count(v, 'framed')} of the fronts are framed: two uprights, two cross pieces and a thin centre panel. Build each frame first. ${buildFrame}`,
-      `Lay the frame face down. With the bearing-guided bit in the router, cut a recess ${size(v, 'recess')} wide all round the inside edge of the back. Set the depth of cut to ${size(v, 'panelThickness')}, the thickness of your panel, so the panel ends up flush with the back.`,
-      'The bit leaves the four corners of the recess rounded. Lay the panel over the recess, mark the corners, and round them to match so the panel drops in.',
-      'Run a thin line of glue in the recess, press the panel in and leave it flat until the glue sets.',
-      ...flatFronts(v, m),
-    ],
-    checklist: (v) => [
-      'Frames are flat and square before routing',
-      `Recess is ${size(v, 'panelThickness')} deep all the way round`,
-      'Panels sit flush with the back of their frames',
-      'Front faces are sanded',
+  drawerBoxSides: {
+    title: fixed('Build a drawer box'),
+    say: () => 'Glue and screw the front and back pieces between the two sides.',
+    more: () => ['Pocket holes go on the outside faces of the front and back pieces.', 'Flush top and bottom.', 'Write the drawer name inside each box.'],
+  },
+  drawerBoxBottom: {
+    title: fixed('Add the drawer bottom'),
+    say: (_v, m) => `Check the box is square. Glue the bottom on underneath and nail it ${nailIt(m)}.`,
+    more: () => [SQUARE, 'Flush all round.'],
+  },
+  frontFrame: {
+    title: (v) => (is(v, 'isDoor') ? 'Build a door frame' : 'Build a drawer front frame'),
+    say: () => 'Glue and screw the two cross pieces between the uprights.',
+    more: () => ['Pocket holes go in the back of each cross piece.', 'Clamp each joint flat so the front faces stay flush.', SQUARE],
+  },
+  frontRecess: {
+    title: fixed('Rout the recess'),
+    say: (v) => `Lay the frame face down. Rout a recess ${size(v, 'recess')} wide and ${size(v, 'panelThickness')} deep round the inside edge.`,
+    more: () => [
+      'Use the bearing-guided bit. The bearing rides along the inside edge of the frame.',
+      'The depth is the thickness of your panel, so the panel ends up flush with the back.',
+      'Go round in two shallow passes, not one deep one.',
+      'Try it on an offcut first.',
     ],
   },
-  // T5, advanced: a groove in each frame piece before assembly.
-  'fronts-stoppedGroove': {
-    title: 'Build the doors and drawer fronts',
-    instructions: (v, m) => [
-      `${count(v, 'framed')} of the fronts are framed: two uprights, two cross pieces and a thin centre panel. Before assembly, rout a groove ${size(v, 'groove')} deep and ${size(v, 'panelThickness')} wide, the thickness of your panel, along the inside edge of every frame piece.`,
-      'On the cross pieces the groove runs the full length. On the uprights, stop it before each end so it does not show on the top and bottom of the door. Mark the stopping points first.',
-      'Drill pocket holes in the back of each cross piece. Slide the panel into the grooves without glue, then glue and screw the cross pieces between the uprights.',
-      ...flatFronts(v, m),
-    ],
-    checklist: () => ['Grooves on the uprights stop short of both ends', 'Panels slide in without forcing', 'Frames are flat and square', 'Front faces are sanded'],
+  frontPanelRecess: {
+    title: fixed('Glue in the panel'),
+    say: () => 'Round the corners of the panel to match the recess. Glue it in.',
+    more: () => ['The bit leaves the corners of the recess rounded. Lay the panel over it and mark the corners.', 'Leave it flat until the glue sets.'],
   },
-  // T5, with a table saw and no router.
-  'fronts-sawnGroove': {
-    title: 'Build the doors and drawer fronts',
-    instructions: (v, m) => [
-      `${count(v, 'framed')} of the fronts are framed: two uprights, two cross pieces and a thin centre panel. Before assembly, cut a groove ${size(v, 'groove')} deep and ${size(v, 'panelThickness')} wide, the thickness of your panel, along the inside edge of every frame piece on the table saw. Make a test cut in an offcut first and check the panel fits.`,
-      'The groove runs the full length of every piece, so it shows as a small notch on the top and bottom edges of each front.',
-      'Drill pocket holes in the back of each cross piece. Slide the panel into the grooves without glue, then glue and screw the cross pieces between the uprights.',
-      ...flatFronts(v, m),
-    ],
-    checklist: () => ['A test groove fits the panel', 'Panels slide in without forcing', 'Frames are flat and square', 'Front faces are sanded'],
-  },
-  // T5, with neither: the panel is fixed to the back of the finished frame.
-  'fronts-panelOnBack': {
-    title: 'Build the doors and drawer fronts',
-    instructions: (v, m) => [
-      `${count(v, 'framed')} of the fronts are framed: two uprights, two cross pieces and a thin centre panel fixed to the back. Build each frame first. ${buildFrame}`,
-      `Lay the frame face down and set the panel on its back, ${size(v, 'panelGap')} in from the edges. On a door, the edge where the hinges go is different: keep the panel ${size(v, 'hingeSpace')} in from that edge, so the hinges have solid wood to mount on. Mark the hinge edge before you start.`,
-      `Glue the panel down and nail it ${nailIt(m)}. Keep the nails short enough not to come through the front.`,
-      ...flatFronts(v, m),
-    ],
-    checklist: (v) => [
-      `Each door panel is ${size(v, 'hingeSpace')} in from the hinge edge`,
-      `Every other panel edge is ${size(v, 'panelGap')} in from the edge of its front`,
-      'No nail has come through a front face',
-      'Front faces are sanded',
+  frontPanelOnBack: {
+    title: fixed('Fix the panel on the back'),
+    say: (v, m) =>
+      is(v, 'isDoor')
+        ? `Keep the panel ${size(v, 'hingeSpace')} from the hinge edge and ${size(v, 'panelGap')} from the others. Glue and nail it ${nailIt(m)}.`
+        : `Keep the panel ${size(v, 'panelGap')} in from every edge. Glue and nail it ${nailIt(m)}.`,
+    more: (v) => [
+      ...(is(v, 'isDoor') ? ['Mark the hinge edge before you start. The hinges need solid wood there.'] : []),
+      'Lay the frame face down first.',
+      'Use nails short enough not to come through the front.',
     ],
   },
-  frontsFlat: {
-    title: 'Prepare the doors and drawer fronts',
-    instructions: (v, m) => flatFronts(v, m),
-    checklist: () => ['Edges are smooth', 'Front faces are sanded'],
-  },
-  // A10: openings for the pipes. Positions are measured on site, so nothing here quotes a size.
-  plumbingHoleSaw: {
-    title: 'Cut the openings for the pipes',
-    instructions: () => [
-      'Before the cabinet goes against the wall, find where each pipe comes out of the wall. Measure from the floor and from the side wall (or from where the end of the cabinet will be) to the centre of each pipe.',
-      'Mark the same points on the back panel from inside the cabinet. Remember the cabinet sits on the platform, so measure up from the floor, not from the bottom of the box.',
-      'With a hole saw a little larger than the pipe, drill a hole at each mark. Drill from the inside until the centre bit just comes through, then finish from the back for a clean edge.',
+  frontGrooveRouter: {
+    title: fixed('Rout the grooves'),
+    say: (v) => `Rout a groove ${size(v, 'groove')} deep and ${size(v, 'panelThickness')} wide along the inside edge of each piece.`,
+    more: () => [
+      'The width is the thickness of your panel.',
+      'On the cross pieces the groove runs the full length.',
+      'On the uprights, stop it before each end so it does not show on the top and bottom of the front. Mark the stopping points first.',
+      'Try it on an offcut and check the panel slides in.',
     ],
-    checklist: () => ['Every pipe has a mark', 'Each mark was measured twice', 'Holes are clear of the mounting strips'],
+  },
+  frontGrooveSaw: {
+    title: fixed('Cut the grooves'),
+    say: (v) => `On the table saw, cut a groove ${size(v, 'groove')} deep and ${size(v, 'panelThickness')} wide along the inside edge of each piece.`,
+    more: () => ['The width is the thickness of your panel.', 'The groove runs the full length, so it shows as a small notch on the top and bottom edges.', 'Try it on an offcut and check the panel slides in.'],
+  },
+  frontFrameWithPanel: {
+    title: (v) => (is(v, 'isDoor') ? 'Assemble a door' : 'Assemble a drawer front'),
+    say: () => 'Slide the panel into the grooves, with no glue. Glue and screw the cross pieces between the uprights.',
+    more: () => ['Pocket holes go in the back of each cross piece.', 'The panel is left loose so the wood can move.', SQUARE],
+  },
+  sand: {
+    title: fixed('Sand what will be seen'),
+    say: (_v, m) => `Sand the frame, the doors, the drawer fronts and any side that shows, ${sandIt(m)}.`,
+    more: () => ['Start with medium paper and finish with fine.', 'Sand along the grain.', 'Wipe off the dust.'],
+  },
+  finish: {
+    title: fixed('Stain or paint'),
+    say: () => 'Put your stain or paint on everything you sanded.',
+    more: () => ['Try it on an offcut first.', 'Do the doors and drawer fronts flat, before they are hung.', 'Follow the drying time on the tin.'],
+  },
+  topcoat: {
+    title: fixed('Add a clear coat'),
+    say: () => 'Brush on a clear protective coat. Let it dry, sand lightly, and coat again.',
+    more: () => ['A bathroom needs a finish that stands up to water.', 'Follow the drying time on the tin.'],
   },
   plumbingJigsaw: {
-    title: 'Cut the opening for the pipes',
-    instructions: () => [
-      'Before the cabinet goes against the wall, find where the pipes come out of the wall. Measure from the floor and from the side wall (or from where the end of the cabinet will be) to the pipes.',
-      'Mark one rectangle on the back panel, from inside the cabinet, big enough to take all the pipes with a little room to spare. Remember the cabinet sits on the platform, so measure up from the floor, not from the bottom of the box.',
-      'Drill a starter hole inside one corner of the rectangle, put the jigsaw blade through it, and cut along the lines.',
-    ],
-    checklist: () => ['The rectangle covers every pipe', 'It was measured twice', 'The opening is clear of the mounting strips'],
+    title: fixed('Cut the opening for the pipes'),
+    say: () => 'Mark one rectangle on the back panel that covers all the pipes. Cut it out with the jigsaw.',
+    more: () => [...pipes, 'Drill a starter hole inside one corner for the jigsaw blade.'],
   },
-  install: {
-    title: 'Set the cabinet in place',
-    instructions: (v) => [
-      'Put the platform against the wall and level it with shims. Screw it to the floor or the wall.',
-      'Lift the box onto the platform with its back against the wall. It overhangs the platform at the front.',
-      'Find the wall studs and screw through the mounting strips into them.',
-      `Glue and nail the toe kick to the platform. Its face sits ${size(v, 'toeSpace')} back from the front of the cabinet. On an end that can be seen, fix the short return piece first, then cover its end with the front piece.`,
-    ],
-    checklist: () => ['Platform is level side to side and front to back', 'Cabinet is screwed to at least two studs', 'Toe kick is fixed'],
+  plumbingHoleSaw: {
+    title: fixed('Cut the holes for the pipes'),
+    say: () => 'Mark the centre of each pipe on the back panel. Drill each with the hole saw.',
+    more: () => [...pipes, 'Use a hole saw a little larger than the pipe.', 'Drill from inside until the centre bit just comes through, then finish from the back.'],
   },
-  drawers: {
-    title: 'Fit the slides, drawers and drawer fronts',
-    instructions: (v) => [
-      `Each drawer runs on a pair of ${size(v, 'slideLength')} slides. Screw the cabinet half of each slide to the divider or spacer, level, with its front end flush with the front of the face frame.`,
-      `Screw the other half to the drawer box so the bottom of the box sits ${size(v, 'lift')} above the bottom of its opening.`,
-      ...(count(v, 'setback') > 0 ? [`Set the front of each drawer box ${size(v, 'setback')} back from the front of the face frame. That leaves room for the panel on the back of the framed drawer fronts.`] : []),
-      `Slide the boxes in. Hold each drawer front so it laps over its opening by ${size(v, 'overlay')} on every side, then screw it on from inside the box.`,
-    ],
-    checklist: (v) => [`${count(v, 'drawers')} drawers slide in and out freely`, 'Gaps between the fronts are even', 'Fronts are screwed on from inside the boxes'],
+  setPlatform: {
+    title: fixed('Place the platform'),
+    say: () => 'Put the platform against the wall. Level it with shims and screw it down.',
+    more: (v) => ['Check level side to side and front to back.', `Its top should be ${size(v, 'height')} off the floor all the way along.`],
   },
-  doors: {
-    title: 'Hang the doors',
-    instructions: (v) => [
-      `Each door hangs on two hinges made for a ${size(v, 'overlay')} overlay. Mark the centre of each hinge ${size(v, 'hingeInset')} from the top and bottom of the door, on the back, along the hinge edge.`,
-      'Bore the cup hole for each hinge with the hinge-boring bit, following the sheet that comes with the hinges for how far in from the edge and how deep. Try it on an offcut first.',
-      'Screw the hinges into their cup holes, then to the edge of the face frame.',
-      `Turn the hinge screws until the door laps over its opening by ${size(v, 'overlay')} on every side and the gaps are even.`,
+  setBox: {
+    title: fixed('Lift the box on'),
+    say: () => 'Set the box on the platform with its back against the wall.',
+    more: () => ['This is a two-person lift.', 'The box overhangs the platform at the front.'],
+  },
+  wallScrews: {
+    title: fixed('Screw it to the wall'),
+    say: () => 'Find the wall studs. Screw through the mounting strips into them.',
+    more: () => ['Screw into at least two studs.', 'Check the cabinet is still level before the last screw.'],
+  },
+  toeKickReturn: {
+    title: fixed('Cover the end of the platform'),
+    say: (_v, m) => `Glue the short toe kick piece to the end of the platform and nail it ${nailIt(m)}.`,
+    more: () => ['This goes on first, so the long front piece can cover its end.'],
+  },
+  toeKick: {
+    title: fixed('Cover the front of the platform'),
+    say: (_v, m) => `Glue the long toe kick piece to the front of the platform and nail it ${nailIt(m)}.`,
+    more: (v) => [`Its face sits ${size(v, 'toeSpace')} back from the front of the cabinet.`],
+  },
+  slidesCabinet: {
+    title: fixed('Fit the slides in the cabinet'),
+    say: (v) => `Screw a ${size(v, 'slideLength')} slide to each side of every drawer opening. Keep each one level.`,
+    more: (v) => [
+      'Slides come in pairs: one half fixes to the cabinet, the other to the drawer box.',
+      is(v, 'setback')
+        ? `Set the front end of each slide ${size(v, 'setback')} back from the front of the face frame.`
+        : 'The front end of each slide is flush with the front of the face frame.',
+      'Use a scrap as a rest so both slides of a pair sit at the same height.',
     ],
-    checklist: (v) => [`${count(v, 'doors')} doors open and close freely`, 'Gaps are even all round'],
+  },
+  slidesDrawers: {
+    title: fixed('Fit the drawer boxes'),
+    say: (v) => `Screw the other half of each slide to its box. The box sits ${size(v, 'lift')} above the bottom of its opening. Slide it in.`,
+    more: (v) => [`There are ${count(v, 'drawers')} drawers.`, 'Each should slide in and out freely.'],
+  },
+  drawerFronts: {
+    title: fixed('Fix the drawer fronts'),
+    say: (v) => `Hold each front so it laps its opening by ${size(v, 'overlay')} all round. Screw it on from inside the box.`,
+    more: () => ['Clamp or tape the front in place before you drive the screws.', 'Keep the gaps between fronts even.'],
+  },
+  hinges: {
+    title: fixed('Fit the hinges to the doors'),
+    say: (v) => `Bore two cup holes in the back of each door, ${size(v, 'hingeInset')} from the top and bottom. Screw in the hinges.`,
+    more: () => [
+      'The cup holes go along the hinge edge. Neighbouring doors have their hinges on opposite edges.',
+      'Use the hinge-boring bit. The sheet that comes with the hinges says how far in from the edge and how deep.',
+      'Try it on an offcut first.',
+    ],
+  },
+  hangDoors: {
+    title: fixed('Hang the doors'),
+    say: (v) => `Screw the hinges to the edge of the face frame. Adjust until each door laps its opening by ${size(v, 'overlay')} all round.`,
+    more: () => ['The small screws on each hinge move the door up, down, in and out.', 'Aim for even gaps all round.'],
+  },
+  handles: {
+    title: fixed('Fit your handles'),
+    say: () => 'Mark, drill and fit a handle on each door and drawer front.',
+    more: () => ['Make a card template so every handle lands in the same place.', 'Put a scrap behind the front as you drill, so the back does not splinter.'],
   },
 };
