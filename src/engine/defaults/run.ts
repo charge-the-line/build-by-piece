@@ -115,3 +115,35 @@ export const startingCorner: RunDesign = {
   },
   overrides: { ends: { left: userChoice('exposed'), right: userChoice('exposed') } },
 };
+
+const fromPhoto = 'A rough guess from a photo of the kitchen. Measure the wall before you buy or cut anything.';
+
+/**
+ * Ashley's kitchen as far as one photo shows it: what stands along each wall,
+ * and two wall lengths that are only a guess. The lengths are marked "check
+ * before you cut" until she types the real ones. The island in the photo and
+ * the microwave over the range are not here: the app cannot plan those yet.
+ */
+export const photoKitchen: RunDesign = {
+  ...startingCorner,
+  id: 'kitchen-photo',
+  name: "Ashley's kitchen (sizes are a guess)",
+  length: checkAtCutting('150', fromPhoto),
+  items: [
+    { id: 'item-1', kind: 'cabinet', cabinet: 'base' },
+    { id: 'item-2', kind: 'cabinet', cabinet: 'base' },
+    { id: 'item-3', kind: 'cabinet', cabinet: 'sinkBase' },
+    { id: 'item-4', kind: 'appliance', appliance: 'dishwasher' },
+    { id: 'item-5', kind: 'cabinet', cabinet: 'base' },
+  ],
+  corner: {
+    side: 'right',
+    length: checkAtCutting('126', fromPhoto),
+    items: [
+      { id: 'item-1', kind: 'cabinet', cabinet: 'base' },
+      { id: 'item-2', kind: 'appliance', appliance: 'range' },
+      { id: 'item-3', kind: 'cabinet', cabinet: 'base' },
+      { id: 'item-4', kind: 'appliance', appliance: 'fridge' },
+    ],
+  },
+};

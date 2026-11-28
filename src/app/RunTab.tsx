@@ -195,7 +195,7 @@ export function RunTab({ design, plan, onChange }: Props) {
       <section>
         <h2>{corner ? 'Your first wall' : 'Your wall'}</h2>
         <p>{corner ? 'Give the length of each wall, from the corner to its far end. The app sizes every cabinet to fit.' : 'Give the length of the run. The app sizes every cabinet to fit.'}</p>
-        <LengthField label={corner ? 'Length of the first wall' : 'Length of the run'} value={design.length.entered} hint={corner ? 'From the corner to the far end' : 'End to end, along the wall'} onValid={(v) => onChange(withRunSize(design, 'length', v))} />
+        <LengthField label={corner ? 'Length of the first wall' : 'Length of the run'} value={design.length.entered} hint={design.length.checkAt ? (design.length.note ?? '') : corner ? 'From the corner to the far end' : 'End to end, along the wall'} onValid={(v) => onChange(withRunSize(design, 'length', v))} />
         <LengthField label="Depth" value={design.depth.entered} hint="Wall to the front of the face frames" onValid={(v) => onChange(withRunSize(design, 'depth', v))} />
         <LengthField label="Height" value={design.height.entered} hint="The boxes only: no platform, no top" onValid={(v) => onChange(withRunSize(design, 'height', v))} />
         {(!corner || corner.side === 'right') && <EndPicker side="Left" value={end('left')} onPick={(v) => onChange(withEnd(design, 'left', v))} />}
@@ -205,7 +205,7 @@ export function RunTab({ design, plan, onChange }: Props) {
       {corner && (
         <section>
           <h2>Your second wall</h2>
-          <LengthField label="Length of the second wall" value={corner.length.entered} hint="From the corner to the far end" onValid={(v) => onChange(withCorner(design, { length: userEntered(v) }))} />
+          <LengthField label="Length of the second wall" value={corner.length.entered} hint={corner.length.checkAt ? (corner.length.note ?? '') : 'From the corner to the far end'} onValid={(v) => onChange(withCorner(design, { length: userEntered(v) }))} />
           <fieldset className="ends">
             <legend>The second wall is on your</legend>
             {(['left', 'right'] as const).map((side) => (

@@ -4,7 +4,7 @@ Rule numbers refer to [RULES.md](RULES.md).
 
 ## Waiting on Max
 
-Nothing blocks the next step, but **a room, an island and a cabinet over the range each need a rules proposal** before any code, as before. **Real sizes for Ashley's kitchen** are still wanted: the corner test case is shaped like her kitchen from a photo, with made-up sizes.
+Nothing blocks the next step, but **a room, an island and a cabinet over the range each need a rules proposal** before any code, as before. **Real sizes for Ashley's kitchen** are still wanted. At Max's request (28 Nov) a new corner kitchen starts with the layout from his photo and two wall lengths guessed from it: about 150" and 126". They could easily be 6" or more out. The app marks both "check before you cut" until she types what she measures.
 
 **A corner:** Max approved [CORNERS-PROPOSAL.md](CORNERS-PROPOSAL.md) by sending a photo of the kitchen and saying to do whatever is best. Built at the defaults as section N; what changed while building is recorded in the proposal (the gap is 3 1/2", the width of an oak 1x4 as sold).
 

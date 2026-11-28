@@ -7,7 +7,7 @@ import { defaultCatalog } from '../engine/defaults/catalog';
 import { userChoice, userEntered } from '../engine/defaults/values';
 import { vanity01 } from '../engine/fixtures/vanity-01';
 import { cabinetKind } from '../engine/defaults/cabinets';
-import { CORNER_ITEM, startingCorner, startingRun } from '../engine/defaults/run';
+import { CORNER_ITEM, photoKitchen, startingRun } from '../engine/defaults/run';
 import type { Approach, CabinetType, Design, EndCondition, PanelMethod, ProjectFile, RunDesign, RunItem, ToolId, VanityDesign } from '../engine/types';
 
 const STORAGE_KEY = 'build-by-piece:project';
@@ -124,7 +124,7 @@ export function useProject() {
         const { tools, approach } = project.design.overrides;
         const kept = { ...(tools ? { tools } : {}), ...(approach ? { approach } : {}) };
         if (type === 'run' || type === 'corner') {
-          const start = type === 'corner' ? startingCorner : startingRun;
+          const start = type === 'corner' ? photoKitchen : startingRun;
           const runs = s.projects.filter((p) => p.design.projectType === 'run' && (p.design.corner !== undefined) === (type === 'corner')).length;
           const design: RunDesign = { ...start, id: `project-${n}`, name: runs === 0 ? start.name : `${start.name} ${runs + 1}`, overrides: { ...start.overrides, ...kept } };
           return { currentId: design.id, projects: [...s.projects, { design, checked: {} }] };
