@@ -5,7 +5,7 @@
  */
 import { describe, expect, it } from 'vitest';
 import { defaultCatalog } from '../defaults/catalog';
-import { startingCorner } from '../defaults/run';
+import { photoKitchen, startingCorner } from '../defaults/run';
 import { vanityDefaults } from '../defaults/vanity';
 import { userEntered } from '../defaults/values';
 import { generateRun } from '../run';
@@ -232,5 +232,39 @@ describe('both walls together (rule N8)', () => {
     expect(r.run!.fromAbove).toBeUndefined();
     expect(r.parts.some((p) => p.name === 'Blind panel' || p.name.startsWith('Gap strip'))).toBe(false);
     expect(r.steps.some((s) => s.wall === 2)).toBe(false);
+  });
+});
+
+describe("Ashley's kitchen, guessed from a photo", () => {
+  const guess = planOf(photoKitchen);
+
+  it('plans with no errors or warnings', () => {
+    expect(guess.canGeneratePlan).toBe(true);
+    expect(problems(guess)).toEqual([]);
+    checkPlacements(guess, 'photo kitchen:');
+  });
+
+  it('marks both wall lengths "check before you cut", and says they are a guess', () => {
+    for (const path of ['length', 'corner.length']) {
+      const input = guess.inputs.find((i) => i.path === path)!;
+      expect(input, path).toMatchObject({ status: 'assumed', origin: 'appDefault', checkAt: 'cutting' });
+      expect(input.note).toContain('guess from a photo');
+    }
+  });
+
+  it('drops the mark once she types the real length', () => {
+    const measured = planOf({ ...photoKitchen, length: userEntered('148 1/2') });
+    expect(measured.inputs.find((i) => i.path === 'length')).toMatchObject({ status: 'confirmed', origin: 'user' });
+    expect(measured.inputs.find((i) => i.path === 'length')!.checkAt).toBeUndefined();
+    expect(measured.inputs.find((i) => i.path === 'corner.length')!.checkAt).toBe('cutting');
+  });
+
+  it('lays the walls out as in the photo: sink and dishwasher on the first, range and fridge on the second', () => {
+    expect(guess.run!.cabinets.map((c) => c.name)).toEqual(['Base cabinet', 'Base cabinet', 'Sink base', 'Base cabinet', 'Corner base cabinet']);
+    expect(guess.run!.spaces.map((s) => s.name)).toEqual(['Space for a dishwasher']);
+    expect(guess.run!.second!.spaces.map((s) => s.name)).toEqual(['Space for a range', 'Space for a fridge']);
+    // Nothing over the sink (a window), the range or the fridge.
+    expect(guess.run!.above.map((a) => a.choice)).toEqual(['upper', 'upper', 'none', 'upper', 'upper', 'upper']);
+    expect(guess.run!.second!.above.map((a) => a.choice)).toEqual(['upper', 'none', 'upper', 'none']);
   });
 });

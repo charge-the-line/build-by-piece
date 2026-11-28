@@ -33,6 +33,8 @@ A project is now either one cabinet or a run: several base cabinets and applianc
 
 A run can have a second wall meeting it at a corner (section N). The app adds a corner base cabinet to the first wall, with part of its box hidden behind a blind panel; the second wall starts in front of it after a 3 1/2" oak gap strip; uppers turn the corner the same way. Both walls are placed in one room and share the cutting diagrams, lists and build. Tested against a made-up kitchen shaped like Ashley's (150" and 126" walls).
 
+A new "Kitchen with a corner" starts as `photoKitchen`: the layout seen in Max's photo of Ashley's kitchen, with both wall lengths guessed from that photo at Max's request. Those two lengths are the only numbers ever taken from an image; they are inputs, not part sizes, they are marked "check before you cut" with a note saying so, and they stay marked until she types the measured length. Do not take any other number from a photo.
+
 As single cabinets the app plans five: the bathroom vanity, and a kitchen base cabinet, drawer base, sink base and upper cabinet (section K of the rules). All are tested against made-up standard sizes; there are no real kitchen measurements yet.
 
 Ashley asked for a much larger, picture-first product; her feedback and Max's decisions are recorded in `docs/OPEN-QUESTIONS.md`, with what is still to do. Her rule for every screen: **more pictures, fewer words.** On construction screens aim for one or two short sentences per step, with anything longer behind "More detail".

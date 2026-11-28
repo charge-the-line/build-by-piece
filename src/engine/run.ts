@@ -136,7 +136,7 @@ function planWall(run: RunDesign, defaults: VanityOptions, catalog: MaterialCata
     error('INPUT_NOT_USABLE', 'U2', `Length of the run: "${run.length.entered}" cannot be used. ${parsedLength.reason}`, 'Type a length that is on a tape measure.', ['length']);
   }
   const length = parsedLength.ok ? parsedLength.ticks : asTicks(0);
-  inputs.unshift({ path: 'length', label: 'length of the run', value: length, status: run.length.status, origin: run.length.origin });
+  inputs.unshift({ path: 'length', label: 'length of the run', value: length, status: run.length.status, origin: run.length.origin, ...(run.length.checkAt ? { checkAt: run.length.checkAt } : {}), ...(run.length.note ? { note: run.length.note } : {}) });
   issues.push(...shared.issues);
   const r = shared.resolved;
   if (!r || !parsedLength.ok) return blocked(inputs, issues);
